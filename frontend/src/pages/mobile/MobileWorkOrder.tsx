@@ -181,24 +181,24 @@ const MobileWorkOrder = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-50">
+    <div className="min-h-screen bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text)]">
       <div className="flex items-center justify-between px-4 py-3">
         <div>
-          <p className="text-xs uppercase text-indigo-300">Worker Mode</p>
+          <p className="text-xs uppercase text-[var(--wp-color-primary)]">Worker Mode</p>
           <h1 className="text-2xl font-semibold">{workOrder?.title ?? 'Work order'}</h1>
-          {header && <p className="text-sm text-neutral-400">{header}</p>}
+          {header && <p className="text-sm text-[var(--wp-color-text-muted)]">{header}</p>}
           {conflictWarning && <p className="text-sm text-amber-300">{conflictWarning}</p>}
         </div>
-        <Link to="/workorders" className="text-sm text-indigo-300 underline">
+        <Link to="/workorders" className="text-sm text-[var(--wp-color-primary)] underline">
           Back
         </Link>
       </div>
 
       <div className="space-y-4 px-4 pb-10">
-        <section className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+        <section className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-neutral-400">Status</p>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">Status</p>
               <p className="text-lg font-semibold">{workOrder?.status ?? 'offline'}</p>
             </div>
             <div className="flex gap-2">
@@ -218,11 +218,11 @@ const MobileWorkOrder = () => {
           </div>
         </section>
 
-        <section className="space-y-2 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+        <section className="space-y-2 rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)] p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Checklist</p>
             <button
-              className="text-sm text-indigo-300"
+              className="text-sm text-[var(--wp-color-primary)]"
               onClick={() => setChecklist((prev) => [...prev, `Step ${prev.length + 1}`])}
             >
               Add item
@@ -230,7 +230,7 @@ const MobileWorkOrder = () => {
           </div>
           <ul className="space-y-2">
             {checklist.map((item, idx) => (
-              <li key={idx} className="flex items-center gap-3 rounded-lg bg-neutral-800/70 p-2">
+              <li key={idx} className="flex items-center gap-3 rounded-lg bg-[var(--wp-color-surface-elevated)]/70 p-2">
                 <input
                   type="checkbox"
                   className="h-4 w-4"
@@ -245,35 +245,35 @@ const MobileWorkOrder = () => {
             ))}
           </ul>
           <button
-            className="w-full rounded-lg border border-neutral-700 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2 text-sm"
             onClick={() => void handleStatus(workOrder?.status ?? 'requested')}
           >
             Sync checklist
           </button>
         </section>
 
-        <section className="space-y-3 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+        <section className="space-y-3 rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)] p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold">Barcode / QR</p>
-              {scannedCode && <p className="text-xs text-neutral-400">Last scan: {scannedCode}</p>}
+              {scannedCode && <p className="text-xs text-[var(--wp-color-text-muted)]">Last scan: {scannedCode}</p>}
             </div>
-            <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-xs text-indigo-200">Camera</span>
+            <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-xs text-[var(--wp-color-primary)]">Camera</span>
           </div>
           <BarcodeScanner onDetected={handleScan} />
         </section>
 
-        <section className="space-y-3 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+        <section className="space-y-3 rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)] p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Offline media</p>
-            <span className="text-xs text-neutral-400">{pendingMedia.length} queued</span>
+            <span className="text-xs text-[var(--wp-color-text-muted)]">{pendingMedia.length} queued</span>
           </div>
           <input
             type="file"
             accept="image/*,video/*"
             multiple
             capture="environment"
-            className="w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-sm"
             onChange={(e) => void handleMediaCapture(e.target.files)}
           />
           <button
@@ -290,3 +290,4 @@ const MobileWorkOrder = () => {
 };
 
 export default MobileWorkOrder;
+

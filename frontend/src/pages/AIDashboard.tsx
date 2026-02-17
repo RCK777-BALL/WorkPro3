@@ -14,7 +14,7 @@ interface Insight {
 }
 
 const levelStyles: Record<Insight['level'], string> = {
-  normal: 'border-slate-700 bg-slate-900/60 text-slate-200',
+  normal: 'border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] text-[var(--wp-color-text)]',
   warning: 'border-amber-500/40 bg-amber-500/10 text-amber-100',
   critical: 'border-rose-500/40 bg-rose-500/10 text-rose-100',
   success: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100',
@@ -43,8 +43,8 @@ export default function AIDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-100">AI Maintenance Insights</h1>
-        <p className="text-sm text-slate-400">
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">AI Maintenance Insights</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">
           Automated trend detection and alerts generated from your recent work orders.
         </p>
       </div>
@@ -55,17 +55,17 @@ export default function AIDashboard() {
             key={insight.plant}
             className={`rounded-lg border p-4 ${levelStyles[insight.level]}`}
           >
-            <p className="text-xs uppercase tracking-wide text-slate-400">{insight.plant}</p>
+            <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">{insight.plant}</p>
             <p className="mt-2 text-sm font-medium">{insight.message}</p>
             <dl className="mt-3 grid gap-2 text-xs">
               <div>
-                <dt className="text-slate-500">Downtime trend</dt>
+                <dt className="text-[var(--wp-color-text-muted)]">Downtime trend</dt>
                 <dd>
                   {insight.downtimeTrend.trend} ({insight.downtimeTrend.slope.toFixed(1)})
                 </dd>
               </div>
               <div>
-                <dt className="text-slate-500">Wrench time trend</dt>
+                <dt className="text-[var(--wp-color-text-muted)]">Wrench time trend</dt>
                 <dd>
                   {insight.wrenchTrend.trend} ({insight.wrenchTrend.slope.toFixed(1)})
                 </dd>
@@ -74,7 +74,7 @@ export default function AIDashboard() {
           </div>
         ))}
         {insights.length === 0 && (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-[var(--wp-color-text-muted)]">
             No AI insights available yet. Add work orders to generate trend data.
           </p>
         )}
@@ -82,3 +82,4 @@ export default function AIDashboard() {
     </div>
   );
 }
+

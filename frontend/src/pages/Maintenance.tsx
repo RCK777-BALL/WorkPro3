@@ -114,11 +114,11 @@ const Maintenance: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-[var(--wp-color-text)]">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white">Maintenance</h2>
-          <p className="text-slate-300">Schedule and track preventive maintenance</p>
+          <h2 className="text-2xl font-bold text-[var(--wp-color-text)]">Maintenance</h2>
+          <p className="text-[var(--wp-color-text-muted)]">Schedule and track preventive maintenance</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
           <Button
@@ -155,12 +155,12 @@ const Maintenance: React.FC = () => {
 
       <MaintenanceMetrics />
 
-      <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-slate-900 p-4 rounded-lg shadow-sm border border-slate-700">
-        <Search className="text-slate-400" size={20} />
+      <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-[var(--wp-color-surface)] p-4 rounded-lg shadow-sm border border-[var(--wp-color-border)]">
+        <Search className="text-[var(--wp-color-text-muted)]" size={20} />
         <input
           type="text"
           placeholder="Search maintenance schedules..."
-          className="flex-1 bg-transparent border-none outline-none text-white placeholder-slate-500"
+          className="flex-1 bg-transparent border-none outline-none text-[var(--wp-color-text)] placeholder-slate-500"
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
@@ -186,3 +186,4 @@ const Maintenance: React.FC = () => {
 };
 
 export default Maintenance;
+

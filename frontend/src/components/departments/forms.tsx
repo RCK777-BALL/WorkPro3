@@ -40,7 +40,7 @@ export function DepartmentForm({ initial, onSubmit, onCancel }: DepartmentFormPr
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input
-          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+          className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md"
           {...register('name', { required: 'Name is required' })}
         />
         {errors.name && (
@@ -50,7 +50,7 @@ export function DepartmentForm({ initial, onSubmit, onCancel }: DepartmentFormPr
       <div>
         <label className="block text-sm font-medium mb-1">Description</label>
         <textarea
-          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+          className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md"
           {...register('description')}
         />
       </div>
@@ -99,7 +99,7 @@ export function LineForm({ initial, onSubmit, onCancel }: LineFormProps) {
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input
-          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+          className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md"
           {...register('name', { required: 'Name is required' })}
         />
         {errors.name && (
@@ -151,7 +151,7 @@ export function StationForm({ initial, onSubmit, onCancel }: StationFormProps) {
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input
-          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+          className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md"
           {...register('name', { required: 'Name is required' })}
         />
         {errors.name && (
@@ -171,3 +171,4 @@ export function StationForm({ initial, onSubmit, onCancel }: StationFormProps) {
 }
 
 export default DepartmentForm;
+

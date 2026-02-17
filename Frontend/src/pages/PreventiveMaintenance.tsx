@@ -25,17 +25,17 @@ const PreventiveMaintenance: React.FC = () => {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Preventive Maintenance</h1>
-          <p className="text-sm text-neutral-500">Manage PM schedules and next run dates.</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Preventive Maintenance</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Manage PM schedules and next run dates.</p>
         </div>
-        <button className="rounded bg-blue-600 px-4 py-2 text-sm text-white" onClick={() => setIsOpen(true)}>
+        <button className="rounded bg-[var(--wp-color-primary)] px-4 py-2 text-sm text-[var(--wp-color-text)]" onClick={() => setIsOpen(true)}>
           Add PM task
         </button>
       </header>
 
-      <div className="rounded-lg border border-neutral-200 bg-white">
+      <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]">
         <table className="w-full text-sm">
-          <thead className="border-b border-neutral-200 text-left text-xs uppercase text-neutral-500">
+          <thead className="border-b border-[var(--wp-color-border)] text-left text-xs uppercase text-[var(--wp-color-text-muted)]">
             <tr>
               <th className="px-4 py-2">Title</th>
               <th className="px-4 py-2">Active</th>
@@ -43,9 +43,9 @@ const PreventiveMaintenance: React.FC = () => {
           </thead>
           <tbody>
             {tasks.map((task) => (
-              <tr key={String(task._id ?? task.id)} className="border-b border-neutral-100">
-                <td className="px-4 py-2 text-neutral-900">{String(task.title ?? 'PM Task')}</td>
-                <td className="px-4 py-2 text-neutral-600">{String(task.active ?? true)}</td>
+              <tr key={String(task._id ?? task.id)} className="border-b border-[var(--wp-color-border)]">
+                <td className="px-4 py-2 text-[var(--wp-color-text)]">{String(task.title ?? 'PM Task')}</td>
+                <td className="px-4 py-2 text-[var(--wp-color-text-muted)]">{String(task.active ?? true)}</td>
               </tr>
             ))}
           </tbody>
@@ -58,3 +58,4 @@ const PreventiveMaintenance: React.FC = () => {
 };
 
 export default PreventiveMaintenance;
+

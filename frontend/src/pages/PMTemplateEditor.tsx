@@ -112,7 +112,7 @@ export default function PMTemplateEditor() {
   };
 
   if (isEditing && templateQuery.isLoading) {
-    return <div className="p-6 text-sm text-neutral-600">Loading template...</div>;
+    return <div className="p-6 text-sm text-[var(--wp-color-text-muted)]">Loading template...</div>;
   }
 
   if (isEditing && templateQuery.isError) {
@@ -123,8 +123,8 @@ export default function PMTemplateEditor() {
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">{isEditing ? "Edit template" : "New template"}</h1>
-          <p className="text-sm text-neutral-600">
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">{isEditing ? "Edit template" : "New template"}</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">
             Define the core details and tasks for your preventive maintenance template.
           </p>
         </div>
@@ -135,7 +135,7 @@ export default function PMTemplateEditor() {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-neutral-800">Name</label>
+              <label className="text-sm font-semibold text-[var(--wp-color-text)]">Name</label>
               <Input
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
@@ -144,7 +144,7 @@ export default function PMTemplateEditor() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-neutral-800">Category</label>
+              <label className="text-sm font-semibold text-[var(--wp-color-text)]">Category</label>
               <Input
                 value={form.category}
                 onChange={(e) => handleChange("category", e.target.value)}
@@ -155,7 +155,7 @@ export default function PMTemplateEditor() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-neutral-800">Description</label>
+            <label className="text-sm font-semibold text-[var(--wp-color-text)]">Description</label>
             <TextArea
               value={form.description ?? ""}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange("description", e.target.value)}
@@ -166,7 +166,7 @@ export default function PMTemplateEditor() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-neutral-800">Estimated minutes</label>
+              <label className="text-sm font-semibold text-[var(--wp-color-text)]">Estimated minutes</label>
               <Input
                 type="number"
                 min={1}
@@ -176,7 +176,7 @@ export default function PMTemplateEditor() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-neutral-800">Tasks</label>
+              <label className="text-sm font-semibold text-[var(--wp-color-text)]">Tasks</label>
               <TaskList tasks={form.tasks ?? [""]} onChange={(tasks) => handleChange("tasks", tasks)} />
             </div>
           </div>
@@ -192,3 +192,4 @@ export default function PMTemplateEditor() {
     </div>
   );
 }
+

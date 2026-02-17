@@ -7,3 +7,4 @@ import ProcedureTemplateBuilder from '@/pm/ProcedureTemplateBuilder';
 const PMProcedureTemplates = () => <ProcedureTemplateBuilder />;
 
 export default PMProcedureTemplates;
+

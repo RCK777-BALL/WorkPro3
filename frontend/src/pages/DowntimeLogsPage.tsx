@@ -144,24 +144,24 @@ const DowntimeLogsPage = () => {
     <div className="space-y-6">
       <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Downtime</h1>
-          <p className="text-sm text-neutral-400">
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Downtime</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">
             Log asset downtime with linked work orders, root causes, and operational impacts.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 md:w-96 md:flex-row md:items-center">
-          <div className="flex flex-1 items-center gap-2 rounded border border-neutral-700 bg-neutral-900 px-3 py-2">
-            <Search className="h-4 w-4 text-neutral-500" />
+          <div className="flex flex-1 items-center gap-2 rounded border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2">
+            <Search className="h-4 w-4 text-[var(--wp-color-text-muted)]" />
             <input
               type="search"
               placeholder="Search cause, impact, or work order"
-              className="w-full bg-transparent text-sm text-neutral-100 outline-none"
+              className="w-full bg-transparent text-sm text-[var(--wp-color-text)] outline-none"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <select
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 md:w-48"
+            className="w-full rounded border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] md:w-48"
             value={assetFilter}
             onChange={(e) => setAssetFilter(e.target.value)}
             data-testid="asset-filter"
@@ -186,10 +186,10 @@ const DowntimeLogsPage = () => {
         overlapError={overlapError}
       />
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-900">
-        <table className="min-w-full divide-y divide-neutral-800 text-sm text-neutral-100">
+      <div className="overflow-x-auto rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]">
+        <table className="min-w-full divide-y divide-neutral-800 text-sm text-[var(--wp-color-text)]">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-neutral-400">
+            <tr className="text-left text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">
               <th className="px-4 py-3">Asset</th>
               <th className="px-4 py-3">Work order</th>
               <th className="px-4 py-3">Start</th>
@@ -203,27 +203,27 @@ const DowntimeLogsPage = () => {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-neutral-400">
+                <td colSpan={8} className="px-4 py-6 text-center text-[var(--wp-color-text-muted)]">
                   Loading downtime entries…
                 </td>
               </tr>
             )}
             {!isLoading && filteredLogs.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-neutral-400">
+                <td colSpan={8} className="px-4 py-6 text-center text-[var(--wp-color-text-muted)]">
                   No downtime entries match your filters.
                 </td>
               </tr>
             )}
             {filteredLogs.map((log) => (
-              <tr key={log.id} className="border-t border-neutral-800">
+              <tr key={log.id} className="border-t border-[var(--wp-color-border)]">
                 <td className="px-4 py-3">{log.assetName ?? log.assetId}</td>
-                <td className="px-4 py-3 text-neutral-300">{log.workOrderTitle ?? log.workOrderId ?? '—'}</td>
-                <td className="px-4 py-3 text-neutral-300">{formatDateTime(log.start)}</td>
-                <td className="px-4 py-3 text-neutral-300">{formatDateTime(log.end)}</td>
-                <td className="px-4 py-3 text-neutral-100">{formatDuration(log.durationMinutes ?? null)}</td>
-                <td className="px-4 py-3 text-neutral-200">{log.cause ?? '—'}</td>
-                <td className="px-4 py-3 text-neutral-200">{log.impact ?? '—'}</td>
+                <td className="px-4 py-3 text-[var(--wp-color-text-muted)]">{log.workOrderTitle ?? log.workOrderId ?? '—'}</td>
+                <td className="px-4 py-3 text-[var(--wp-color-text-muted)]">{formatDateTime(log.start)}</td>
+                <td className="px-4 py-3 text-[var(--wp-color-text-muted)]">{formatDateTime(log.end)}</td>
+                <td className="px-4 py-3 text-[var(--wp-color-text)]">{formatDuration(log.durationMinutes ?? null)}</td>
+                <td className="px-4 py-3 text-[var(--wp-color-text)]">{log.cause ?? '—'}</td>
+                <td className="px-4 py-3 text-[var(--wp-color-text)]">{log.impact ?? '—'}</td>
                 <td className="px-4 py-3 text-right">
                   <button
                     className="inline-flex items-center gap-1 rounded px-3 py-1 text-xs font-semibold text-blue-300 hover:bg-blue-500/10"
@@ -254,3 +254,4 @@ const DowntimeLogsPage = () => {
 };
 
 export default DowntimeLogsPage;
+

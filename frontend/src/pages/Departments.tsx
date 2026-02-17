@@ -663,25 +663,25 @@ const Departments = () => {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-white shadow">
-        <div className="absolute -right-24 top-1/2 hidden h-48 w-48 -translate-y-1/2 rounded-full bg-white/10 blur-3xl md:block" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-[var(--wp-color-text)] shadow">
+        <div className="absolute -right-24 top-1/2 hidden h-48 w-48 -translate-y-1/2 rounded-full bg-[var(--wp-color-surface)]/10 blur-3xl md:block" />
         <div className="relative z-10 flex flex-col gap-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-4">
-              <span className="rounded-xl bg-white/20 p-3">
+              <span className="rounded-xl bg-[var(--wp-color-surface)]/20 p-3">
                 <Building2 className="h-6 w-6" />
               </span>
               <div className="space-y-2">
                 <div>
                   <h1 className="text-2xl font-semibold">Departments</h1>
-                  <p className="mt-1 max-w-2xl text-sm text-white/80">
+                  <p className="mt-1 max-w-2xl text-sm text-[var(--wp-color-text)]/80">
                     Audit, enrich, and maintain the full production hierarchy so frontline teams always know where work lives.
                   </p>
                 </div>
                 {hasUnassignedDepartments && (
-                  <div className="flex items-start gap-2 rounded-xl border border-white/30 bg-white/10 p-3 text-sm backdrop-blur">
+                  <div className="flex items-start gap-2 rounded-xl border border-white/30 bg-[var(--wp-color-surface)]/10 p-3 text-sm backdrop-blur">
                     <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-300" />
-                    <p className="text-white/90">
+                    <p className="text-[var(--wp-color-text)]/90">
                       Some departments are not linked to a plant. Assign them to keep planning, maintenance, and reporting aligned.
                     </p>
                   </div>
@@ -693,7 +693,7 @@ const Departments = () => {
                 variant="secondary"
                 size="sm"
                 onClick={() => navigate('/plants')}
-                className="backdrop-blur-sm bg-white/15 text-white hover:bg-white/20"
+                className="backdrop-blur-sm bg-[var(--wp-color-surface)]/15 text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface)]/20"
               >
                 <Factory className="mr-2 h-4 w-4" />
                 Manage plants
@@ -702,7 +702,7 @@ const Departments = () => {
                 variant="primary"
                 size="sm"
                 onClick={startDepartmentCreation}
-                className="bg-white text-primary-700 hover:bg-white/90"
+                className="bg-[var(--wp-color-surface)] text-primary-700 hover:bg-[var(--wp-color-surface)]/90"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 New department
@@ -712,7 +712,7 @@ const Departments = () => {
                 size="sm"
                 onClick={handleImportClick}
                 loading={importing}
-                className="border-white/40 bg-white/10 text-white hover:bg-white/20"
+                className="border-white/40 bg-[var(--wp-color-surface)]/10 text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface)]/20"
               >
                 {!importing && <Upload className="mr-2 h-4 w-4" />}
                 Import Excel
@@ -722,7 +722,7 @@ const Departments = () => {
                 size="sm"
                 onClick={handleExport}
                 loading={exporting}
-                className="border-white/40 bg-white/10 text-white hover:bg-white/20"
+                className="border-white/40 bg-[var(--wp-color-surface)]/10 text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface)]/20"
               >
                 {!exporting && <Download className="mr-2 h-4 w-4" />}
                 Export Excel
@@ -766,13 +766,13 @@ const Departments = () => {
               }].map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm backdrop-blur"
+                  className="flex items-center justify-between rounded-2xl border border-white/20 bg-[var(--wp-color-surface)]/10 px-4 py-3 text-sm backdrop-blur"
                 >
                   <div className="space-y-1">
-                    <span className="text-xs uppercase tracking-wide text-white/70">{stat.label}</span>
+                    <span className="text-xs uppercase tracking-wide text-[var(--wp-color-text)]/70">{stat.label}</span>
                     <p className="text-lg font-semibold">{stat.value.toLocaleString()}</p>
                   </div>
-                  <span className="rounded-full bg-white/20 p-2 text-white">{stat.icon}</span>
+                  <span className="rounded-full bg-[var(--wp-color-surface)]/20 p-2 text-[var(--wp-color-text)]">{stat.icon}</span>
                 </div>
               ))}
             </div>
@@ -780,19 +780,19 @@ const Departments = () => {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="rounded-3xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-6 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <Search className="h-4 w-4 text-neutral-500" />
+          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-4 py-3 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]">
+            <Search className="h-4 w-4 text-[var(--wp-color-text-muted)]" />
             <input
               value={search}
               onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
               placeholder="Search departments, lines, stations, or assets"
-              className="w-full border-none bg-transparent text-sm outline-none placeholder:text-neutral-400 dark:text-neutral-100"
+              className="w-full border-none bg-transparent text-sm outline-none placeholder:text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text)]"
             />
           </div>
           <div className="flex w-full flex-col gap-3 lg:w-auto">
-            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
               <Filter className="h-4 w-4" /> Asset type focus
             </span>
             <div className="flex flex-wrap gap-2">
@@ -806,8 +806,8 @@ const Departments = () => {
                     className={cn(
                       'rounded-full border px-3 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-900',
                       isActive
-                        ? 'border-primary-500 bg-primary-600 text-white shadow-sm'
-                        : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700',
+                        ? 'border-primary-500 bg-primary-600 text-[var(--wp-color-text)] shadow-sm'
+                        : 'border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] text-[var(--wp-color-text-muted)] hover:bg-[var(--wp-color-surface-elevated)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)] dark:text-[var(--wp-color-text)] dark:hover:bg-[var(--wp-color-surface-elevated)]',
                     )}
                   >
                     {option.label}
@@ -818,7 +818,7 @@ const Departments = () => {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 border-t border-neutral-200 pt-4 text-sm text-neutral-500 dark:border-neutral-800 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-6 flex flex-col gap-3 border-t border-[var(--wp-color-border)] pt-4 text-sm text-[var(--wp-color-text-muted)] dark:border-[var(--wp-color-border)] dark:text-[var(--wp-color-text-muted)] sm:flex-row sm:items-center sm:justify-between">
           <span>
             {loading
               ? 'Loading hierarchy…'
@@ -843,23 +843,23 @@ const Departments = () => {
               {Array.from({ length: 3 }).map((_, index) => (
                 <div
                   key={index}
-                  className="animate-pulse rounded-2xl border border-neutral-200 bg-neutral-50 p-6 dark:border-neutral-800 dark:bg-neutral-800/60"
+                  className="animate-pulse rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-6 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]/60"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-2">
-                      <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
-                      <div className="h-3 w-64 rounded bg-neutral-200 dark:bg-neutral-700" />
+                      <div className="h-4 w-40 rounded bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] dark:bg-[var(--wp-color-surface-elevated)]" />
+                      <div className="h-3 w-64 rounded bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] dark:bg-[var(--wp-color-surface-elevated)]" />
                     </div>
                     <div className="flex gap-2">
-                      <div className="h-8 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
-                      <div className="h-8 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
+                      <div className="h-8 w-20 rounded bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] dark:bg-[var(--wp-color-surface-elevated)]" />
+                      <div className="h-8 w-20 rounded bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] dark:bg-[var(--wp-color-surface-elevated)]" />
                     </div>
                   </div>
                   <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {Array.from({ length: 3 }).map((__, idx) => (
                       <div
                         key={idx}
-                        className="h-20 rounded-lg border border-dashed border-neutral-200 bg-white/60 dark:border-neutral-700 dark:bg-neutral-900/40"
+                        className="h-20 rounded-lg border border-dashed border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/60 dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)]"
                       />
                     ))}
                   </div>
@@ -875,11 +875,11 @@ const Departments = () => {
               </Button>
             </div>
           ) : !hasDepartments ? (
-            <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-12 text-center dark:border-neutral-700 dark:bg-neutral-900/60">
-              <Building2 className="h-10 w-10 text-neutral-400" />
+            <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-12 text-center dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]">
+              <Building2 className="h-10 w-10 text-[var(--wp-color-text-muted)]" />
               <div className="space-y-2">
-                <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">Start mapping your production network</h2>
-                <p className="max-w-md text-sm text-neutral-500 dark:text-neutral-400">
+                <h2 className="text-lg font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Start mapping your production network</h2>
+                <p className="max-w-md text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                   Import from Excel or build departments manually to give technicians a dependable source of truth for every asset location.
                 </p>
               </div>
@@ -929,7 +929,7 @@ const Departments = () => {
         </div>
 
         {!loading && !error && hasDepartments && filteredDepartments.length > PAGE_SIZE && (
-          <div className="mt-6 flex items-center justify-between border-t border-neutral-200 pt-4 text-sm text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+          <div className="mt-6 flex items-center justify-between border-t border-[var(--wp-color-border)] pt-4 text-sm text-[var(--wp-color-text-muted)] dark:border-[var(--wp-color-border)] dark:text-[var(--wp-color-text-muted)]">
             <span>
               Showing {(currentPage - 1) * PAGE_SIZE + 1}–
               {Math.min(currentPage * PAGE_SIZE, filteredDepartments.length)} of{' '}
@@ -1013,3 +1013,4 @@ const Departments = () => {
 };
 
 export default Departments;
+

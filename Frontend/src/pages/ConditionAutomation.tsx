@@ -270,7 +270,7 @@ export default function ConditionAutomation() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`rounded-full px-2 py-1 text-xs ${rule.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                      <span className={`rounded-full px-2 py-1 text-xs ${rule.active ? 'bg-emerald-100 text-emerald-700' : 'bg-[color-mix(in srgb,var(--wp-color-text) 10%, transparent)] text-[var(--wp-color-text)]'}`}>
                         {rule.active ? 'Active' : 'Inactive'}
                       </span>
                       {id ? (
@@ -295,4 +295,5 @@ export default function ConditionAutomation() {
     </div>
   );
 }
+
 

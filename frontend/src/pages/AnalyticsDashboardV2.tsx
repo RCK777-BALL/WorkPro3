@@ -57,10 +57,10 @@ const deriveParams = (
 };
 
 const renderMetricCard = (title: string, value: string, subtitle?: string) => (
-  <Card className="space-y-1 border border-neutral-200 shadow-sm">
+  <Card className="space-y-1 border border-[var(--wp-color-border)] shadow-sm">
     <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">{title}</p>
-    <p className="text-2xl font-semibold text-neutral-900">{value}</p>
-    {subtitle ? <p className="text-xs text-neutral-500">{subtitle}</p> : null}
+    <p className="text-2xl font-semibold text-[var(--wp-color-text)]">{value}</p>
+    {subtitle ? <p className="text-xs text-[var(--wp-color-text-muted)]">{subtitle}</p> : null}
   </Card>
 );
 
@@ -68,9 +68,9 @@ const toHours = (minutes: number) => minutes / 60;
 
 const BreakdownTable = ({ rows }: { rows: MetricsRollupBreakdownRow[] }) => (
   <div className="overflow-x-auto">
-    <table className="min-w-full text-left text-sm text-neutral-700">
+    <table className="min-w-full text-left text-sm text-[var(--wp-color-text)]">
       <thead>
-        <tr className="border-b border-neutral-200 text-xs uppercase tracking-wide text-neutral-500">
+        <tr className="border-b border-[var(--wp-color-border)] text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">
           <th className="px-3 py-2">Scope</th>
           <th className="px-3 py-2">MTTR (h)</th>
           <th className="px-3 py-2">MTBF (h)</th>
@@ -81,8 +81,8 @@ const BreakdownTable = ({ rows }: { rows: MetricsRollupBreakdownRow[] }) => (
       </thead>
       <tbody>
         {rows.map((row) => (
-          <tr key={`${row.scope}-${row.id ?? 'all'}`} className="border-b border-neutral-100">
-            <td className="px-3 py-2 font-medium text-neutral-900">
+          <tr key={`${row.scope}-${row.id ?? 'all'}`} className="border-b border-[var(--wp-color-border)]">
+            <td className="px-3 py-2 font-medium text-[var(--wp-color-text)]">
               {row.scope.toUpperCase()} • {row.name ?? row.id ?? 'Unassigned'}
             </td>
             <td className="px-3 py-2">{formatNumber(row.mttrHours, 2)}</td>
@@ -103,16 +103,16 @@ const DrillDownList = ({ workOrders }: { workOrders: MetricsRollupDetailRow[] })
       <div key={order.id} className="py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-semibold text-neutral-900">{order.title}</p>
-            <p className="text-xs text-neutral-500">
+            <p className="text-sm font-semibold text-[var(--wp-color-text)]">{order.title}</p>
+            <p className="text-xs text-[var(--wp-color-text-muted)]">
               {order.type.toUpperCase()} • {order.status} • {order.priority ?? 'unspecified'}
             </p>
           </div>
-          <div className="text-right text-xs text-neutral-500">
+          <div className="text-right text-xs text-[var(--wp-color-text-muted)]">
             {order.completedAt ? `Completed ${new Date(order.completedAt).toLocaleDateString()}` : 'Open'}
           </div>
         </div>
-        <div className="mt-2 grid gap-3 text-xs text-neutral-600 sm:grid-cols-3">
+        <div className="mt-2 grid gap-3 text-xs text-[var(--wp-color-text-muted)] sm:grid-cols-3">
           <p>Asset: {order.assetName ?? order.assetId ?? 'n/a'}</p>
           <p>Line: {order.lineName ?? order.lineId ?? 'n/a'}</p>
           <p>Site: {order.siteName ?? order.siteId ?? 'n/a'}</p>
@@ -196,8 +196,8 @@ export default function AnalyticsDashboardV2() {
     <div className="space-y-6">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Reliability rollups</h1>
-          <p className="text-sm text-neutral-500">
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Reliability rollups</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">
             MTTR, MTBF, PM compliance, and downtime rolled up by tenant, site, line, and asset with drill-downs.
           </p>
         </div>
@@ -219,9 +219,9 @@ export default function AnalyticsDashboardV2() {
       <Card className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-neutral-600">Range</label>
+            <label className="text-xs font-semibold text-[var(--wp-color-text-muted)]">Range</label>
             <select
-              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
               value={rangeDays}
               onChange={(event) => setRangeDays(Number(event.target.value))}
             >
@@ -233,9 +233,9 @@ export default function AnalyticsDashboardV2() {
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-neutral-600">Granularity</label>
+            <label className="text-xs font-semibold text-[var(--wp-color-text-muted)]">Granularity</label>
             <select
-              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
               value={granularity}
               onChange={(event) => setGranularity(event.target.value as 'day' | 'month')}
             >
@@ -244,9 +244,9 @@ export default function AnalyticsDashboardV2() {
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-neutral-600">Site</label>
+            <label className="text-xs font-semibold text-[var(--wp-color-text-muted)]">Site</label>
             <select
-              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
               value={siteId}
               onChange={(event) => setSiteId(event.target.value)}
             >
@@ -259,9 +259,9 @@ export default function AnalyticsDashboardV2() {
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-neutral-600">Line</label>
+            <label className="text-xs font-semibold text-[var(--wp-color-text-muted)]">Line</label>
             <select
-              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
               value={lineId}
               onChange={(event) => setLineId(event.target.value)}
             >
@@ -274,9 +274,9 @@ export default function AnalyticsDashboardV2() {
             </select>
           </div>
           <div className="space-y-2 md:col-span-2 lg:col-span-4 xl:col-span-2">
-            <label className="text-xs font-semibold text-neutral-600">Asset</label>
+            <label className="text-xs font-semibold text-[var(--wp-color-text-muted)]">Asset</label>
             <select
-              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
               value={assetId}
               onChange={(event) => setAssetId(event.target.value)}
             >
@@ -307,7 +307,7 @@ export default function AnalyticsDashboardV2() {
               renderMetricCard('Range', `${params.startDate?.slice(0, 10)} → ${params.endDate?.slice(0, 10)}`),
             ]
             : Array.from({ length: 3 }).map((_, index) => (
-              <Card key={index} className="h-24 animate-pulse bg-neutral-50">
+              <Card key={index} className="h-24 animate-pulse bg-[var(--wp-color-surface)]">
                 <div className="h-full" />
               </Card>
             ))}
@@ -316,32 +316,32 @@ export default function AnalyticsDashboardV2() {
       <Card className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Breakdown by asset / line / site</h2>
-            <p className="text-sm text-neutral-500">
+            <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Breakdown by asset / line / site</h2>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">
               Sorted by downtime to highlight bottlenecks across the hierarchy.
             </p>
           </div>
-          {loadingSummary ? <span className="text-sm text-neutral-500">Loading…</span> : null}
+          {loadingSummary ? <span className="text-sm text-[var(--wp-color-text-muted)]">Loading…</span> : null}
         </div>
-        {breakdownRows.length ? <BreakdownTable rows={breakdownRows} /> : <p className="text-sm text-neutral-500">No rollups available for this range.</p>}
+        {breakdownRows.length ? <BreakdownTable rows={breakdownRows} /> : <p className="text-sm text-[var(--wp-color-text-muted)]">No rollups available for this range.</p>}
       </Card>
 
       <Card className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Drill-down to work orders & PMs</h2>
-            <p className="text-sm text-neutral-500">Open the trail of work orders backing each rollup.</p>
+            <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Drill-down to work orders & PMs</h2>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">Open the trail of work orders backing each rollup.</p>
           </div>
-          {loadingDetails ? <span className="text-sm text-neutral-500">Loading…</span> : null}
+          {loadingDetails ? <span className="text-sm text-[var(--wp-color-text-muted)]">Loading…</span> : null}
         </div>
-        {details.length ? <DrillDownList workOrders={details} /> : <p className="text-sm text-neutral-500">No matching work orders found.</p>}
+        {details.length ? <DrillDownList workOrders={details} /> : <p className="text-sm text-[var(--wp-color-text-muted)]">No matching work orders found.</p>}
       </Card>
 
       <Card className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">Manual overrides</h2>
-            <p className="text-sm text-neutral-500">Align numbers with other dashboards when needed.</p>
+            <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Manual overrides</h2>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">Align numbers with other dashboards when needed.</p>
           </div>
           <Button onClick={loadSummary} disabled={loadingSummary}>
             Apply overrides
@@ -398,3 +398,4 @@ export default function AnalyticsDashboardV2() {
     </div>
   );
 }
+

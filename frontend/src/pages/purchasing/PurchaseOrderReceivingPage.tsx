@@ -29,9 +29,9 @@ const PurchaseOrderReceivingPage = () => {
   return (
     <div className="space-y-4">
       <header className="space-y-1">
-        <p className="text-sm text-neutral-500">Purchasing</p>
-        <h1 className="text-2xl font-semibold text-neutral-900">Receive purchase orders</h1>
-        <p className="text-sm text-neutral-600">Capture inbound quantities for sent purchase orders.</p>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">Purchasing</p>
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Receive purchase orders</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">Capture inbound quantities for sent purchase orders.</p>
       </header>
 
       <Card>
@@ -45,26 +45,26 @@ const PurchaseOrderReceivingPage = () => {
           </div>
         </Card.Header>
         <Card.Content>
-          {isLoading && <p className="text-sm text-neutral-500">Loading purchase orders…</p>}
+          {isLoading && <p className="text-sm text-[var(--wp-color-text-muted)]">Loading purchase orders…</p>}
           {!isLoading && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-200 text-sm">
-                <thead className="bg-neutral-50">
+                <thead className="bg-[var(--wp-color-surface)]">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">PO</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Vendor</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Status</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Lines</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Action</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">PO</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Vendor</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Status</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Lines</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {receivableOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-neutral-50">
-                      <td className="px-3 py-2 text-neutral-900">{order.poNumber ?? order.id}</td>
-                      <td className="px-3 py-2 text-neutral-700">{order.vendor?.name ?? order.vendorId ?? '—'}</td>
-                      <td className="px-3 py-2 text-neutral-700 capitalize">{order.status.replace('_', ' ')}</td>
-                      <td className="px-3 py-2 text-neutral-700">{order.lines.length}</td>
+                    <tr key={order.id} className="hover:bg-[var(--wp-color-surface)]">
+                      <td className="px-3 py-2 text-[var(--wp-color-text)]">{order.poNumber ?? order.id}</td>
+                      <td className="px-3 py-2 text-[var(--wp-color-text)]">{order.vendor?.name ?? order.vendorId ?? '—'}</td>
+                      <td className="px-3 py-2 text-[var(--wp-color-text)] capitalize">{order.status.replace('_', ' ')}</td>
+                      <td className="px-3 py-2 text-[var(--wp-color-text)]">{order.lines.length}</td>
                       <td className="px-3 py-2">
                         <Button size="sm" variant="outline" onClick={() => handleOpen(order)}>
                           Receive
@@ -74,7 +74,7 @@ const PurchaseOrderReceivingPage = () => {
                   ))}
                   {!receivableOrders.length && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={5}>
+                      <td className="px-3 py-6 text-center text-[var(--wp-color-text-muted)]" colSpan={5}>
                         All purchase orders have been fully received.
                       </td>
                     </tr>
@@ -92,3 +92,4 @@ const PurchaseOrderReceivingPage = () => {
 };
 
 export default PurchaseOrderReceivingPage;
+

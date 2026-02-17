@@ -91,11 +91,11 @@ const ReceiveModal = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Receive stock">
       <div className="space-y-3">
-        <label className="text-sm font-medium text-neutral-800">Location</label>
+        <label className="text-sm font-medium text-[var(--wp-color-text)]">Location</label>
         <select
           value={stockItemId}
           onChange={(event) => setStockItemId(event.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
           disabled={!availableLocations.length}
         >
           <option value="">Choose location</option>
@@ -108,13 +108,13 @@ const ReceiveModal = ({
         {!availableLocations.length && (
           <p className="text-xs text-warning-700">Create a stock location before receiving inventory.</p>
         )}
-        <label className="text-sm font-medium text-neutral-800">Quantity</label>
+        <label className="text-sm font-medium text-[var(--wp-color-text)]">Quantity</label>
         <input
           type="number"
           min={1}
           value={quantity}
           onChange={(event) => setQuantity(Number(event.target.value))}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
         />
         {error && <p className="text-sm text-error-600">{error}</p>}
         <div className="flex justify-end gap-2">
@@ -192,9 +192,9 @@ const InventoryPartDetail = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-neutral-500">Inventory</p>
-          <h1 className="text-2xl font-semibold text-neutral-900">Part details</h1>
-          <p className="text-sm text-neutral-600">Site and bin filters carry through to history and navigation.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Inventory</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Part details</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Site and bin filters carry through to history and navigation.</p>
         </div>
         <Link to={backLink} className="text-sm text-blue-600 hover:underline">
           Back to list
@@ -223,7 +223,7 @@ const InventoryPartDetail = () => {
         </Card.Header>
         <Card.Content className="space-y-3">
           {(partQuery.isLoading || stockQuery.isLoading) && (
-            <div className="flex items-center gap-2 text-sm text-neutral-600" role="status">
+            <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]" role="status">
               <LoadingSpinner />
               <span>Loading part details…</span>
             </div>
@@ -232,24 +232,24 @@ const InventoryPartDetail = () => {
           {!partQuery.isLoading && !hasPartError && partQuery.data && (
             <div className="grid gap-3 md:grid-cols-3">
               <div>
-                <p className="text-xs uppercase text-neutral-500">Part number</p>
-                <p className="font-medium text-neutral-900">{partQuery.data.partNo ?? partQuery.data.partNumber ?? "—"}</p>
+                <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Part number</p>
+                <p className="font-medium text-[var(--wp-color-text)]">{partQuery.data.partNo ?? partQuery.data.partNumber ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-neutral-500">Reorder point</p>
-                <p className="font-medium text-neutral-900">{partQuery.data.reorderPoint}</p>
+                <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Reorder point</p>
+                <p className="font-medium text-[var(--wp-color-text)]">{partQuery.data.reorderPoint}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-neutral-500">Unit cost</p>
-                <p className="font-medium text-neutral-900">{partQuery.data.unitCost ?? partQuery.data.cost ?? "—"}</p>
+                <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Unit cost</p>
+                <p className="font-medium text-[var(--wp-color-text)]">{partQuery.data.unitCost ?? partQuery.data.cost ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-neutral-500">Total on hand</p>
-                <p className="font-medium text-neutral-900">{totalQuantity}</p>
+                <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Total on hand</p>
+                <p className="font-medium text-[var(--wp-color-text)]">{totalQuantity}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-neutral-500">Vendor</p>
-                <p className="font-medium text-neutral-900">{partQuery.data.vendor?.name ?? "—"}</p>
+                <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Vendor</p>
+                <p className="font-medium text-[var(--wp-color-text)]">{partQuery.data.vendor?.name ?? "—"}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge text={partQuery.data.alertState?.severity ?? "ok"} color="warning" />
@@ -260,14 +260,14 @@ const InventoryPartDetail = () => {
 
           {activeTab === "stock" && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-neutral-900">Stock by location</p>
+              <p className="text-sm font-medium text-[var(--wp-color-text)]">Stock by location</p>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-neutral-200 text-sm">
-                  <thead className="bg-neutral-50">
+                  <thead className="bg-[var(--wp-color-surface)]">
                     <tr>
-                      <th className="px-3 py-2 text-left font-medium text-neutral-700">Location</th>
-                      <th className="px-3 py-2 text-left font-medium text-neutral-700">Quantity</th>
-                      <th className="px-3 py-2 text-left font-medium text-neutral-700">Actions</th>
+                      <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Location</th>
+                      <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Quantity</th>
+                      <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
@@ -275,9 +275,9 @@ const InventoryPartDetail = () => {
                       const location = stock.location ?? locationMap.get(stock.locationId);
                       return (
                         <tr key={stock.id}>
-                          <td className="px-3 py-2 text-neutral-700">{formatInventoryLocation(location ?? undefined)}</td>
-                          <td className="px-3 py-2 text-neutral-700">{stock.quantity}</td>
-                          <td className="px-3 py-2 text-neutral-700">
+                          <td className="px-3 py-2 text-[var(--wp-color-text)]">{formatInventoryLocation(location ?? undefined)}</td>
+                          <td className="px-3 py-2 text-[var(--wp-color-text)]">{stock.quantity}</td>
+                          <td className="px-3 py-2 text-[var(--wp-color-text)]">
                             <div className="flex gap-2">
                               <Button size="sm" variant="outline" onClick={() => void handleQuickAdjust(stock, 1)}>
                                 +1
@@ -293,7 +293,7 @@ const InventoryPartDetail = () => {
                   </tbody>
                 </table>
                 {!partStock.length && (
-                  <p className="p-3 text-sm text-neutral-500">No stock items recorded for this part.</p>
+                  <p className="p-3 text-sm text-[var(--wp-color-text-muted)]">No stock items recorded for this part.</p>
                 )}
               </div>
             </div>
@@ -302,7 +302,7 @@ const InventoryPartDetail = () => {
           {activeTab === "history" && (
             <div className="space-y-3">
               {stockHistoryQuery.isLoading && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600" role="status">
+                <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]" role="status">
                   <LoadingSpinner />
                   <span>Loading history…</span>
                 </div>
@@ -313,10 +313,10 @@ const InventoryPartDetail = () => {
               {!stockHistoryQuery.isLoading && !hasHistoryError && (
                 <>
                   <StockHistoryList entries={paginatedHistory} />
-                  <div className="flex items-center gap-3 text-sm text-neutral-700">
+                  <div className="flex items-center gap-3 text-sm text-[var(--wp-color-text)]">
                     <button
                       type="button"
-                      className="rounded border border-neutral-300 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded border border-[var(--wp-color-border)] px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                       disabled={page <= 1}
                     >
@@ -327,7 +327,7 @@ const InventoryPartDetail = () => {
                     </span>
                     <button
                       type="button"
-                      className="rounded border border-neutral-300 px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded border border-[var(--wp-color-border)] px-3 py-1 disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                       disabled={page >= totalPages}
                     >
@@ -341,8 +341,8 @@ const InventoryPartDetail = () => {
 
           {activeTab === "overview" && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-neutral-900">Highlights</p>
-              <ul className="list-inside list-disc text-sm text-neutral-700">
+              <p className="text-sm font-medium text-[var(--wp-color-text)]">Highlights</p>
+              <ul className="list-inside list-disc text-sm text-[var(--wp-color-text)]">
                 <li>Track reorder points and vendor readiness for this part.</li>
                 <li>Use the tabs above to review movement history or adjust balances.</li>
               </ul>
@@ -357,3 +357,4 @@ const InventoryPartDetail = () => {
 };
 
 export default InventoryPartDetail;
+

@@ -491,10 +491,10 @@ const AssetsPage: React.FC = () => {
           </div>
         )}
 
-        <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="flex flex-col gap-3 rounded-lg border border-dashed border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-100">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                 <input
                   type="checkbox"
                   checked={showSampleData}
@@ -504,7 +504,7 @@ const AssetsPage: React.FC = () => {
                       setError(null);
                     }
                   }}
-                  className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  className="h-4 w-4 rounded border-[var(--wp-color-border)] text-primary-600 focus:ring-primary-500"
                 />
                 Enable sample data for demos & training
               </label>
@@ -514,7 +514,7 @@ const AssetsPage: React.FC = () => {
                 </span>
               )}
             </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
               Sample assets stay local to your session so you can demo search, filtering, and table actions without touching live data.
             </p>
           </div>
@@ -621,9 +621,9 @@ const AssetsPage: React.FC = () => {
           <Card>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-neutral-600">Existing assets</p>
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">Assets already created</h2>
-                <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                <p className="text-sm text-[var(--wp-color-text-muted)]">Existing assets</p>
+                <h2 className="text-xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Assets already created</h2>
+                <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                   Quickly jump back into an asset to review details or make changes.
                 </p>
               </div>
@@ -636,11 +636,11 @@ const AssetsPage: React.FC = () => {
               {filteredAssets.map((asset) => (
                 <div
                   key={asset.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/70 px-4 py-3 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 px-4 py-3 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]"
                 >
                   <div className="min-w-0">
-                    <p className="text-base font-semibold text-neutral-900 dark:text-neutral-50">{asset.name}</p>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                    <p className="text-base font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{asset.name}</p>
+                    <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                       {asset.type ?? 'Type not specified'}
                       {asset.location ? ` • ${asset.location}` : ''}
                     </p>
@@ -720,9 +720,9 @@ const AssetsPage: React.FC = () => {
         )}
 
         {!isLoading && filteredAssets.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-8 text-center text-[var(--wp-color-text)] shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)] dark:text-[var(--wp-color-text)]">
             <p className="text-lg font-semibold">No assets yet</p>
-            <p className="max-w-xl text-sm text-neutral-600 dark:text-neutral-300">
+            <p className="max-w-xl text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
               Start building your asset catalog to track equipment details, status, and maintenance history. You can add new assets or import them from your existing records.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -758,7 +758,7 @@ const AssetsPage: React.FC = () => {
               </Button>
             </div>
             {importSummary && (
-              <div className="mt-2 rounded-md bg-neutral-50 p-3 text-xs text-neutral-600 dark:bg-neutral-900/70 dark:text-neutral-300">
+              <div className="mt-2 rounded-md bg-[var(--wp-color-surface)] p-3 text-xs text-[var(--wp-color-text-muted)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_75%,transparent)] dark:text-[var(--wp-color-text-muted)]">
                 Last import preview: {importSummary.validRows.toLocaleString()} valid rows out of {importSummary.totalRows.toLocaleString()} ({importSummary.errors.length.toLocaleString()} issues)
               </div>
             )}
@@ -836,3 +836,4 @@ const AssetsPage: React.FC = () => {
 };
 
 export default AssetsPage;
+

@@ -431,13 +431,13 @@ const WorkOrderDetail = () => {
 
   const header = useMemo(() => {
     if (loading) {
-      return <p className="text-sm text-neutral-500">Loading work order...</p>;
+      return <p className="text-sm text-[var(--wp-color-text-muted)]">Loading work order...</p>;
     }
     if (error) {
       return <p className="text-sm text-rose-500">{error}</p>;
     }
     if (!workOrder) {
-      return <p className="text-sm text-neutral-500">No work order found.</p>;
+      return <p className="text-sm text-[var(--wp-color-text-muted)]">No work order found.</p>;
     }
     return null;
   }, [loading, error, workOrder]);
@@ -446,9 +446,9 @@ const WorkOrderDetail = () => {
     <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-indigo-300">Work order</p>
-          <h1 className="text-3xl font-bold text-white">{workOrder?.title ?? 'Work order details'}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-300">
+          <p className="text-xs uppercase tracking-wide text-[var(--wp-color-primary)]">Work order</p>
+          <h1 className="text-3xl font-bold text-[var(--wp-color-text)]">{workOrder?.title ?? 'Work order details'}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--wp-color-text-muted)]">
             <Badge
               text={workOrder?.status ?? 'unknown'}
               color={clsx(
@@ -458,7 +458,7 @@ const WorkOrderDetail = () => {
             />
             <Badge text={workOrder?.priority ?? 'medium'} />
             {workOrder?.assetId && (
-              <Link className="text-indigo-300 hover:text-indigo-200" to={`/assets/${workOrder.assetId}`}>
+              <Link className="text-[var(--wp-color-primary)] hover:text-[var(--wp-color-primary)]" to={`/assets/${workOrder.assetId}`}>
                 View asset
               </Link>
             )}
@@ -467,7 +467,7 @@ const WorkOrderDetail = () => {
         </div>
         <Link
           to="/workorders"
-          className="rounded-full border border-neutral-700 px-4 py-2 text-sm font-medium text-neutral-200 hover:bg-neutral-800"
+          className="rounded-full border border-[var(--wp-color-border)] px-4 py-2 text-sm font-medium text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface-elevated)]"
         >
           Back to list
         </Link>
@@ -476,9 +476,9 @@ const WorkOrderDetail = () => {
       <WorkOrderQueuePanel workOrderId={id} />
 
       {workOrder && (
-        <div className="rounded-3xl border border-neutral-900/80 bg-neutral-950/60 p-4 text-neutral-100 sm:p-6">
-          <h2 className="text-lg font-semibold text-white">Summary</h2>
-          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-neutral-200">
+        <div className="rounded-3xl border border-[var(--wp-color-border)]/80 bg-[color-mix(in_srgb,var(--wp-color-background)_70%,transparent)] p-4 text-[var(--wp-color-text)] sm:p-6">
+          <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Summary</h2>
+          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[var(--wp-color-text)]">
             {workOrder.description ?? 'No description provided.'}
           </p>
         </div>
@@ -493,7 +493,7 @@ const WorkOrderDetail = () => {
             </Card.Header>
             <Card.Content className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-neutral-400">Compliance</span>
+                <span className="text-sm text-[var(--wp-color-text-muted)]">Compliance</span>
                 <Badge
                   text={workOrder.complianceStatus ?? 'not_required'}
                   color={
@@ -506,19 +506,19 @@ const WorkOrderDetail = () => {
                 />
               </div>
               {workOrder.complianceCompletedAt && (
-                <p className="text-xs text-neutral-400">
+                <p className="text-xs text-[var(--wp-color-text-muted)]">
                   Completed at {new Date(workOrder.complianceCompletedAt).toLocaleString()}
                 </p>
               )}
-              <div className="text-sm text-neutral-300">
-                <p className="font-medium text-neutral-200">Template</p>
+              <div className="text-sm text-[var(--wp-color-text-muted)]">
+                <p className="font-medium text-[var(--wp-color-text)]">Template</p>
                 {workOrder.workOrderTemplateId ? (
-                  <p className="text-xs text-neutral-400">
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">
                     {workOrder.workOrderTemplateId}
                     {workOrder.templateVersion ? ` · v${workOrder.templateVersion}` : ''}
                   </p>
                 ) : (
-                  <p className="text-xs text-neutral-500">No template linked</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">No template linked</p>
                 )}
               </div>
             </Card.Content>
@@ -531,10 +531,10 @@ const WorkOrderDetail = () => {
             <Card.Content className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-neutral-200">Response</p>
-                  <p className="text-xs text-neutral-400">Due {formatDateTime(slaSnapshot?.responseDue)}</p>
+                  <p className="text-sm font-medium text-[var(--wp-color-text)]">Response</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">Due {formatDateTime(slaSnapshot?.responseDue)}</p>
                   {workOrder.slaTargets?.responseMinutes && (
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-[var(--wp-color-text-muted)]">
                       Target {workOrder.slaTargets.responseMinutes} minutes
                     </p>
                   )}
@@ -543,10 +543,10 @@ const WorkOrderDetail = () => {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-neutral-200">Resolution</p>
-                  <p className="text-xs text-neutral-400">Due {formatDateTime(slaSnapshot?.resolveDue)}</p>
+                  <p className="text-sm font-medium text-[var(--wp-color-text)]">Resolution</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">Due {formatDateTime(slaSnapshot?.resolveDue)}</p>
                   {workOrder.slaTargets?.resolveMinutes && (
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-[var(--wp-color-text-muted)]">
                       Target {workOrder.slaTargets.resolveMinutes} minutes
                     </p>
                   )}
@@ -565,14 +565,14 @@ const WorkOrderDetail = () => {
             </Card.Header>
             <Card.Content className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-neutral-400">Approval status</span>
+                <span className="text-sm text-[var(--wp-color-text-muted)]">Approval status</span>
                 <Badge text={workOrder.approvalStatus ?? 'draft'} />
               </div>
               {workOrder.currentApprovalStep && (
-                <p className="text-xs text-neutral-400">Step {workOrder.currentApprovalStep}</p>
+                <p className="text-xs text-[var(--wp-color-text-muted)]">Step {workOrder.currentApprovalStep}</p>
               )}
               {workOrder.approvalSteps?.length ? (
-                <ul className="space-y-2 text-xs text-neutral-300">
+                <ul className="space-y-2 text-xs text-[var(--wp-color-text-muted)]">
                   {workOrder.approvalSteps.map((step) => (
                     <li key={`${step.step}-${step.name}`} className="flex items-center justify-between">
                       <span>
@@ -583,11 +583,11 @@ const WorkOrderDetail = () => {
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-neutral-500">No approval steps configured.</p>
+                <p className="text-xs text-[var(--wp-color-text-muted)]">No approval steps configured.</p>
               )}
               {(workOrder.permitRequirements?.length || workOrder.requiredPermitTypes?.length) && (
-                <div className="rounded-xl border border-neutral-800/60 bg-neutral-900/40 p-3 text-xs text-neutral-300">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                <div className="rounded-xl border border-[var(--wp-color-border)]/60 bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)] p-3 text-xs text-[var(--wp-color-text-muted)]">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--wp-color-text-muted)]">
                     Permit requirements
                   </p>
                   <ul className="space-y-1">
@@ -609,9 +609,9 @@ const WorkOrderDetail = () => {
               )}
               <div className="space-y-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-300">Reason code</label>
+                  <label className="mb-1 block text-sm font-medium text-[var(--wp-color-text-muted)]">Reason code</label>
                   <select
-                    className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100"
+                    className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
                     value={approvalReasonCode}
                     onChange={(event) => setApprovalReasonCode(event.target.value)}
                   >
@@ -663,7 +663,7 @@ const WorkOrderDetail = () => {
                     </>
                   )}
                   {!canApprove && workOrder.approvalStatus === 'pending' && (
-                    <span className="text-xs text-neutral-500">Role required to approve.</span>
+                    <span className="text-xs text-[var(--wp-color-text-muted)]">Role required to approve.</span>
                   )}
                 </div>
               </div>
@@ -721,20 +721,20 @@ const WorkOrderDetail = () => {
         <Card.Content>
           <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
-              <p className="text-xs uppercase tracking-wide text-neutral-500">Checks logged</p>
-              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.totalChecks}</p>
+              <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Checks logged</p>
+              <p className="text-2xl font-semibold text-[var(--wp-color-text)]">{checklistCompliance.totalChecks}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-neutral-500">Passed</p>
-              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.passedChecks}</p>
+              <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Passed</p>
+              <p className="text-2xl font-semibold text-[var(--wp-color-text)]">{checklistCompliance.passedChecks}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-neutral-500">Pass rate</p>
-              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.passRate}%</p>
+              <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Pass rate</p>
+              <p className="text-2xl font-semibold text-[var(--wp-color-text)]">{checklistCompliance.passRate}%</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-neutral-500">Last recorded</p>
-              <p className="text-2xl font-semibold text-neutral-100">
+              <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Last recorded</p>
+              <p className="text-2xl font-semibold text-[var(--wp-color-text)]">
                 {checklistHistory[0]?.recordedAt
                   ? new Date(checklistHistory[0].recordedAt).toLocaleString()
                   : '—'}
@@ -745,49 +745,49 @@ const WorkOrderDetail = () => {
             <table className="min-w-full divide-y divide-neutral-800/60 text-sm">
               <thead>
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Item</th>
-                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Reading</th>
-                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Status</th>
-                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Evidence</th>
-                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Recorded at</th>
-                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Recorded by</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Item</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Reading</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Status</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Evidence</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Recorded at</th>
+                  <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Recorded by</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/40">
                 {checklistHistory.map((entry, index) => (
                   <tr key={`${entry.checklistItemId}-${index}`}>
-                    <td className="px-3 py-2 text-neutral-50">{entry.checklistItemLabel ?? entry.checklistItemId}</td>
-                    <td className="px-3 py-2 text-neutral-200">{formatReading(entry.reading)}</td>
+                    <td className="px-3 py-2 text-[var(--wp-color-text)]">{entry.checklistItemLabel ?? entry.checklistItemId}</td>
+                    <td className="px-3 py-2 text-[var(--wp-color-text)]">{formatReading(entry.reading)}</td>
                     <td className="px-3 py-2">
                       <Badge
                         text={entry.passed === undefined ? 'N/A' : entry.passed ? 'Pass' : 'Fail'}
                         color={entry.passed === undefined ? undefined : entry.passed ? 'green' : 'red'}
                       />
                     </td>
-                    <td className="px-3 py-2 text-neutral-200">
+                    <td className="px-3 py-2 text-[var(--wp-color-text)]">
                       {entry.evidenceUrls?.length ? (
                         <ul className="space-y-1">
                           {entry.evidenceUrls.map((url) => (
                             <li key={url}>
-                              <a className="text-indigo-300 hover:text-indigo-200" href={url} target="_blank" rel="noreferrer">
+                              <a className="text-[var(--wp-color-primary)] hover:text-[var(--wp-color-primary)]" href={url} target="_blank" rel="noreferrer">
                                 {url}
                               </a>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <span className="text-neutral-500">—</span>
+                        <span className="text-[var(--wp-color-text-muted)]">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-neutral-200">
+                    <td className="px-3 py-2 text-[var(--wp-color-text)]">
                       {entry.recordedAt ? new Date(entry.recordedAt).toLocaleString() : '—'}
                     </td>
-                    <td className="px-3 py-2 text-neutral-200">{entry.recordedBy ?? '—'}</td>
+                    <td className="px-3 py-2 text-[var(--wp-color-text)]">{entry.recordedBy ?? '—'}</td>
                   </tr>
                 ))}
                 {!checklistHistory.length && (
                   <tr>
-                    <td className="px-3 py-4 text-center text-neutral-500" colSpan={6}>
+                    <td className="px-3 py-4 text-center text-[var(--wp-color-text-muted)]" colSpan={6}>
                       No checklist activity recorded yet.
                     </td>
                   </tr>
@@ -818,27 +818,27 @@ const WorkOrderDetail = () => {
           </div>
         </Card.Header>
         <Card.Content>
-          {partsQuery.isLoading && <p className="text-sm text-neutral-500">Loading parts…</p>}
+          {partsQuery.isLoading && <p className="text-sm text-[var(--wp-color-text-muted)]">Loading parts…</p>}
           {hasPartsError && <p className="text-sm text-rose-500">Unable to load parts.</p>}
           {!partsQuery.isLoading && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-800/50 text-sm">
                 <thead>
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Part</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Reserved</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Issued</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Available</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Actions</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Part</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Reserved</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Issued</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Available</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-800/40">
                   {partLines.map((line) => (
                     <tr key={line.partId}>
-                      <td className="px-3 py-2 text-neutral-50">{line.name}</td>
-                      <td className="px-3 py-2 text-neutral-200">{line.reserved}</td>
-                      <td className="px-3 py-2 text-neutral-200">{line.issued}</td>
-                      <td className="px-3 py-2 text-neutral-200">{availableStock(line.partId)}</td>
+                      <td className="px-3 py-2 text-[var(--wp-color-text)]">{line.name}</td>
+                      <td className="px-3 py-2 text-[var(--wp-color-text)]">{line.reserved}</td>
+                      <td className="px-3 py-2 text-[var(--wp-color-text)]">{line.issued}</td>
+                      <td className="px-3 py-2 text-[var(--wp-color-text)]">{availableStock(line.partId)}</td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-2">
                           <Button size="sm" variant="outline" onClick={() => openAction('reserve', line.partId)}>
@@ -859,7 +859,7 @@ const WorkOrderDetail = () => {
                   ))}
                   {!partLines.length && (
                     <tr>
-                      <td className="px-3 py-4 text-center text-neutral-400" colSpan={5}>
+                      <td className="px-3 py-4 text-center text-[var(--wp-color-text-muted)]" colSpan={5}>
                         No parts reserved yet.
                       </td>
                     </tr>
@@ -877,9 +877,9 @@ const WorkOrderDetail = () => {
         title={`${actionModal?.type ?? ''} part`}
       >
         <div className="space-y-3">
-          <label className="text-sm font-medium text-neutral-800">Part</label>
+          <label className="text-sm font-medium text-[var(--wp-color-text)]">Part</label>
           <select
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
             value={actionModal?.partId ?? ''}
             onChange={(event) =>
               setActionModal((prev) => (prev ? { ...prev, partId: event.target.value } : prev))
@@ -912,7 +912,7 @@ const WorkOrderDetail = () => {
       {id ? (
         <CommentThread entityType="WO" entityId={id} />
       ) : (
-        <p className="text-sm text-neutral-500">Work order id required to load comments.</p>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">Work order id required to load comments.</p>
       )}
       <ConflictResolver
         conflict={conflict}
@@ -924,3 +924,4 @@ const WorkOrderDetail = () => {
 };
 
 export default WorkOrderDetail;
+

@@ -36,7 +36,7 @@ const StockHistoryList = ({
 }) => (
   <div className="space-y-2">
     {!entries || entries.length === 0 ? (
-      <p className="text-sm text-neutral-500">No history yet.</p>
+      <p className="text-sm text-[var(--wp-color-text-muted)]">No history yet.</p>
     ) : (
       entries.map((entry, idx) => {
         const fallbackLocation = locationMap.get(entry.location.locationId);
@@ -48,17 +48,17 @@ const StockHistoryList = ({
         return (
           <div
             key={entry.id ?? idx}
-            className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3"
+            className="flex items-start justify-between gap-3 rounded-md border border-[var(--wp-color-border)] p-3"
           >
             <div>
-              <p className="text-sm font-medium text-neutral-900">{partNames.get(entry.partId) ?? entry.partId}</p>
-              <p className="text-xs text-neutral-500">
+              <p className="text-sm font-medium text-[var(--wp-color-text)]">{partNames.get(entry.partId) ?? entry.partId}</p>
+              <p className="text-xs text-[var(--wp-color-text-muted)]">
                 {entry.delta > 0 ? '+' : ''}
                 {entry.delta} • {locationLabel}
               </p>
-              {entry.reason && <p className="mt-1 text-xs text-neutral-500">{entry.reason}</p>}
+              {entry.reason && <p className="mt-1 text-xs text-[var(--wp-color-text-muted)]">{entry.reason}</p>}
             </div>
-            <div className="text-right text-xs text-neutral-500">
+            <div className="text-right text-xs text-[var(--wp-color-text-muted)]">
               {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ''}
             </div>
           </div>
@@ -160,23 +160,23 @@ const LocationForm = ({
 const StockTable = ({ items }: { items: StockItem[] }) => (
   <div className="overflow-x-auto">
     <table className="min-w-full divide-y divide-neutral-200 text-sm">
-      <thead className="bg-neutral-50">
+      <thead className="bg-[var(--wp-color-surface)]">
         <tr>
-          <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
-          <th className="px-3 py-2 text-left font-medium text-neutral-700">Location</th>
-          <th className="px-3 py-2 text-left font-medium text-neutral-700">Qty</th>
-          <th className="px-3 py-2 text-left font-medium text-neutral-700">Unit</th>
+          <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Part</th>
+          <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Location</th>
+          <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Qty</th>
+          <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Unit</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-neutral-200">
         {items.map((item) => (
           <tr key={item.id}>
-            <td className="px-3 py-2 text-neutral-900">{item.part?.name ?? item.partId}</td>
-            <td className="px-3 py-2 text-neutral-700">
+            <td className="px-3 py-2 text-[var(--wp-color-text)]">{item.part?.name ?? item.partId}</td>
+            <td className="px-3 py-2 text-[var(--wp-color-text)]">
               {item.location ? formatInventoryLocation(item.location) : item.locationId}
             </td>
-            <td className="px-3 py-2 text-neutral-700">{item.quantity}</td>
-            <td className="px-3 py-2 text-neutral-700">{item.unit ?? '—'}</td>
+            <td className="px-3 py-2 text-[var(--wp-color-text)]">{item.quantity}</td>
+            <td className="px-3 py-2 text-[var(--wp-color-text)]">{item.unit ?? '—'}</td>
           </tr>
         ))}
       </tbody>
@@ -278,9 +278,9 @@ const TransferModal = ({
     >
       <div className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-neutral-200">Part</label>
+          <label className="text-sm font-medium text-[var(--wp-color-text)]">Part</label>
           <select
-            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+            className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
             value={partId}
             onChange={(e) => {
               setPartId(e.target.value);
@@ -297,9 +297,9 @@ const TransferModal = ({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-neutral-200">From location</label>
+          <label className="text-sm font-medium text-[var(--wp-color-text)]">From location</label>
           <select
-            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+            className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
             value={fromLocationId}
             onChange={(e) => setFromLocationId(e.target.value)}
             disabled={!partId}
@@ -319,9 +319,9 @@ const TransferModal = ({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-neutral-200">To location</label>
+          <label className="text-sm font-medium text-[var(--wp-color-text)]">To location</label>
           <select
-            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+            className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
             value={toLocationId}
             onChange={(e) => setToLocationId(e.target.value)}
             disabled={!partId}
@@ -436,8 +436,8 @@ export default function InventoryLocations() {
         </div>
       )}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-neutral-900">Inventory locations</h1>
-        <p className="text-sm text-neutral-500">
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Inventory locations</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">
           Organize stock across stores, rooms, and bins with a full audit history of adjustments.
         </p>
       </header>
@@ -449,27 +449,27 @@ export default function InventoryLocations() {
         </Card.Header>
         <Card.Content className="space-y-3">
           {Object.entries(locationTree).map(([store, rooms]) => (
-            <div key={store} className="space-y-2 rounded-md border border-neutral-200 p-3">
+            <div key={store} className="space-y-2 rounded-md border border-[var(--wp-color-border)] p-3">
               <div className="flex items-center justify-between">
-                <p className="font-semibold text-neutral-900">{store}</p>
-                <span className="text-xs text-neutral-500">{Object.values(rooms).flat().length} locations</span>
+                <p className="font-semibold text-[var(--wp-color-text)]">{store}</p>
+                <span className="text-xs text-[var(--wp-color-text-muted)]">{Object.values(rooms).flat().length} locations</span>
               </div>
               <div className="space-y-2 pl-3">
                 {Object.entries(rooms).map(([room, bins]) => (
                   <div key={room} className="space-y-1">
-                    <p className="text-sm font-medium text-neutral-800">Room: {room}</p>
+                    <p className="text-sm font-medium text-[var(--wp-color-text)]">Room: {room}</p>
                     <div className="space-y-2 pl-4">
                       {bins.map((loc) => {
                         const items = stock.filter((item) => item.locationId === loc.id);
                         return (
-                          <div key={loc.id} className="rounded border border-neutral-200 bg-neutral-50 p-2">
-                            <div className="flex items-center justify-between text-sm text-neutral-800">
+                          <div key={loc.id} className="rounded border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-2">
+                            <div className="flex items-center justify-between text-sm text-[var(--wp-color-text)]">
                               <span>{formatInventoryLocation(loc)}</span>
                               <button className="text-xs text-blue-600" onClick={() => setSelected(loc)}>
                                 Edit
                               </button>
                             </div>
-                            <div className="pl-2 text-xs text-neutral-600">
+                            <div className="pl-2 text-xs text-[var(--wp-color-text-muted)]">
                               {items.length ? (
                                 <ul className="list-inside list-disc">
                                   {items.map((item) => (
@@ -491,7 +491,7 @@ export default function InventoryLocations() {
               </div>
             </div>
           ))}
-          {!locations.length && <p className="text-sm text-neutral-500">No locations defined yet.</p>}
+          {!locations.length && <p className="text-sm text-[var(--wp-color-text-muted)]">No locations defined yet.</p>}
         </Card.Content>
       </Card>
 
@@ -503,29 +503,29 @@ export default function InventoryLocations() {
           </Card.Header>
           <Card.Content>
             <div className="space-y-4">
-              {locationsQuery.isLoading && <p className="text-sm text-neutral-500">Loading locations…</p>}
+              {locationsQuery.isLoading && <p className="text-sm text-[var(--wp-color-text-muted)]">Loading locations…</p>}
               {locationsQuery.error ? (
                 <p className="text-sm text-error-600">Unable to load locations. Please try again.</p>
               ) : null}
               {Object.entries(grouped).map(([store, list]) => (
                 <div key={store} className="space-y-2">
-                  <p className="text-xs font-semibold uppercase text-neutral-500">{store}</p>
+                  <p className="text-xs font-semibold uppercase text-[var(--wp-color-text-muted)]">{store}</p>
                   <div className="grid gap-2 md:grid-cols-2">
                     {list.map((loc) => (
                       <button
                         key={loc.id}
                         onClick={() => setSelected(loc)}
-                        className="rounded-md border border-neutral-200 p-3 text-left hover:border-neutral-400"
+                        className="rounded-md border border-[var(--wp-color-border)] p-3 text-left hover:border-[var(--wp-color-text-muted)]"
                       >
-                        <p className="font-medium text-neutral-900">{formatInventoryLocation(loc)}</p>
-                        <p className="text-xs text-neutral-500">{loc.bin ? `Bin ${loc.bin}` : 'No bin set'}</p>
+                        <p className="font-medium text-[var(--wp-color-text)]">{formatInventoryLocation(loc)}</p>
+                        <p className="text-xs text-[var(--wp-color-text-muted)]">{loc.bin ? `Bin ${loc.bin}` : 'No bin set'}</p>
                       </button>
                     ))}
                   </div>
                 </div>
               ))}
               {!locationsQuery.isLoading && !locationsQuery.error && !locations.length && (
-                <p className="text-sm text-neutral-500">No locations yet.</p>
+                <p className="text-sm text-[var(--wp-color-text-muted)]">No locations yet.</p>
               )}
             </div>
           </Card.Content>
@@ -555,7 +555,7 @@ export default function InventoryLocations() {
           </div>
         </Card.Header>
         <Card.Content>
-          {stockQuery.isLoading && <p className="text-sm text-neutral-500">Loading stock…</p>}
+          {stockQuery.isLoading && <p className="text-sm text-[var(--wp-color-text-muted)]">Loading stock…</p>}
           {stockQuery.error ? <p className="text-sm text-error-600">Unable to load stock.</p> : null}
           {!stockQuery.isLoading && !stockQuery.error && <StockTable items={stock} />}
         </Card.Content>
@@ -567,7 +567,7 @@ export default function InventoryLocations() {
           <Card.Description>Recent adjustments and receipts.</Card.Description>
         </Card.Header>
         <Card.Content>
-          {historyQuery.isLoading && <p className="text-sm text-neutral-500">Loading history…</p>}
+          {historyQuery.isLoading && <p className="text-sm text-[var(--wp-color-text-muted)]">Loading history…</p>}
           {historyQuery.error ? <p className="text-sm text-error-600">Unable to load stock history.</p> : null}
           {!historyQuery.isLoading && !historyQuery.error && (
             <StockHistoryList entries={history} locationMap={locationMap} partNames={partNames} />
@@ -593,3 +593,4 @@ export default function InventoryLocations() {
     </div>
   );
 }
+

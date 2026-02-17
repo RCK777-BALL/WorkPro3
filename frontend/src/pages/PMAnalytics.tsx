@@ -46,18 +46,18 @@ export default function PMAnalytics() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-wide text-indigo-600">Preventive analytics</p>
-          <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">PM performance</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <h1 className="text-3xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">PM performance</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
             Track on-time, late, and missed preventive work along with completion rates.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <label className="flex items-center gap-2 text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text-muted)]">
             <span>Window</span>
             <select
               value={months}
               onChange={(event) => setMonths(Number(event.target.value))}
-              className="rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]"
               aria-label="Select reporting window"
             >
               {[3, 6, 9, 12, 18].map((value) => (
@@ -77,35 +77,35 @@ export default function PMAnalytics() {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card title="On time" subtitle="Completed before due date" className="bg-white dark:bg-neutral-900">
-          <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">{totals?.onTime ?? '–'}</p>
+        <Card title="On time" subtitle="Completed before due date" className="bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)]">
+          <p className="text-3xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{totals?.onTime ?? '–'}</p>
         </Card>
-        <Card title="Late" subtitle="Completed after due date" className="bg-white dark:bg-neutral-900">
-          <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">{totals?.late ?? '–'}</p>
+        <Card title="Late" subtitle="Completed after due date" className="bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)]">
+          <p className="text-3xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{totals?.late ?? '–'}</p>
         </Card>
-        <Card title="Missed" subtitle="Due but not completed" className="bg-white dark:bg-neutral-900">
-          <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">{totals?.missed ?? '–'}</p>
+        <Card title="Missed" subtitle="Due but not completed" className="bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)]">
+          <p className="text-3xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{totals?.missed ?? '–'}</p>
         </Card>
-        <Card title="Completion rate" subtitle="On-time + late vs scheduled" className="bg-white dark:bg-neutral-900">
-          <p className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <Card title="Completion rate" subtitle="On-time + late vs scheduled" className="bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)]">
+          <p className="text-3xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             {totals ? `${percentFormatter.format(totals.completionRate)}%` : '–'}
           </p>
         </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card title="Completion rate over time" className="h-[360px] bg-white dark:bg-neutral-900">
+        <Card title="Completion rate over time" className="h-[360px] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)]">
           {isLoading ? (
-            <div className="flex h-full items-center justify-center text-neutral-500 dark:text-neutral-400">
+            <div className="flex h-full items-center justify-center text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
               Loading trend…
             </div>
           ) : (
             <SimpleLineChart data={completionTrend} className="h-full" showDots stroke="#4f46e5" />
           )}
         </Card>
-        <Card title="On-time vs late vs missed" className="h-[360px] bg-white dark:bg-neutral-900">
+        <Card title="On-time vs late vs missed" className="h-[360px] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)]">
           {isLoading ? (
-            <div className="flex h-full items-center justify-center text-neutral-500 dark:text-neutral-400">
+            <div className="flex h-full items-center justify-center text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
               Loading breakdown…
             </div>
           ) : statusTrend.length ? (
@@ -129,20 +129,20 @@ export default function PMAnalytics() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-neutral-500 dark:text-neutral-400">
+            <div className="flex h-full items-center justify-center text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
               No status data available for the selected window.
             </div>
           )}
         </Card>
       </div>
 
-      <Card title="Monthly breakdown" className="bg-white dark:bg-neutral-900">
+      <Card title="Monthly breakdown" className="bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)]">
         {isLoading ? (
-          <div className="p-4 text-neutral-500 dark:text-neutral-400">Loading breakdown…</div>
+          <div className="p-4 text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Loading breakdown…</div>
         ) : trend.length ? (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+              <thead className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                 <tr>
                   <th className="px-4 py-2 font-semibold">Period</th>
                   <th className="px-4 py-2 font-semibold">On time</th>
@@ -154,8 +154,8 @@ export default function PMAnalytics() {
               </thead>
               <tbody>
                 {trend.map((point) => (
-                  <tr key={point.period} className="border-t border-neutral-100 dark:border-neutral-800">
-                    <td className="px-4 py-3 text-neutral-900 dark:text-neutral-50">{point.period}</td>
+                  <tr key={point.period} className="border-t border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)]">
+                    <td className="px-4 py-3 text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{point.period}</td>
                     <td className="px-4 py-3">{point.onTime}</td>
                     <td className="px-4 py-3">{point.late}</td>
                     <td className="px-4 py-3">{point.missed}</td>
@@ -167,9 +167,10 @@ export default function PMAnalytics() {
             </table>
           </div>
         ) : (
-          <div className="p-4 text-neutral-500 dark:text-neutral-400">No preventive work orders found in this window.</div>
+          <div className="p-4 text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">No preventive work orders found in this window.</div>
         )}
       </Card>
     </div>
   );
 }
+

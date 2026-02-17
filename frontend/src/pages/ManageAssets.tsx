@@ -256,9 +256,9 @@ const ManageAssets = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-neutral-600">Assets</p>
-          <h1 className="text-2xl font-bold text-neutral-900">Manage Assets</h1>
-          <p className="text-neutral-600 mt-1">Add new equipment, edit details, duplicate templates, or remove retired assets.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Assets</p>
+          <h1 className="text-2xl font-bold text-[var(--wp-color-text)]">Manage Assets</h1>
+          <p className="text-[var(--wp-color-text-muted)] mt-1">Add new equipment, edit details, duplicate templates, or remove retired assets.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
@@ -274,24 +274,24 @@ const ManageAssets = () => {
 
       {error && <p className="text-red-600" role="alert">{error}</p>}
 
-      <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white dark:bg-neutral-800 p-4 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700">
+      <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)] p-4 rounded-lg shadow-sm border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)]">
         <input
           type="text"
           placeholder="Search assets..."
-          className="flex-1 bg-transparent border-none outline-none text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
+          className="flex-1 bg-transparent border-none outline-none text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] placeholder:text-[var(--wp-color-text-muted)] dark:placeholder:text-[var(--wp-color-text-muted)]"
           value={search}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
       </div>
 
       {selectedIds.length > 0 && (
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="space-y-3 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+              <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                 {selectedIds.length} assets selected
               </p>
-              <p className="text-sm text-neutral-600 dark:text-neutral-300">
+              <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                 Update status, reassign site/tenant, archive, or export these records.
               </p>
             </div>
@@ -302,10 +302,10 @@ const ManageAssets = () => {
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1">
-              <label className="text-sm text-neutral-600 dark:text-neutral-300">Bulk status</label>
+              <label className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Bulk status</label>
               <div className="flex gap-2">
                 <select
-                  className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                  className="flex-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
                   value={bulkStatus}
                   onChange={(e) => setBulkStatus(e.target.value as NonNullable<Asset['status']>)}
                 >
@@ -320,10 +320,10 @@ const ManageAssets = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm text-neutral-600 dark:text-neutral-300">Reassign site</label>
+              <label className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Reassign site</label>
               <div className="flex gap-2">
                 <input
-                  className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                  className="flex-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
                   value={bulkSite}
                   onChange={(e) => setBulkSite(e.target.value)}
                   placeholder="Site id"
@@ -335,10 +335,10 @@ const ManageAssets = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm text-neutral-600 dark:text-neutral-300">Reassign tenant</label>
+              <label className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Reassign tenant</label>
               <div className="flex gap-2">
                 <input
-                  className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                  className="flex-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
                   value={bulkTenant}
                   onChange={(e) => setBulkTenant(e.target.value)}
                   placeholder="Tenant id"
@@ -388,16 +388,16 @@ const ManageAssets = () => {
       />
 
       {qrPreviewAsset && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-neutral-900">
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-[color-mix(in_srgb,var(--wp-color-background)_70%,transparent)] p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-lg rounded-lg bg-[var(--wp-color-surface)] p-6 shadow-xl dark:bg-[var(--wp-color-surface)]">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{qrPreviewAsset.name}</h2>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Scan to jump directly to this asset.</p>
+                <h2 className="text-lg font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{qrPreviewAsset.name}</h2>
+                <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Scan to jump directly to this asset.</p>
               </div>
               <button
                 type="button"
-                className="text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                className="text-[var(--wp-color-text-muted)] hover:text-[var(--wp-color-text)] dark:text-[var(--wp-color-text-muted)] dark:hover:text-[var(--wp-color-text)]"
                 onClick={() => setQrPreviewAsset(null)}
                 aria-label="Close QR preview"
               >
@@ -415,3 +415,4 @@ const ManageAssets = () => {
 };
 
 export default ManageAssets;
+

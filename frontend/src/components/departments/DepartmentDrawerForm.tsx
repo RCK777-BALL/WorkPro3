@@ -65,7 +65,7 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
         <label className="block text-sm font-medium mb-1">Name</label>
         <input
           type="text"
-          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+          className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md"
           value={name}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setName(e.target.value);
@@ -86,7 +86,7 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
             <div className="flex-1">
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md"
                 value={line.name}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleLineChange(index, e.target.value)}
               />
@@ -123,3 +123,4 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
     </form>
   );
 }
+

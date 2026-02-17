@@ -100,26 +100,26 @@ const StationModal = ({
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Station name
           </label>
           <input
             value={name}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
             onBlur={() => setTouched(true)}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-[var(--wp-color-text)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
             placeholder="Station 3"
           />
           {error && <p className="mt-1 text-sm text-error-600">{error}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Notes
           </label>
           <textarea
             value={notes}
             onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setNotes(event.target.value)}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-[var(--wp-color-text)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
             rows={3}
             placeholder="Optional details for this station"
           />
@@ -130,3 +130,4 @@ const StationModal = ({
 };
 
 export default StationModal;
+

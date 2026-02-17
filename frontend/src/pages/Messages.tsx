@@ -408,7 +408,7 @@ const Messages = () => {
           </div>
           <div className="hidden w-80 border-l border-gray-900 bg-gray-950/40 lg:flex lg:flex-col">
             <div className="border-b border-gray-900 px-5 py-4">
-              <Text className="text-sm font-semibold text-white">Participants</Text>
+              <Text className="text-sm font-semibold text-[var(--wp-color-text)]">Participants</Text>
               <Text size="xs" className="text-gray-400">
                 Presence updates in real-time
               </Text>
@@ -427,7 +427,7 @@ const Messages = () => {
                         {member.name.charAt(0).toUpperCase()}
                       </Avatar>
                       <div className="flex flex-1 flex-col">
-                        <Text className="text-sm font-semibold text-white">{member.name}</Text>
+                        <Text className="text-sm font-semibold text-[var(--wp-color-text)]">{member.name}</Text>
                         <Group gap="xs">
                           <Badge color={online ? 'green' : 'gray'} variant="light" size="sm">
                             {online ? 'Online' : 'Offline'}
@@ -457,3 +457,4 @@ const Messages = () => {
 };
 
 export default Messages;
+

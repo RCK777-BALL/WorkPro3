@@ -65,9 +65,9 @@ const InventoryList = () => {
   return (
     <div className="space-y-4">
       <header className="space-y-1">
-        <p className="text-sm text-neutral-500">Inventory</p>
-        <h1 className="text-2xl font-semibold text-neutral-900">Stock by location</h1>
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm text-[var(--wp-color-text-muted)]">Inventory</p>
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Stock by location</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">
           Filter parts by site and bin to focus on relevant stock and drill into individual movement history.
         </p>
       </header>
@@ -79,10 +79,10 @@ const InventoryList = () => {
         </Card.Header>
         <Card.Content>
           <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm text-neutral-700">
+            <label className="flex items-center gap-2 text-sm text-[var(--wp-color-text)]">
               <span>Site</span>
               <select
-                className="rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                className="rounded-md border border-[var(--wp-color-border)] px-2 py-1 text-sm"
                 value={siteFilter}
                 onChange={(event) => updateParam('siteId', event.target.value)}
               >
@@ -94,10 +94,10 @@ const InventoryList = () => {
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-2 text-sm text-neutral-700">
+            <label className="flex items-center gap-2 text-sm text-[var(--wp-color-text)]">
               <span>Bin</span>
               <select
-                className="rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                className="rounded-md border border-[var(--wp-color-border)] px-2 py-1 text-sm"
                 value={binFilter}
                 onChange={(event) => updateParam('bin', event.target.value)}
               >
@@ -120,7 +120,7 @@ const InventoryList = () => {
         </Card.Header>
         <Card.Content>
           {stockQuery.isLoading && (
-            <div className="flex items-center gap-2 text-sm text-neutral-600" role="status">
+            <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]" role="status">
               <LoadingSpinner />
               <span>Loading inventory…</span>
             </div>
@@ -132,12 +132,12 @@ const InventoryList = () => {
           {!stockQuery.isLoading && !hasStockError && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-200 text-sm">
-                <thead className="bg-neutral-50">
+                <thead className="bg-[var(--wp-color-surface)]">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Location</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Quantity</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Unit</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Part</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Location</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Quantity</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Unit</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -145,24 +145,24 @@ const InventoryList = () => {
                     const location = item.location ?? locationMap.get(item.locationId);
                     const linkTarget = `/inventory/items/${item.partId}${queryString ? `?${queryString}` : ''}`;
                     return (
-                      <tr key={item.id} className="hover:bg-neutral-50">
-                        <td className="px-3 py-2 text-neutral-900">
+                      <tr key={item.id} className="hover:bg-[var(--wp-color-surface)]">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           <Link to={linkTarget} className="text-blue-600 hover:underline">
                             {item.part?.name ?? item.partId}
                           </Link>
                         </td>
-                        <td className="px-3 py-2 text-neutral-700">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           {formatInventoryLocation(location ?? undefined)}
                         </td>
-                        <td className="px-3 py-2 text-neutral-700">{item.quantity}</td>
-                        <td className="px-3 py-2 text-neutral-700">{item.unit ?? '—'}</td>
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">{item.quantity}</td>
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">{item.unit ?? '—'}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
               {!filteredItems.length && (
-                <p className="p-3 text-sm text-neutral-500">
+                <p className="p-3 text-sm text-[var(--wp-color-text-muted)]">
                   {siteFilter !== 'all' || binFilter !== 'all'
                     ? 'No parts match the selected filters.'
                     : 'No stock records found yet.'}
@@ -177,3 +177,4 @@ const InventoryList = () => {
 };
 
 export default InventoryList;
+

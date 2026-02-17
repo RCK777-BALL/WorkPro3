@@ -14,7 +14,7 @@ import type { ReorderAlertStatus } from "@/types";
 const statusColor: Record<string, string> = {
   open: "bg-warning-50 text-warning-700",
   approved: "bg-success-50 text-success-700",
-  skipped: "bg-neutral-100 text-neutral-700",
+  skipped: "bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text)]",
 };
 
 const statusLabel: Record<string, string> = {
@@ -46,9 +46,9 @@ const ReorderAlerts = () => {
   return (
     <div className="space-y-4">
       <header className="space-y-1">
-        <p className="text-sm text-neutral-500">Inventory</p>
-        <h1 className="text-2xl font-semibold text-neutral-900">Reorder alerts</h1>
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm text-[var(--wp-color-text-muted)]">Inventory</p>
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Reorder alerts</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">
           Track low stock parts and quickly approve or skip generated reorder suggestions.
         </p>
       </header>
@@ -71,7 +71,7 @@ const ReorderAlerts = () => {
         </Card.Header>
         <Card.Content>
           {isLoading && (
-            <p className="flex items-center gap-2 text-sm text-neutral-600" role="status">
+            <p className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]" role="status">
               <Loader2 className="h-4 w-4 animate-spin" />
               Checking inventory…
             </p>
@@ -80,42 +80,42 @@ const ReorderAlerts = () => {
           {!isLoading && !hasError && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-200 text-sm">
-                <thead className="bg-neutral-50">
+                <thead className="bg-[var(--wp-color-surface)]">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">On hand</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Reorder point</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Vendor</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Linked assets</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Status</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Actions</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Part</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">On hand</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Reorder point</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Vendor</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Linked assets</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Status</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {alerts.map((alert) => {
                     const status = alert.status ?? "open";
                     return (
-                      <tr key={alert.partId} className="hover:bg-neutral-50">
-                        <td className="px-3 py-2 text-neutral-900">
+                      <tr key={alert.partId} className="hover:bg-[var(--wp-color-surface)]">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           <div className="font-semibold">{alert.partName}</div>
                           {alert.lastTriggeredAt && (
-                            <p className="text-xs text-neutral-500">
+                            <p className="text-xs text-[var(--wp-color-text-muted)]">
                               Last triggered {new Date(alert.lastTriggeredAt).toLocaleDateString()}
                             </p>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-neutral-700">{alert.quantity}</td>
-                        <td className="px-3 py-2 text-neutral-700">{alert.reorderPoint}</td>
-                        <td className="px-3 py-2 text-neutral-700">{alert.vendorName ?? "—"}</td>
-                        <td className="px-3 py-2 text-neutral-700">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">{alert.quantity}</td>
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">{alert.reorderPoint}</td>
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">{alert.vendorName ?? "—"}</td>
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           {alert.assetNames.length ? alert.assetNames.join(", ") : "—"}
                         </td>
-                        <td className="px-3 py-2 text-neutral-700">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColor[status]}`}>
                             {statusLabel[status] ?? status}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-neutral-700">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           <div className="flex flex-wrap gap-2">
                             <Button
                               size="sm"
@@ -142,7 +142,7 @@ const ReorderAlerts = () => {
                   })}
                   {!alerts.length && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={7}>
+                      <td className="px-3 py-6 text-center text-[var(--wp-color-text-muted)]" colSpan={7}>
                         All caught up! No reorder alerts are pending.
                       </td>
                     </tr>
@@ -158,3 +158,4 @@ const ReorderAlerts = () => {
 };
 
 export default ReorderAlerts;
+

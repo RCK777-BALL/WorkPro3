@@ -61,7 +61,7 @@ const TeamMemberProfile = () => {
 
   if (!member) {
     return (
-      <p className="text-neutral-500">Member not found.</p>
+      <p className="text-[var(--wp-color-text-muted)]">Member not found.</p>
     );
   }
 
@@ -145,21 +145,21 @@ const TeamMemberProfile = () => {
 
   return (
     <div className="space-y-6">
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 flex items-center space-x-4">
+        <div className="bg-[var(--wp-color-surface)] rounded-lg shadow-sm border border-[var(--wp-color-border)] p-6 flex items-center space-x-4">
           <Avatar
             name={member.name}
             size="lg"
             {...(member.avatar ? { src: member.avatar } : {})}
           />
           <div>
-            <h2 className="text-2xl font-bold text-neutral-900">{member.name}</h2>
-            <p className="text-neutral-500">{member.role}</p>
-            <p className="text-neutral-500">{member.email}</p>
-            <p className="text-neutral-500">{member.phone}</p>
+            <h2 className="text-2xl font-bold text-[var(--wp-color-text)]">{member.name}</h2>
+            <p className="text-[var(--wp-color-text-muted)]">{member.role}</p>
+            <p className="text-[var(--wp-color-text-muted)]">{member.email}</p>
+            <p className="text-[var(--wp-color-text-muted)]">{member.phone}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 space-y-4">
+        <div className="bg-[var(--wp-color-surface)] rounded-lg shadow-sm border border-[var(--wp-color-border)] p-6 space-y-4">
           <div>
             <h3 className="font-semibold">Manager</h3>
             {manager ? (
@@ -167,7 +167,7 @@ const TeamMemberProfile = () => {
                 {manager.name}
               </Link>
             ) : (
-              <span className="text-neutral-500">None</span>
+              <span className="text-[var(--wp-color-text-muted)]">None</span>
             )}
           </div>
           <div>
@@ -183,48 +183,48 @@ const TeamMemberProfile = () => {
                 ))}
               </ul>
             ) : (
-              <span className="text-neutral-500">None</span>
+              <span className="text-[var(--wp-color-text-muted)]">None</span>
             )}
           </div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-            <h3 className="text-lg font-semibold text-neutral-900">Permit Activity</h3>
-            {loadingActivity && <p className="text-sm text-neutral-500">Loading activity…</p>}
+          <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 shadow-sm">
+            <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">Permit Activity</h3>
+            {loadingActivity && <p className="text-sm text-[var(--wp-color-text-muted)]">Loading activity…</p>}
             {activityError && <p className="text-sm text-error-600">{activityError}</p>}
             {permitActivity && !loadingActivity && !activityError && (
-              <div className="space-y-4 text-sm text-neutral-700">
+              <div className="space-y-4 text-sm text-[var(--wp-color-text)]">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-                  <div className="rounded border bg-neutral-50 p-3">
-                    <div className="text-xs text-neutral-500">Permits Involved</div>
-                    <div className="text-lg font-semibold text-neutral-900">{permitActivity.totalInvolved}</div>
+                  <div className="rounded border bg-[var(--wp-color-surface)] p-3">
+                    <div className="text-xs text-[var(--wp-color-text-muted)]">Permits Involved</div>
+                    <div className="text-lg font-semibold text-[var(--wp-color-text)]">{permitActivity.totalInvolved}</div>
                   </div>
-                  <div className="rounded border bg-neutral-50 p-3">
-                    <div className="text-xs text-neutral-500">Pending Approvals</div>
-                    <div className="text-lg font-semibold text-neutral-900">{permitActivity.pendingApprovals}</div>
+                  <div className="rounded border bg-[var(--wp-color-surface)] p-3">
+                    <div className="text-xs text-[var(--wp-color-text-muted)]">Pending Approvals</div>
+                    <div className="text-lg font-semibold text-[var(--wp-color-text)]">{permitActivity.pendingApprovals}</div>
                   </div>
-                  <div className="rounded border bg-neutral-50 p-3">
-                    <div className="text-xs text-neutral-500">Active Permits</div>
-                    <div className="text-lg font-semibold text-neutral-900">{permitActivity.activePermits}</div>
+                  <div className="rounded border bg-[var(--wp-color-surface)] p-3">
+                    <div className="text-xs text-[var(--wp-color-text-muted)]">Active Permits</div>
+                    <div className="text-lg font-semibold text-[var(--wp-color-text)]">{permitActivity.activePermits}</div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-neutral-700">Recent Actions</h4>
+                  <h4 className="text-sm font-semibold text-[var(--wp-color-text)]">Recent Actions</h4>
                   <ul className="mt-2 space-y-2">
                     {permitActivity.recentHistory.length ? (
                       permitActivity.recentHistory.map((entry) => (
-                        <li key={`${entry.permitId}-${entry.at}`} className="rounded border border-neutral-200 p-2">
+                        <li key={`${entry.permitId}-${entry.at}`} className="rounded border border-[var(--wp-color-border)] p-2">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium text-neutral-900">{entry.permitNumber}</span>
-                            <span className="text-xs text-neutral-500">{new Date(entry.at).toLocaleString()}</span>
+                            <span className="font-medium text-[var(--wp-color-text)]">{entry.permitNumber}</span>
+                            <span className="text-xs text-[var(--wp-color-text-muted)]">{new Date(entry.at).toLocaleString()}</span>
                           </div>
-                          <div className="text-xs text-neutral-500">{entry.action}</div>
-                          {entry.notes && <div className="text-xs text-neutral-500">{entry.notes}</div>}
+                          <div className="text-xs text-[var(--wp-color-text-muted)]">{entry.action}</div>
+                          {entry.notes && <div className="text-xs text-[var(--wp-color-text-muted)]">{entry.notes}</div>}
                         </li>
                       ))
                     ) : (
-                      <li className="text-xs text-neutral-400">No recent permit activity.</li>
+                      <li className="text-xs text-[var(--wp-color-text-muted)]">No recent permit activity.</li>
                     )}
                   </ul>
                 </div>
@@ -232,18 +232,18 @@ const TeamMemberProfile = () => {
             )}
           </div>
           {loadingWorkHistory ? (
-            <div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-500 shadow-sm">
+            <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-6 text-sm text-[var(--wp-color-text-muted)] shadow-sm">
               Loading work history…
             </div>
           ) : workHistoryError ? (
-            <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+            <div className="space-y-4 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-6 shadow-sm">
               <p className="text-sm text-error-600">{workHistoryError}</p>
               <button
                 type="button"
                 onClick={() => {
                   void loadWorkHistory();
                 }}
-                className="inline-flex items-center justify-center rounded-md border border-primary-200 bg-white px-4 py-2 text-sm font-medium text-primary-600 transition hover:border-primary-300 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                className="inline-flex items-center justify-center rounded-md border border-primary-200 bg-[var(--wp-color-surface)] px-4 py-2 text-sm font-medium text-primary-600 transition hover:border-primary-300 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
                 Retry
               </button>
@@ -261,3 +261,4 @@ const TeamMemberProfile = () => {
 };
 
 export default TeamMemberProfile;
+

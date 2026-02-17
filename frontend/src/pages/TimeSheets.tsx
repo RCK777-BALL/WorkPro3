@@ -119,7 +119,7 @@ const TimeSheets: React.FC = () => {
           <div className="max-w-2xl mx-auto space-y-6">
         <form
           onSubmit={handleSubmit}
-          className="bg-white dark:bg-neutral-800 p-4 rounded-lg shadow space-y-4"
+          className="bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)] p-4 rounded-lg shadow space-y-4"
         >
           <h2 className="text-xl font-bold">
             {editingId ? 'Edit Timesheet' : 'New Timesheet'}
@@ -168,14 +168,14 @@ const TimeSheets: React.FC = () => {
           {timesheets.map((ts) => (
             <div
               key={ts.id}
-              className="flex justify-between items-center p-4 bg-white dark:bg-neutral-800 rounded-lg shadow"
+              className="flex justify-between items-center p-4 bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)] rounded-lg shadow"
             >
               <div>
                 <p className="font-medium">
                   {ts.date} - {ts.hours}h
                 </p>
                 {ts.description && (
-                  <p className="text-sm text-neutral-500">{ts.description}</p>
+                  <p className="text-sm text-[var(--wp-color-text-muted)]">{ts.description}</p>
                 )}
               </div>
               <div className="space-x-2">
@@ -198,3 +198,4 @@ const TimeSheets: React.FC = () => {
 };
 
 export default TimeSheets;
+

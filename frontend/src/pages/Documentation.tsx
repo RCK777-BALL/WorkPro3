@@ -362,8 +362,8 @@ const Documentation: React.FC = () => {
           <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-neutral-900">Documentation</h2>
-            <p className="text-neutral-500">Browse guides, tutorials, and reference materials</p>
+            <h2 className="text-2xl font-bold text-[var(--wp-color-text)]">Documentation</h2>
+            <p className="text-[var(--wp-color-text-muted)]">Browse guides, tutorials, and reference materials</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
             <Button
@@ -388,23 +388,23 @@ const Documentation: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Create New Category</h3>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Category Title
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                  className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md"
                   value={newCategory.title}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCategory({ ...newCategory, title: e.target.value })}
                   placeholder="Enter category title"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Description
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                  className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md"
                   value={newCategory.description}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewCategory({ ...newCategory, description: e.target.value })}
                   placeholder="Enter category description"
@@ -433,7 +433,7 @@ const Documentation: React.FC = () => {
           <Card>
             <DocumentUploader onUpload={handleDocumentUpload} />
             {isUploading && (
-              <div className="mt-3 text-sm text-neutral-500">Uploading documents…</div>
+              <div className="mt-3 text-sm text-[var(--wp-color-text-muted)]">Uploading documents…</div>
             )}
           </Card>
         )}
@@ -441,29 +441,29 @@ const Documentation: React.FC = () => {
         <Card>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-neutral-900">Uploaded Documents</h3>
-              <span className="text-sm text-neutral-500">
+              <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">Uploaded Documents</h3>
+              <span className="text-sm text-[var(--wp-color-text-muted)]">
                 {documents.length} document{documents.length === 1 ? '' : 's'}
               </span>
             </div>
 
             {isLoadingDocuments ? (
-              <div className="flex items-center gap-3 text-sm text-neutral-500">
+              <div className="flex items-center gap-3 text-sm text-[var(--wp-color-text-muted)]">
                 <LoadingSpinner fullscreen={false} size="sm" />
                 <span>Loading documents…</span>
               </div>
             ) : documents.length === 0 ? (
-              <p className="text-sm text-neutral-500">No documents uploaded yet.</p>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">No documents uploaded yet.</p>
             ) : (
               <div className="space-y-3">
                 {documents.map((doc) => (
                   <div
                     key={doc.id}
-                    className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
-                      <p className="font-medium text-neutral-900">{doc.metadata.title}</p>
-                      <p className="text-sm text-neutral-500">
+                      <p className="font-medium text-[var(--wp-color-text)]">{doc.metadata.title}</p>
+                      <p className="text-sm text-[var(--wp-color-text-muted)]">
                         {doc.metadata.type.toUpperCase()} · {(doc.metadata.size / 1024).toFixed(1)} KB ·{' '}
                         {(
                           doc.metadata.lastModified instanceof Date
@@ -500,12 +500,12 @@ const Documentation: React.FC = () => {
         </Card>
 
         {/* Search Bar */}
-        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white p-4 rounded-lg shadow-sm border border-neutral-200">
-          <Search className="text-neutral-500" size={20} />
+        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-[var(--wp-color-surface)] p-4 rounded-lg shadow-sm border border-[var(--wp-color-border)]">
+          <Search className="text-[var(--wp-color-text-muted)]" size={20} />
           <input
             type="text"
             placeholder="Search documentation..."
-            className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
+            className="flex-1 bg-transparent border-none outline-none text-[var(--wp-color-text)] placeholder-neutral-400"
           />
         </div>
 
@@ -519,10 +519,10 @@ const Documentation: React.FC = () => {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start">
-                  <div className="p-3 rounded-lg bg-neutral-50">{category.icon}</div>
+                  <div className="p-3 rounded-lg bg-[var(--wp-color-surface)]">{category.icon}</div>
                   <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-neutral-900">{category.title}</h3>
-                    <p className="text-neutral-500 mt-1">{category.description}</p>
+                    <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">{category.title}</h3>
+                    <p className="text-[var(--wp-color-text-muted)] mt-1">{category.description}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -549,17 +549,17 @@ const Documentation: React.FC = () => {
                 {category.articles.map((article, articleIndex) => (
                   <div
                     key={articleIndex}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-neutral-50 transition-colors duration-150 group"
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--wp-color-surface)] transition-colors duration-150 group"
                   >
                     {article.href ? (
                       <Link to={article.href} className="flex items-center flex-1">
-                        <span className="text-sm font-medium text-neutral-900">{article.title}</span>
-                        <span className="ml-2 text-xs text-neutral-500">{article.time}</span>
+                        <span className="text-sm font-medium text-[var(--wp-color-text)]">{article.title}</span>
+                        <span className="ml-2 text-xs text-[var(--wp-color-text-muted)]">{article.time}</span>
                       </Link>
                     ) : (
                       <button className="flex items-center flex-1">
-                        <span className="text-sm font-medium text-neutral-900">{article.title}</span>
-                        <span className="ml-2 text-xs text-neutral-500">{article.time}</span>
+                        <span className="text-sm font-medium text-[var(--wp-color-text)]">{article.title}</span>
+                        <span className="ml-2 text-xs text-[var(--wp-color-text-muted)]">{article.time}</span>
                       </button>
                     )}
                     <div className="flex items-center space-x-2">
@@ -569,7 +569,7 @@ const Documentation: React.FC = () => {
                         icon={<Trash2 size={16} />}
                         onClick={() => handleDeleteArticle(index, articleIndex)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity duration-150" children={undefined}                      />
-                      <ChevronRight size={16} className="text-neutral-400 group-hover:text-primary-600 transition-colors duration-150" />
+                      <ChevronRight size={16} className="text-[var(--wp-color-text-muted)] group-hover:text-primary-600 transition-colors duration-150" />
                     </div>
                   </div>
                 ))}
@@ -585,7 +585,7 @@ const Documentation: React.FC = () => {
               <h3 className="text-xl font-semibold">Need Help?</h3>
               <p className="mt-1 text-primary-200">Our support team is here to assist you</p>
             </div>
-            <button className="px-4 py-2 bg-white text-primary-dark rounded-lg hover:bg-primary-light transition-colors duration-150">
+            <button className="px-4 py-2 bg-[var(--wp-color-surface)] text-primary-dark rounded-lg hover:bg-primary-light transition-colors duration-150">
               Contact Support
             </button>
           </div>
@@ -595,3 +595,4 @@ const Documentation: React.FC = () => {
 };
 
 export default Documentation;
+

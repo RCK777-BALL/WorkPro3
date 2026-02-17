@@ -57,7 +57,7 @@ const ForgotPasswordPage: React.FC = () => {
             <button
               onClick={promptInstall}
               type="button"
-              className="mb-4 px-4 py-2 rounded bg-primary-600 text-white"
+              className="mb-4 px-4 py-2 rounded bg-primary-600 text-[var(--wp-color-text)]"
             >
               {t('app.install')}
             </button>
@@ -73,7 +73,7 @@ const ForgotPasswordPage: React.FC = () => {
           autoComplete="email"
         />
         {message && <div className="text-green-600">{message}</div>}
-        <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
+        <button type="submit" className="bg-primary-600 text-[var(--wp-color-text)] px-4 py-2 rounded w-full">
           {t('auth.sendResetLink')}
         </button>
         <p className="text-sm text-center">
@@ -85,3 +85,4 @@ const ForgotPasswordPage: React.FC = () => {
 };
 
 export default ForgotPasswordPage;
+

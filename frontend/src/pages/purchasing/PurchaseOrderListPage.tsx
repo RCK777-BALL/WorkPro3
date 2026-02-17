@@ -67,8 +67,8 @@ const PurchaseOrderListPage = () => {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Purchase Orders</h1>
-          <p className="text-sm text-neutral-500">Track ordering lifecycle from draft through receipt.</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Purchase Orders</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Track ordering lifecycle from draft through receipt.</p>
         </div>
         <Button as={Link} to="/purchasing/purchase-orders/new" variant="primary">
           New purchase order
@@ -84,9 +84,9 @@ const PurchaseOrderListPage = () => {
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
           />
           <div>
-            <label className="block text-sm font-medium text-neutral-700">Status</label>
+            <label className="block text-sm font-medium text-[var(--wp-color-text)]">Status</label>
             <select
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
+              className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2"
               value={status}
               onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
                 setStatus(event.target.value as typeof status)
@@ -144,3 +144,4 @@ const PurchaseOrderListPage = () => {
 };
 
 export default PurchaseOrderListPage;
+

@@ -63,13 +63,13 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <form onSubmit={handleSubmit} className="max-w-md w-full space-y-4 bg-white p-6 rounded shadow">
+      <form onSubmit={handleSubmit} className="max-w-md w-full space-y-4 bg-[var(--wp-color-surface)] p-6 rounded shadow">
         {showInstall && (
           <div className="flex justify-center">
             <button
               onClick={promptInstall}
               type="button"
-              className="mb-2 px-4 py-2 rounded bg-primary-600 text-white"
+              className="mb-2 px-4 py-2 rounded bg-primary-600 text-[var(--wp-color-text)]"
             >
               {t('app.install', 'Install App')}
             </button>
@@ -127,7 +127,7 @@ const RegisterPage: React.FC = () => {
 
         {error && <div className="text-red-500">{error}</div>}
 
-        <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
+        <button type="submit" className="bg-primary-600 text-[var(--wp-color-text)] px-4 py-2 rounded w-full">
           {t('auth.register', 'Register')}
         </button>
 
@@ -143,3 +143,4 @@ const RegisterPage: React.FC = () => {
 };
 
 export default RegisterPage;
+

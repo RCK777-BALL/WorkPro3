@@ -26,7 +26,7 @@ const statusColors: Record<WorkRequestStatus, string> = {
   converted: 'bg-emerald-100 text-emerald-800',
   closed: 'bg-gray-200 text-gray-800',
   rejected: 'bg-rose-100 text-rose-800',
-  deleted: 'bg-neutral-200 text-neutral-500',
+  deleted: 'bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] text-[var(--wp-color-text-muted)]',
 };
 
 const priorityColors: Record<WorkRequestItem['priority'], string> = {
@@ -37,10 +37,10 @@ const priorityColors: Record<WorkRequestItem['priority'], string> = {
 };
 
 const SummaryCard = ({ title, value, subtitle }: { title: string; value: number | string; subtitle: string }) => (
-  <div className="rounded-xl border border-neutral-200/60 bg-white/70 p-4 shadow-sm">
-    <p className="text-sm text-neutral-500">{title}</p>
-    <p className="mt-2 text-2xl font-semibold text-neutral-900">{value}</p>
-    <p className="text-xs text-neutral-400">{subtitle}</p>
+  <div className="rounded-xl border border-[var(--wp-color-border)]/60 bg-[var(--wp-color-surface)]/70 p-4 shadow-sm">
+    <p className="text-sm text-[var(--wp-color-text-muted)]">{title}</p>
+    <p className="mt-2 text-2xl font-semibold text-[var(--wp-color-text)]">{value}</p>
+    <p className="text-xs text-[var(--wp-color-text-muted)]">{subtitle}</p>
   </div>
 );
 
@@ -110,12 +110,12 @@ export default function WorkRequestDashboard() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Work Requests</h1>
-          <p className="text-sm text-neutral-500">Monitor submissions from the public portal and convert them into work orders.</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Work Requests</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Monitor submissions from the public portal and convert them into work orders.</p>
         </div>
         <button
           type="button"
-          className="inline-flex items-center rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50"
+          className="inline-flex items-center rounded-full border border-[var(--wp-color-border)] px-4 py-2 text-sm font-medium text-[var(--wp-color-text)] transition hover:bg-[var(--wp-color-surface)]"
           onClick={handleRefresh}
           disabled={refreshing}
         >
@@ -137,13 +137,13 @@ export default function WorkRequestDashboard() {
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900">Recent activity</h2>
-          <p className="text-sm text-neutral-500">Newest requests appear first. Use convert to promote directly into a work order.</p>
+          <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Recent activity</h2>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Newest requests appear first. Use convert to promote directly into a work order.</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-neutral-200 bg-white">
-            <thead className="bg-neutral-50">
-              <tr className="text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <table className="min-w-full divide-y divide-neutral-200 bg-[var(--wp-color-surface)]">
+            <thead className="bg-[var(--wp-color-surface)]">
+              <tr className="text-left text-xs font-semibold uppercase tracking-wide text-[var(--wp-color-text-muted)]">
                 <th className="px-4 py-3">Requester</th>
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Priority</th>
@@ -157,21 +157,21 @@ export default function WorkRequestDashboard() {
               {requests.map((request) => (
                 <tr key={request._id}>
                   <td className="px-4 py-3">
-                    <div className="font-medium text-neutral-900">{request.requesterName}</div>
-                    <div className="text-xs text-neutral-500">{request.requesterEmail ?? request.requesterPhone ?? '—'}</div>
+                    <div className="font-medium text-[var(--wp-color-text)]">{request.requesterName}</div>
+                    <div className="text-xs text-[var(--wp-color-text-muted)]">{request.requesterEmail ?? request.requesterPhone ?? '—'}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="font-medium text-neutral-900">{request.title}</div>
-                    <p className="text-xs text-neutral-500">{request.description ?? 'No description provided.'}</p>
+                    <div className="font-medium text-[var(--wp-color-text)]">{request.title}</div>
+                    <p className="text-xs text-[var(--wp-color-text-muted)]">{request.description ?? 'No description provided.'}</p>
                   </td>
                   <td className={`px-4 py-3 font-semibold ${priorityColors[request.priority]}`}>{request.priority}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={request.status} />
                   </td>
-                  <td className="px-4 py-3 text-neutral-500">
+                  <td className="px-4 py-3 text-[var(--wp-color-text-muted)]">
                     {request.createdAt ? formatDistanceToNow(new Date(request.createdAt), { addSuffix: true }) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-neutral-500">
+                  <td className="px-4 py-3 text-[var(--wp-color-text-muted)]">
                     {request.photos && request.photos.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {request.photos.map((photo) => (
@@ -180,7 +180,7 @@ export default function WorkRequestDashboard() {
                             href={`/static/uploads/${photo}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded-full border border-neutral-200 px-2 py-1 text-xs text-neutral-600 hover:border-neutral-400"
+                            className="rounded-full border border-[var(--wp-color-border)] px-2 py-1 text-xs text-[var(--wp-color-text-muted)] hover:border-[var(--wp-color-text-muted)]"
                           >
                             View
                           </a>
@@ -192,11 +192,11 @@ export default function WorkRequestDashboard() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {request.workOrder ? (
-                      <span className="text-xs text-neutral-500">WO #{request.workOrder}</span>
+                      <span className="text-xs text-[var(--wp-color-text-muted)]">WO #{request.workOrder}</span>
                     ) : (
                       <button
                         type="button"
-                        className="inline-flex items-center rounded-full bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60"
+                        className="inline-flex items-center rounded-full bg-primary-600 px-3 py-1.5 text-xs font-semibold text-[var(--wp-color-text)] transition hover:bg-primary-700 disabled:opacity-60"
                         onClick={() => handleConvert(request._id)}
                         disabled={converting[request._id] || request.status === 'converted'}
                       >
@@ -209,18 +209,19 @@ export default function WorkRequestDashboard() {
             </tbody>
           </table>
           {statusLoading && (
-            <p className="px-4 py-3 text-sm text-neutral-500">Loading work requests…</p>
+            <p className="px-4 py-3 text-sm text-[var(--wp-color-text-muted)]">Loading work requests…</p>
           )}
           {!statusLoading && requests.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-neutral-500">No requests yet.</p>
+            <p className="px-4 py-6 text-center text-sm text-[var(--wp-color-text-muted)]">No requests yet.</p>
           )}
         </div>
       </section>
 
-      <section className="rounded-xl border border-neutral-200/80 bg-white/70 p-4">
-        <h3 className="text-lg font-semibold text-neutral-900">Open queue</h3>
-        <p className="text-sm text-neutral-500">{openRequests.length} request(s) awaiting review.</p>
+      <section className="rounded-xl border border-[var(--wp-color-border)]/80 bg-[var(--wp-color-surface)]/70 p-4">
+        <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">Open queue</h3>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">{openRequests.length} request(s) awaiting review.</p>
       </section>
     </div>
   );
 }
+

@@ -189,18 +189,18 @@ const RoleManagementPage = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Role permissions</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Role permissions</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">
             Manage granular permissions per site using reusable roles.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-slate-300" htmlFor="site-filter">
+          <label className="text-sm text-[var(--wp-color-text-muted)]" htmlFor="site-filter">
             View roles for site
           </label>
           <select
             id="site-filter"
-            className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+            className="rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-2 py-1 text-sm text-[var(--wp-color-text)]"
             value={viewSiteId}
             onChange={(e) => handleViewSiteChange(e.target.value)}
           >
@@ -216,17 +216,17 @@ const RoleManagementPage = () => {
       <Card>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-100">Tenant &amp; site scopes</h2>
-            <p className="text-sm text-slate-400">
+            <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Tenant &amp; site scopes</h2>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">
               Policies are evaluated with the current tenant, site context, and socket connections using shared guards.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {siteSummaries.map((site) => (
-              <div key={site.label} className="rounded-md border border-slate-800 bg-slate-900 px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">{site.label}</p>
-                <p className="text-xl font-semibold text-slate-100">{site.roles}</p>
-                <p className="text-xs text-slate-500">Roles scoped here</p>
+              <div key={site.label} className="rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">{site.label}</p>
+                <p className="text-xl font-semibold text-[var(--wp-color-text)]">{site.roles}</p>
+                <p className="text-xs text-[var(--wp-color-text-muted)]">Roles scoped here</p>
               </div>
             ))}
           </div>
@@ -235,26 +235,26 @@ const RoleManagementPage = () => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="flex items-center justify-between border-b border-[var(--wp-color-border)] pb-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">Existing roles</h2>
-              <p className="text-sm text-slate-400">Filtered by tenant and active site context.</p>
+              <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Existing roles</h2>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">Filtered by tenant and active site context.</p>
             </div>
             <Button onClick={() => resetForm()} variant="outline" disabled={saving || !editable}>
               New role
             </Button>
           </div>
           {loading ? (
-            <p className="py-6 text-sm text-slate-400">Loading roles…</p>
+            <p className="py-6 text-sm text-[var(--wp-color-text-muted)]">Loading roles…</p>
           ) : filteredRoles.length === 0 ? (
-            <p className="py-6 text-sm text-slate-400">No roles available for this site.</p>
+            <p className="py-6 text-sm text-[var(--wp-color-text-muted)]">No roles available for this site.</p>
           ) : (
             <ul className="divide-y divide-slate-800">
               {filteredRoles.map((role) => (
                 <li
                   key={role._id}
-                  className={`flex items-center justify-between gap-3 py-3 transition hover:bg-slate-900/40 ${
-                    selectedRoleId === role._id ? 'bg-slate-900/60' : ''
+                  className={`flex items-center justify-between gap-3 py-3 transition hover:bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)] ${
+                    selectedRoleId === role._id ? 'bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]' : ''
                   }`}
                 >
                   <button
@@ -262,11 +262,11 @@ const RoleManagementPage = () => {
                     onClick={() => setSelectedRoleId(role._id)}
                     type="button"
                   >
-                    <span className="flex items-center gap-2 text-slate-100">
+                    <span className="flex items-center gap-2 text-[var(--wp-color-text)]">
                       <Shield className="h-4 w-4 text-emerald-400" />
                       <span className="font-medium">{role.name}</span>
                     </span>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-[var(--wp-color-text-muted)]">
                       {role.siteId ? 'Site specific' : 'All sites'} • {role.permissions.length} permissions
                     </span>
                   </button>
@@ -287,24 +287,24 @@ const RoleManagementPage = () => {
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="flex items-center justify-between border-b border-[var(--wp-color-border)] pb-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">
+              <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">
                 {selectedRoleId ? 'Edit role' : 'Create role'}
               </h2>
-              <p className="text-sm text-slate-400">Assign permissions and scope the role to a site.</p>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">Assign permissions and scope the role to a site.</p>
             </div>
             <CheckCircle2 className="h-5 w-5 text-emerald-400" />
           </div>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm text-slate-300" htmlFor="role-name">
+              <label className="text-sm text-[var(--wp-color-text-muted)]" htmlFor="role-name">
                 Role name
               </label>
               <input
                 id="role-name"
-                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100"
+                className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-[var(--wp-color-text)]"
                 placeholder="e.g. Inventory Manager"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -313,12 +313,12 @@ const RoleManagementPage = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-slate-300" htmlFor="role-site">
+              <label className="text-sm text-[var(--wp-color-text-muted)]" htmlFor="role-site">
                 Site scope
               </label>
               <select
                 id="role-site"
-                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100"
+                className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-[var(--wp-color-text)]"
                 value={siteId ?? ''}
                 onChange={(e) => setSiteId(e.target.value || null)}
                 disabled={!editable}
@@ -329,15 +329,15 @@ const RoleManagementPage = () => {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--wp-color-text-muted)]">
                 Leave blank to make the role available to all sites in the tenant.
               </p>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-300">Permissions</span>
-                <span className="text-xs text-slate-500">{selectedPermissions.length} selected</span>
+                <span className="text-sm text-[var(--wp-color-text-muted)]">Permissions</span>
+                <span className="text-xs text-[var(--wp-color-text-muted)]">{selectedPermissions.length} selected</span>
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {permissionOptions.map((option) => {
@@ -348,7 +348,7 @@ const RoleManagementPage = () => {
                       className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${
                         checked
                           ? 'border-emerald-500/70 bg-emerald-500/10 text-emerald-100'
-                          : 'border-slate-700 bg-slate-900 text-slate-100'
+                          : 'border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] text-[var(--wp-color-text)]'
                       }`}
                     >
                       <input
@@ -360,7 +360,7 @@ const RoleManagementPage = () => {
                       />
                       <span className="flex-1">
                         <span className="block font-medium capitalize">{option.group}</span>
-                        <span className="block text-xs text-slate-400">{option.label}</span>
+                        <span className="block text-xs text-[var(--wp-color-text-muted)]">{option.label}</span>
                       </span>
                     </label>
                   );
@@ -386,3 +386,4 @@ const RoleManagementPage = () => {
 };
 
 export default RoleManagementPage;
+

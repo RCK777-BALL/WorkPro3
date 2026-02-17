@@ -767,11 +767,11 @@ export default function WorkOrders() {
 
         <Card className="p-4">
           <div className="flex flex-col items-center space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0">
-            <Search className="text-neutral-500" size={20} />
+            <Search className="text-[var(--wp-color-text-muted)]" size={20} />
             <input
               type="text"
               placeholder="Search work orders..."
-              className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400 dark:text-neutral-100"
+              className="flex-1 bg-transparent border-none outline-none text-[var(--wp-color-text)] placeholder-neutral-400 dark:text-[var(--wp-color-text)]"
               value={search}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             />
@@ -857,7 +857,7 @@ export default function WorkOrders() {
             />
           ))}
           {filteredOrders.length === 0 && (
-            <p className="rounded-lg border border-dashed border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
+            <p className="rounded-lg border border-dashed border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-4 py-6 text-center text-sm text-[var(--wp-color-text-muted)]">
               No work orders available.
             </p>
           )}
@@ -924,3 +924,4 @@ export default function WorkOrders() {
     </>
   );
 }
+

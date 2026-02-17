@@ -47,21 +47,21 @@ const ReceiveModal = ({ purchaseOrder, isOpen, onClose }: ReceiveModalProps) => 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Receive items">
       <div className="space-y-4">
-        <p className="text-sm text-neutral-600">Enter quantities for lines that arrived.</p>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">Enter quantities for lines that arrived.</p>
         <div className="space-y-3">
           {openLines.map((line) => {
             const remaining = line.qtyOrdered - (line.qtyReceived ?? 0);
             return (
-              <div key={line.part} className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 p-3">
+              <div key={line.part} className="flex items-center justify-between gap-3 rounded-md border border-[var(--wp-color-border)] p-3">
                 <div>
-                  <p className="text-sm font-medium text-neutral-800">{line.part}</p>
-                  <p className="text-xs text-neutral-500">Remaining: {remaining}</p>
+                  <p className="text-sm font-medium text-[var(--wp-color-text)]">{line.part}</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">Remaining: {remaining}</p>
                 </div>
                 <input
                   type="number"
                   min={0}
                   max={remaining}
-                  className="w-28 rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                  className="w-28 rounded-md border border-[var(--wp-color-border)] px-2 py-1 text-sm"
                   value={quantities[line.part] ?? ''}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                     setQuantities((prev) => ({ ...prev, [line.part]: Number(event.target.value) }))
@@ -70,7 +70,7 @@ const ReceiveModal = ({ purchaseOrder, isOpen, onClose }: ReceiveModalProps) => 
               </div>
             );
           })}
-          {!openLines.length && <p className="text-sm text-neutral-500">All lines are fully received.</p>}
+          {!openLines.length && <p className="text-sm text-[var(--wp-color-text-muted)]">All lines are fully received.</p>}
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
@@ -86,3 +86,4 @@ const ReceiveModal = ({ purchaseOrder, isOpen, onClose }: ReceiveModalProps) => 
 };
 
 export default ReceiveModal;
+

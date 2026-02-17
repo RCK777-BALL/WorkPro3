@@ -84,7 +84,7 @@ export default function RequestPortal() {
         <button
           type="submit"
           disabled={submitting}
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          className="bg-[var(--wp-color-primary)] text-[var(--wp-color-text)] px-4 py-2 rounded disabled:opacity-50"
         >
           {submitting ? 'Submitting...' : 'Submit Request'}
         </button>
@@ -94,3 +94,4 @@ export default function RequestPortal() {
     </div>
   );
 }
+

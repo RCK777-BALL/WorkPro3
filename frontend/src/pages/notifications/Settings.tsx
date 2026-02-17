@@ -179,11 +179,11 @@ const NotificationSettingsPage = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Channels</p>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Notification Settings</h1>
-          <p className="text-sm text-neutral-500">Configure outbound webhooks and messaging destinations.</p>
+          <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Channels</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Notification Settings</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Configure outbound webhooks and messaging destinations.</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+        <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
           <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           <span>
             {configuredProviders} of {providers.length || 4} providers configured
@@ -194,18 +194,18 @@ const NotificationSettingsPage = () => {
       <Card title="Subscriptions" subtitle="Choose when and where you receive alerts" icon={<AlarmClock className="h-5 w-5 text-primary-500" />}>
         <div className="space-y-4">
           <div>
-            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Channels</p>
+            <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Channels</p>
             <div className="mt-2 grid gap-2 md:grid-cols-3">
               {channelOptions.map((channel) => (
-                <label key={channel.key} className="flex items-start gap-2 rounded-lg border border-neutral-200 bg-white/70 p-3 text-sm dark:border-neutral-700 dark:bg-neutral-800">
+                <label key={channel.key} className="flex items-start gap-2 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 p-3 text-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]">
                   <input
                     type="checkbox"
                     checked={subscription?.channels?.includes(channel.key as any) ?? false}
                     onChange={() => toggleSubscriptionChannel(channel.key as any)}
                   />
                   <span>
-                    <span className="font-medium text-neutral-800 dark:text-neutral-100">{channel.label}</span>
-                    <span className="block text-xs text-neutral-500">{channel.description}</span>
+                    <span className="font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{channel.label}</span>
+                    <span className="block text-xs text-[var(--wp-color-text-muted)]">{channel.description}</span>
                   </span>
                 </label>
               ))}
@@ -213,18 +213,18 @@ const NotificationSettingsPage = () => {
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Events</p>
+            <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Events</p>
             <div className="mt-2 grid gap-2 md:grid-cols-2">
               {subscriptionEvents.map((event) => (
-                <label key={event.key} className="flex items-start gap-2 rounded-lg border border-neutral-200 bg-white/70 p-3 text-sm dark:border-neutral-700 dark:bg-neutral-800">
+                <label key={event.key} className="flex items-start gap-2 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 p-3 text-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]">
                   <input
                     type="checkbox"
                     checked={subscription?.events?.includes(event.key) ?? false}
                     onChange={() => toggleSubscriptionEvent(event.key)}
                   />
                   <span>
-                    <span className="font-medium text-neutral-800 dark:text-neutral-100">{event.label}</span>
-                    <span className="block text-xs text-neutral-500">{event.description}</span>
+                    <span className="font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{event.label}</span>
+                    <span className="block text-xs text-[var(--wp-color-text-muted)]">{event.description}</span>
                   </span>
                 </label>
               ))}
@@ -233,28 +233,28 @@ const NotificationSettingsPage = () => {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Quiet hours</p>
+              <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Quiet hours</p>
               <div className="mt-2 grid gap-2">
-                <label className="text-xs text-neutral-500">Start time</label>
+                <label className="text-xs text-[var(--wp-color-text-muted)]">Start time</label>
                 <input
                   type="time"
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
                   value={subscription?.quietHours?.start ?? ''}
                   onChange={(event) => updateSubscriptionField('quietHours', { ...subscription?.quietHours, start: event.target.value })}
                 />
-                <label className="text-xs text-neutral-500">End time</label>
+                <label className="text-xs text-[var(--wp-color-text-muted)]">End time</label>
                 <input
                   type="time"
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
                   value={subscription?.quietHours?.end ?? ''}
                   onChange={(event) => updateSubscriptionField('quietHours', { ...subscription?.quietHours, end: event.target.value })}
                 />
               </div>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">Digest</p>
+              <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Digest</p>
               <div className="mt-2 space-y-2">
-                <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+                <label className="flex items-center gap-2 text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                   <input
                     type="checkbox"
                     checked={subscription?.digest?.enabled ?? false}
@@ -263,7 +263,7 @@ const NotificationSettingsPage = () => {
                   Enable digest summaries
                 </label>
                 <select
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
                   value={subscription?.digest?.frequency ?? 'daily'}
                   onChange={(event) => updateSubscriptionField('digest', { ...subscription?.digest, frequency: event.target.value })}
                 >
@@ -279,7 +279,7 @@ const NotificationSettingsPage = () => {
             <Button variant="primary" onClick={saveSubscription}>
               Save subscription
             </Button>
-            {subscriptionStatus && <p className="text-xs text-neutral-500">{subscriptionStatus}</p>}
+            {subscriptionStatus && <p className="text-xs text-[var(--wp-color-text-muted)]">{subscriptionStatus}</p>}
           </div>
         </div>
       </Card>
@@ -287,9 +287,9 @@ const NotificationSettingsPage = () => {
       <Card title="Webhooks" subtitle="Deliver notifications to your own tooling" icon={<Webhook className="h-5 w-5 text-primary-500" />}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">Generic webhook URL</label>
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Generic webhook URL</label>
             <input
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+              className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
               placeholder="https://hooks.example.com/notify"
               value={form.webhookUrl}
               onChange={(event) => setForm((prev) => ({ ...prev, webhookUrl: event.target.value }))}
@@ -297,18 +297,18 @@ const NotificationSettingsPage = () => {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">Slack webhook URL</label>
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Slack webhook URL</label>
               <input
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
                 placeholder="https://hooks.slack.com/services/..."
                 value={form.slackWebhookUrl}
                 onChange={(event) => setForm((prev) => ({ ...prev, slackWebhookUrl: event.target.value }))}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">Teams webhook URL</label>
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Teams webhook URL</label>
               <input
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
                 placeholder="https://contoso.webhook.office.com/..."
                 value={form.teamsWebhookUrl}
                 onChange={(event) => setForm((prev) => ({ ...prev, teamsWebhookUrl: event.target.value }))}
@@ -369,11 +369,11 @@ const NotificationSettingsPage = () => {
       <Card title="Provider status" subtitle="Verify which channels are active" icon={<Bell className="h-5 w-5 text-amber-500" />}>
         <div className="grid gap-3 md:grid-cols-2">
           {providers.map((provider) => (
-            <div key={provider.id} className="flex items-start justify-between rounded-lg border border-neutral-200 bg-white/70 p-3 dark:border-neutral-700 dark:bg-neutral-800">
+            <div key={provider.id} className="flex items-start justify-between rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 p-3 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]">
               <div>
-                <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{provider.label}</p>
-                <p className="text-xs text-neutral-500">{provider.docsUrl}</p>
-                <p className="text-xs text-neutral-500">{provider.supportsTarget ? 'Requires recipient' : 'Uses configured webhook'}</p>
+                <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{provider.label}</p>
+                <p className="text-xs text-[var(--wp-color-text-muted)]">{provider.docsUrl}</p>
+                <p className="text-xs text-[var(--wp-color-text-muted)]">{provider.supportsTarget ? 'Requires recipient' : 'Uses configured webhook'}</p>
               </div>
               <span
                 className={`inline-flex items-center rounded-full px-2 py-1 text-xs ${provider.configured ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'}`}
@@ -387,7 +387,7 @@ const NotificationSettingsPage = () => {
 
       <Card title="User opt-in" subtitle="Control how you receive alerts" icon={<Bell className="h-5 w-5 text-primary-500" />}>
         <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+          <label className="flex items-center gap-2 text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             <input
               type="checkbox"
               checked={preferences.email}
@@ -395,7 +395,7 @@ const NotificationSettingsPage = () => {
             />
             Email notifications
           </label>
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+          <label className="flex items-center gap-2 text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             <input
               type="checkbox"
               checked={preferences.sms}
@@ -406,31 +406,31 @@ const NotificationSettingsPage = () => {
           <Button variant="primary" onClick={savePreferences} icon={<Bell className="h-4 w-4" />}>
             Save preferences
           </Button>
-          {prefResult && <p className="text-xs text-neutral-500">{prefResult}</p>}
+          {prefResult && <p className="text-xs text-[var(--wp-color-text-muted)]">{prefResult}</p>}
         </div>
       </Card>
 
       <Card title="Destination details" subtitle="Targets for email and SMS delivery" icon={<Send className="h-5 w-5 text-primary-500" />}>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">Email address for tests</label>
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Email address for tests</label>
             <input
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+              className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
               placeholder="alerts@example.com"
               value={form.emailTarget}
               onChange={(event) => setForm((prev) => ({ ...prev, emailTarget: event.target.value }))}
             />
-            <p className="mt-1 text-xs text-neutral-500">Used for SMTP verification.</p>
+            <p className="mt-1 text-xs text-[var(--wp-color-text-muted)]">Used for SMTP verification.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">SMS number for tests</label>
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">SMS number for tests</label>
             <input
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+              className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
               placeholder="+15555555555"
               value={form.smsTarget}
               onChange={(event) => setForm((prev) => ({ ...prev, smsTarget: event.target.value }))}
             />
-            <p className="mt-1 text-xs text-neutral-500">Stored as your default SMS destination.</p>
+            <p className="mt-1 text-xs text-[var(--wp-color-text-muted)]">Stored as your default SMS destination.</p>
           </div>
         </div>
       </Card>
@@ -439,3 +439,4 @@ const NotificationSettingsPage = () => {
 };
 
 export default NotificationSettingsPage;
+

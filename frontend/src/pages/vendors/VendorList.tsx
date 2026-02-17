@@ -53,3 +53,4 @@ const VendorList = ({ vendors, onEdit }: Props) => {
 };
 
 export default VendorList;
+

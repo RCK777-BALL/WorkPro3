@@ -144,42 +144,42 @@ export default function GlobalAnalyticsDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-100">Global Analytics</h1>
-        <p className="text-sm text-slate-400">
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Global Analytics</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">
           Compare performance across all plants to spot trends and opportunities.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-          <p className="text-xs uppercase text-slate-500">Work Orders</p>
-          <p className="text-xl font-semibold text-slate-100">{totals.totalWorkOrders}</p>
+        <div className="rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+          <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Work Orders</p>
+          <p className="text-xl font-semibold text-[var(--wp-color-text)]">{totals.totalWorkOrders}</p>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-          <p className="text-xs uppercase text-slate-500">Avg PM Compliance</p>
-          <p className="text-xl font-semibold text-slate-100">{totals.averageCompliance}%</p>
+        <div className="rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+          <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Avg PM Compliance</p>
+          <p className="text-xl font-semibold text-[var(--wp-color-text)]">{totals.averageCompliance}%</p>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-          <p className="text-xs uppercase text-slate-500">Avg Wrench Time</p>
-          <p className="text-xl font-semibold text-slate-100">
+        <div className="rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+          <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Avg Wrench Time</p>
+          <p className="text-xl font-semibold text-[var(--wp-color-text)]">
             {totals.averageWrenchTime.toFixed(1)} hrs
           </p>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-          <p className="text-xs uppercase text-slate-500">Downtime Hours</p>
-          <p className="text-xl font-semibold text-slate-100">{totals.totalDowntime.toFixed(1)}</p>
+        <div className="rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+          <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Downtime Hours</p>
+          <p className="text-xl font-semibold text-[var(--wp-color-text)]">{totals.totalDowntime.toFixed(1)}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <label htmlFor="metric" className="text-sm text-slate-300">
+        <label htmlFor="metric" className="text-sm text-[var(--wp-color-text-muted)]">
           Metric
         </label>
         <select
           id="metric"
           value={metric}
           onChange={(event) => setMetric(event.target.value as MetricKey)}
-          className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+          className="rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-2 py-1 text-sm text-[var(--wp-color-text)]"
         >
           {METRICS.map((option) => (
             <option value={option.key} key={option.key}>
@@ -189,8 +189,8 @@ export default function GlobalAnalyticsDashboard() {
         </select>
       </div>
 
-      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-200">
+      <div className="rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+        <h2 className="mb-3 text-sm font-semibold text-[var(--wp-color-text)]">
           Plant Comparison ({METRICS.find((m) => m.key === metric)?.label})
         </h2>
         <div className="h-80">
@@ -214,3 +214,4 @@ export default function GlobalAnalyticsDashboard() {
     </div>
   );
 }
+

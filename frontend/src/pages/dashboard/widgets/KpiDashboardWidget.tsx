@@ -184,12 +184,12 @@ export function KpiDashboardWidget() {
             <Button size="sm" variant="secondary">
               <Download className="h-4 w-4" /> Export
             </Button>
-            <div className="absolute right-0 z-20 mt-2 hidden w-56 rounded-lg border border-slate-800 bg-slate-900 p-2 text-xs shadow-lg group-hover:block">
+            <div className="absolute right-0 z-20 mt-2 hidden w-56 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-2 text-xs shadow-lg group-hover:block">
               {exportLinks.map((link) => (
                 <button
                   key={link.href}
                   type="button"
-                  className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-slate-200 hover:bg-slate-800"
+                  className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface-elevated)]"
                   onClick={() => {
                     window.location.href = link.href;
                   }}
@@ -211,8 +211,8 @@ export function KpiDashboardWidget() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            <Timer className="h-4 w-4 text-indigo-300" />
+          <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]">
+            <Timer className="h-4 w-4 text-[var(--wp-color-primary)]" />
             MTTR Trend
           </div>
           {loading ? (
@@ -222,13 +222,13 @@ export function KpiDashboardWidget() {
               <SimpleLineChart data={mttrSeries} stroke="#6366f1" />
             </div>
           )}
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[var(--wp-color-text-muted)]">
             Avg: {formatAverage(mttrMtbf?.series.map((point) => point.mttrHours))} hours
           </p>
         </section>
 
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
+          <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]">
             <Activity className="h-4 w-4 text-emerald-300" />
             MTBF Trend
           </div>
@@ -239,13 +239,13 @@ export function KpiDashboardWidget() {
               <SimpleLineChart data={mtbfSeries} stroke="#22c55e" />
             </div>
           )}
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[var(--wp-color-text-muted)]">
             Avg: {formatAverage(mttrMtbf?.series.map((point) => point.mtbfHours))} hours
           </p>
         </section>
 
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
+          <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]">
             <AlertTriangle className="h-4 w-4 text-amber-300" />
             Backlog Aging Mix
           </div>
@@ -256,13 +256,13 @@ export function KpiDashboardWidget() {
               <SimpleBarChart data={backlogSeries} />
             </div>
           )}
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[var(--wp-color-text-muted)]">
             Open: {backlogAging?.totalOpen ?? 0} • Avg age {backlogAging?.averageAgeDays ?? 0} days
           </p>
         </section>
 
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
+          <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]">
             <Gauge className="h-4 w-4 text-sky-300" />
             SLA Resolution Trend
           </div>
@@ -273,7 +273,7 @@ export function KpiDashboardWidget() {
               <SimpleLineChart data={slaSeries} stroke="#0ea5e9" />
             </div>
           )}
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[var(--wp-color-text-muted)]">
             Avg resolution: {formatAverage(slaPerformance?.series.map((point) => point.resolutionRate))}%
           </p>
         </section>
@@ -281,8 +281,8 @@ export function KpiDashboardWidget() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr,1fr]">
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            <Gauge className="h-4 w-4 text-indigo-300" />
+          <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]">
+            <Gauge className="h-4 w-4 text-[var(--wp-color-primary)]" />
             Technician Utilization
           </div>
           {loading ? (
@@ -292,32 +292,32 @@ export function KpiDashboardWidget() {
               <SimplePieChart data={utilizationSeries} />
             </div>
           )}
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[var(--wp-color-text-muted)]">
             Avg utilization: {technicianUtilization?.averageUtilization ?? 0}%
           </p>
         </section>
         <section className="space-y-3">
-          <div className="text-sm text-slate-300">Top technicians</div>
+          <div className="text-sm text-[var(--wp-color-text-muted)]">Top technicians</div>
           <div className="space-y-3">
             {(technicianUtilization?.technicians ?? []).slice(0, 5).map((tech) => (
-              <div key={tech.technicianId} className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+              <div key={tech.technicianId} className="rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-100">{tech.technicianName}</span>
-                  <span className="text-slate-300">{tech.utilizationRate}%</span>
+                  <span className="text-[var(--wp-color-text)]">{tech.technicianName}</span>
+                  <span className="text-[var(--wp-color-text-muted)]">{tech.utilizationRate}%</span>
                 </div>
-                <div className="mt-2 h-1.5 w-full rounded-full bg-slate-800">
+                <div className="mt-2 h-1.5 w-full rounded-full bg-[var(--wp-color-surface-elevated)]">
                   <div
                     className="h-1.5 rounded-full bg-indigo-500"
                     style={{ width: `${Math.min(100, tech.utilizationRate)}%` }}
                   />
                 </div>
-                <div className="mt-2 text-xs text-slate-400">
+                <div className="mt-2 text-xs text-[var(--wp-color-text-muted)]">
                   {tech.hoursLogged}h logged of {tech.capacityHours}h
                 </div>
               </div>
             ))}
             {!loading && (technicianUtilization?.technicians.length ?? 0) === 0 ? (
-              <p className="text-sm text-slate-400">No technician utilization logged.</p>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">No technician utilization logged.</p>
             ) : null}
           </div>
         </section>
@@ -327,7 +327,7 @@ export function KpiDashboardWidget() {
 }
 
 function LoadingBox() {
-  return <div className="h-48 animate-pulse rounded-lg border border-dashed border-slate-800 bg-slate-900/40" />;
+  return <div className="h-48 animate-pulse rounded-lg border border-dashed border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)]" />;
 }
 
 function formatPeriod(value: string, granularity: 'day' | 'month') {
@@ -343,3 +343,4 @@ function formatAverage(values?: number[]) {
   const total = values.reduce((sum, value) => sum + value, 0) / values.length;
   return Number(total.toFixed(1));
 }
+

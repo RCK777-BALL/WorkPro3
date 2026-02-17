@@ -78,7 +78,7 @@ export default function AuthCallback() {
   }, [completeAuthSession, navigate, ssoToken]);
 
   return (
-    <div className="flex h-screen items-center justify-center bg-black text-white">
+    <div className="flex h-screen items-center justify-center bg-[var(--wp-color-background)] text-[var(--wp-color-text)]">
       <div className="space-y-3 rounded-lg bg-zinc-900 p-6 text-center">
         <p className="text-lg font-medium">Completing sign-in...</p>
         <p className="text-sm text-zinc-400">
@@ -88,3 +88,4 @@ export default function AuthCallback() {
     </div>
   );
 }
+

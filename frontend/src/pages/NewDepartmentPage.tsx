@@ -24,3 +24,4 @@ const NewDepartmentPage: React.FC = () => {
 };
 
 export default NewDepartmentPage;
+

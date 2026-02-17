@@ -14,19 +14,19 @@ const Vendors: React.FC = () => {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Vendors</h1>
-          <p className="text-sm text-neutral-500">Manage vendor contacts and purchasing terms.</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Vendors</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Manage vendor contacts and purchasing terms.</p>
         </div>
-        <button className="rounded bg-blue-600 px-4 py-2 text-sm text-white" onClick={() => setIsOpen(true)}>
+        <button className="rounded bg-[var(--wp-color-primary)] px-4 py-2 text-sm text-[var(--wp-color-text)]" onClick={() => setIsOpen(true)}>
           Add vendor
         </button>
       </header>
 
-      <div className="rounded-lg border border-neutral-200 bg-white p-4">
+      <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4">
         {vendors.length === 0 ? (
-          <p className="text-sm text-neutral-500">No vendors yet.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">No vendors yet.</p>
         ) : (
-          <ul className="space-y-2 text-sm text-neutral-700">
+          <ul className="space-y-2 text-sm text-[var(--wp-color-text)]">
             {vendors.map((vendor) => (
               <li key={vendor.name}>{vendor.name}</li>
             ))}
@@ -40,3 +40,4 @@ const Vendors: React.FC = () => {
 };
 
 export default Vendors;
+

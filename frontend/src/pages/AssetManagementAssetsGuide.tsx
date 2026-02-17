@@ -212,8 +212,8 @@ const AssetManagementAssetsGuide: React.FC = () => {
           <span className="text-sm font-medium">Guides / Asset Management / Assets</span>
         </div>
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-neutral-900">Assets Setup Guide</h1>
-          <p className="text-neutral-600 max-w-4xl">
+          <h1 className="text-3xl font-bold text-[var(--wp-color-text)]">Assets Setup Guide</h1>
+          <p className="text-[var(--wp-color-text-muted)] max-w-4xl">
             Stand up a clean asset library with the right hierarchy, context, and documentation so technicians can
             find equipment quickly and maintenance reports stay accurate.
           </p>
@@ -237,12 +237,12 @@ const AssetManagementAssetsGuide: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {readinessChecklist.map((item) => (
             <div key={item.title} className="flex gap-3">
-              <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center border border-primary-100">
+              <div className="h-10 w-10 rounded-lg bg-[var(--wp-color-surface)] flex items-center justify-center border border-primary-100">
                 {item.icon}
               </div>
               <div>
-                <p className="font-semibold text-neutral-900">{item.title}</p>
-                <p className="text-sm text-neutral-700">{item.description}</p>
+                <p className="font-semibold text-[var(--wp-color-text)]">{item.title}</p>
+                <p className="text-sm text-[var(--wp-color-text)]">{item.description}</p>
               </div>
             </div>
           ))}
@@ -256,10 +256,10 @@ const AssetManagementAssetsGuide: React.FC = () => {
               <div className="p-3 rounded-lg bg-primary-50">{step.icon}</div>
               <div className="space-y-3">
                 <div>
-                  <h2 className="text-xl font-semibold text-neutral-900">{step.title}</h2>
-                  <p className="text-neutral-600 mt-1">{step.description}</p>
+                  <h2 className="text-xl font-semibold text-[var(--wp-color-text)]">{step.title}</h2>
+                  <p className="text-[var(--wp-color-text-muted)] mt-1">{step.description}</p>
                 </div>
-                <ul className="space-y-2 list-disc list-inside text-neutral-700">
+                <ul className="space-y-2 list-disc list-inside text-[var(--wp-color-text)]">
                   {step.points.map((point) => (
                     <li key={point}>{point}</li>
                   ))}
@@ -277,25 +277,25 @@ const AssetManagementAssetsGuide: React.FC = () => {
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-neutral-900">Asset naming template</h2>
-              <p className="text-neutral-600">
+              <h2 className="text-xl font-semibold text-[var(--wp-color-text)]">Asset naming template</h2>
+              <p className="text-[var(--wp-color-text-muted)]">
                 Apply a consistent structure whenever you add or import equipment so every record is searchable and easy to
                 decode on the floor.
               </p>
             </div>
           </div>
-          <pre className="bg-neutral-900 text-neutral-50 text-sm p-4 rounded-md overflow-x-auto">
+          <pre className="bg-[var(--wp-color-surface)] text-[var(--wp-color-text)] text-sm p-4 rounded-md overflow-x-auto">
             <code>{namingTemplate}</code>
           </pre>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {namingFields.map((field) => (
-              <div key={field.label} className="border border-neutral-200 rounded-lg p-3 shadow-sm">
-                <p className="font-semibold text-neutral-900">{field.label}</p>
-                <p className="text-sm text-neutral-600">{field.description}</p>
+              <div key={field.label} className="border border-[var(--wp-color-border)] rounded-lg p-3 shadow-sm">
+                <p className="font-semibold text-[var(--wp-color-text)]">{field.label}</p>
+                <p className="text-sm text-[var(--wp-color-text-muted)]">{field.description}</p>
               </div>
             ))}
           </div>
-          <ul className="list-disc list-inside text-neutral-700 space-y-1">
+          <ul className="list-disc list-inside text-[var(--wp-color-text)] space-y-1">
             {namingTips.map((tip) => (
               <li key={tip}>{tip}</li>
             ))}
@@ -307,8 +307,8 @@ const AssetManagementAssetsGuide: React.FC = () => {
         <Card id="asset-explorer">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-neutral-900">Asset Explorer</h3>
-              <p className="text-neutral-700">
+              <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">Asset Explorer</h3>
+              <p className="text-[var(--wp-color-text)]">
                 See every asset you have created in one place. Use the list to jump into details or confirm your
                 hierarchy is complete.
               </p>
@@ -328,26 +328,26 @@ const AssetManagementAssetsGuide: React.FC = () => {
           <div className="mt-4 space-y-3">
             {assetError && <p className="text-red-600">{assetError}</p>}
             {isLoadingAssets && !assets.length ? (
-              <p className="text-neutral-600">Loading assets…</p>
+              <p className="text-[var(--wp-color-text-muted)]">Loading assets…</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {normalizedAssets.length === 0 ? (
-                  <p className="text-neutral-600">No assets have been created yet.</p>
+                  <p className="text-[var(--wp-color-text-muted)]">No assets have been created yet.</p>
                 ) : (
                   normalizedAssets.map((asset) => (
-                    <div key={asset.id} className="rounded-lg border border-neutral-200 p-3 shadow-sm">
-                      <p className="text-base font-semibold text-neutral-900">{asset.name}</p>
-                      <p className="text-sm text-neutral-600">
+                    <div key={asset.id} className="rounded-lg border border-[var(--wp-color-border)] p-3 shadow-sm">
+                      <p className="text-base font-semibold text-[var(--wp-color-text)]">{asset.name}</p>
+                      <p className="text-sm text-[var(--wp-color-text-muted)]">
                         {asset.type ?? 'Type not specified'}
                         {asset.location ? ` • ${asset.location}` : ''}
                       </p>
                       {(asset.department || asset.line || asset.station) && (
-                        <p className="text-xs text-neutral-500 mt-1">
+                        <p className="text-xs text-[var(--wp-color-text-muted)] mt-1">
                           {[asset.department, asset.line, asset.station].filter(Boolean).join(' › ')}
                         </p>
                       )}
                       {asset.createdAt && (
-                        <p className="text-xs text-neutral-500 mt-1">Created {new Date(asset.createdAt).toLocaleDateString()}</p>
+                        <p className="text-xs text-[var(--wp-color-text-muted)] mt-1">Created {new Date(asset.createdAt).toLocaleDateString()}</p>
                       )}
                     </div>
                   ))
@@ -362,3 +362,4 @@ const AssetManagementAssetsGuide: React.FC = () => {
 };
 
 export default AssetManagementAssetsGuide;
+

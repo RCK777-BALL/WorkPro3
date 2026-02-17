@@ -99,7 +99,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
         {department.lines.map((line) => (
           <div key={line.id} className="border rounded-md">
             <div
-              className="flex justify-between items-center p-2 bg-neutral-50 cursor-pointer"
+              className="flex justify-between items-center p-2 bg-[var(--wp-color-surface)] cursor-pointer"
               onClick={() => toggleLine(line.id)}
             >
               <input
@@ -135,7 +135,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                 {line.stations.map((station) => (
                   <div key={station.id} className="border rounded-md">
                     <div
-                      className="flex justify-between items-center p-2 bg-neutral-100 cursor-pointer"
+                      className="flex justify-between items-center p-2 bg-[var(--wp-color-surface-elevated)] cursor-pointer"
                       onClick={() => toggleStation(station.id)}
                     >
                       <input
@@ -235,21 +235,21 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                           );
                         })}
                         {station.assets.length === 0 && (
-                          <p className="text-neutral-500 text-sm ml-4">Add First Asset</p>
+                          <p className="text-[var(--wp-color-text-muted)] text-sm ml-4">Add First Asset</p>
                         )}
                       </div>
                     )}
                   </div>
                 ))}
                 {line.stations.length === 0 && (
-                  <p className="text-neutral-500 text-sm ml-2">Add First Station</p>
+                  <p className="text-[var(--wp-color-text-muted)] text-sm ml-2">Add First Station</p>
                 )}
               </div>
             )}
           </div>
         ))}
         {department.lines.length === 0 && (
-          <p className="text-neutral-500 text-sm">Add First Line</p>
+          <p className="text-[var(--wp-color-text-muted)] text-sm">Add First Line</p>
         )}
       </div>
 
@@ -261,3 +261,4 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
 };
 
 export default DepartmentHierarchyGrid;
+

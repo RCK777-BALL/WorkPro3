@@ -92,9 +92,9 @@ const FeatureFlagsPage = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm uppercase tracking-wide text-slate-400">Administration</p>
-          <h1 className="text-2xl font-semibold text-slate-100">Feature flags</h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm uppercase tracking-wide text-[var(--wp-color-text-muted)]">Administration</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Feature flags</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">
             Toggle access-controlled features and manage experimental rollouts.
           </p>
         </div>
@@ -109,43 +109,43 @@ const FeatureFlagsPage = () => {
         icon={<Flag className="h-4 w-4 text-emerald-400" />}
       >
         <div className="grid gap-4 md:grid-cols-4">
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className="flex flex-col gap-1 text-sm text-[var(--wp-color-text-muted)]">
             Key
             <input
               value={newFlag.key}
               onChange={(event) => setNewFlag((prev) => ({ ...prev, key: event.target.value }))}
-              className="rounded-lg border border-slate-700 bg-transparent px-3 py-2"
+              className="rounded-lg border border-[var(--wp-color-border)] bg-transparent px-3 py-2"
               placeholder="rbac_admin"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300">
+          <label className="flex flex-col gap-1 text-sm text-[var(--wp-color-text-muted)]">
             Name
             <input
               value={newFlag.name}
               onChange={(event) => setNewFlag((prev) => ({ ...prev, name: event.target.value }))}
-              className="rounded-lg border border-slate-700 bg-transparent px-3 py-2"
+              className="rounded-lg border border-[var(--wp-color-border)] bg-transparent px-3 py-2"
               placeholder="RBAC Administration"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-300 md:col-span-2">
+          <label className="flex flex-col gap-1 text-sm text-[var(--wp-color-text-muted)] md:col-span-2">
             Description
             <input
               value={newFlag.description}
               onChange={(event) => setNewFlag((prev) => ({ ...prev, description: event.target.value }))}
-              className="rounded-lg border border-slate-700 bg-transparent px-3 py-2"
+              className="rounded-lg border border-[var(--wp-color-border)] bg-transparent px-3 py-2"
               placeholder="Describe what this flag controls"
             />
           </label>
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <label className="inline-flex items-center gap-2 text-sm text-slate-300">
+          <label className="inline-flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]">
             <input
               type="checkbox"
               checked={newFlag.enabled}
               onChange={(event) =>
                 setNewFlag((prev) => ({ ...prev, enabled: event.target.checked }))
               }
-              className="h-4 w-4 rounded border-slate-600 bg-transparent"
+              className="h-4 w-4 rounded border-[var(--wp-color-border)] bg-transparent"
             />
             Enable immediately
           </label>
@@ -163,13 +163,13 @@ const FeatureFlagsPage = () => {
           {flags.map((flag) => (
             <div
               key={flag._id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950 px-4 py-3"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-4 py-3"
             >
               <div>
-                <p className="text-sm font-semibold text-slate-100">{flag.name || flag.key}</p>
-                <p className="text-xs text-slate-400">{flag.key}</p>
+                <p className="text-sm font-semibold text-[var(--wp-color-text)]">{flag.name || flag.key}</p>
+                <p className="text-xs text-[var(--wp-color-text-muted)]">{flag.key}</p>
                 {flag.description && (
-                  <p className="text-xs text-slate-500">{flag.description}</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">{flag.description}</p>
                 )}
               </div>
               <button
@@ -179,12 +179,12 @@ const FeatureFlagsPage = () => {
                 className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold transition ${
                   flag.enabled
                     ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                    : 'border-slate-700 text-slate-400'
+                    : 'border-[var(--wp-color-border)] text-[var(--wp-color-text-muted)]'
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    flag.enabled ? 'bg-emerald-400' : 'bg-slate-500'
+                    flag.enabled ? 'bg-emerald-400' : 'bg-[color-mix(in srgb,var(--wp-color-text) 45%, transparent)]'
                   }`}
                 />
                 {flag.enabled ? 'Enabled' : 'Disabled'}
@@ -192,7 +192,7 @@ const FeatureFlagsPage = () => {
             </div>
           ))}
           {!loading && flags.length === 0 && (
-            <p className="text-sm text-slate-400">No feature flags found.</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">No feature flags found.</p>
           )}
         </div>
       </Card>
@@ -201,3 +201,4 @@ const FeatureFlagsPage = () => {
 };
 
 export default FeatureFlagsPage;
+

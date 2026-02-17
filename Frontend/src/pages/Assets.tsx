@@ -22,19 +22,19 @@ const Assets: React.FC = () => {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Assets</h1>
-          <p className="text-sm text-neutral-500">Track critical equipment, docs, and history.</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Assets</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Track critical equipment, docs, and history.</p>
         </div>
-        <button className="rounded bg-blue-600 px-4 py-2 text-sm text-white" onClick={() => setIsOpen(true)}>
+        <button className="rounded bg-[var(--wp-color-primary)] px-4 py-2 text-sm text-[var(--wp-color-text)]" onClick={() => setIsOpen(true)}>
           Add asset
         </button>
       </header>
 
       <UploadDropzone onFiles={() => undefined} />
 
-      <div className="rounded-lg border border-neutral-200 bg-white">
+      <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]">
         <table className="w-full text-sm">
-          <thead className="border-b border-neutral-200 text-left text-xs uppercase text-neutral-500">
+          <thead className="border-b border-[var(--wp-color-border)] text-left text-xs uppercase text-[var(--wp-color-text-muted)]">
             <tr>
               <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Status</th>
@@ -42,9 +42,9 @@ const Assets: React.FC = () => {
           </thead>
           <tbody>
             {assets.map((asset) => (
-              <tr key={asset.id} className="border-b border-neutral-100">
-                <td className="px-4 py-2 text-neutral-900">{asset.name}</td>
-                <td className="px-4 py-2 text-neutral-600">{asset.status ?? 'Active'}</td>
+              <tr key={asset.id} className="border-b border-[var(--wp-color-border)]">
+                <td className="px-4 py-2 text-[var(--wp-color-text)]">{asset.name}</td>
+                <td className="px-4 py-2 text-[var(--wp-color-text-muted)]">{asset.status ?? 'Active'}</td>
               </tr>
             ))}
           </tbody>
@@ -57,3 +57,4 @@ const Assets: React.FC = () => {
 };
 
 export default Assets;
+

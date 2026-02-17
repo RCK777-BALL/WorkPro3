@@ -14,12 +14,12 @@ import {
   type RequestTypeItem,
 } from '@/api/requestTypes';
 
-const cardClass = 'rounded-xl border border-neutral-200 bg-white p-5 shadow-sm';
+const cardClass = 'rounded-xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-5 shadow-sm';
 
 const inputClass =
-  'mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none';
+  'mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none';
 
-const labelClass = 'text-sm font-medium text-neutral-700';
+const labelClass = 'text-sm font-medium text-[var(--wp-color-text)]';
 
 const AttachmentRow = ({
   attachment,
@@ -30,7 +30,7 @@ const AttachmentRow = ({
   onChange: (update: RequestAttachmentDefinition) => void;
   onRemove: () => void;
 }) => (
-  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 md:flex-row md:items-end">
+  <div className="flex flex-col gap-2 rounded-lg border border-[var(--wp-color-border)] p-3 md:flex-row md:items-end">
     <div className="flex-1">
       <label className={labelClass}>Key</label>
       <input
@@ -59,7 +59,7 @@ const AttachmentRow = ({
       />
     </div>
     <div className="flex items-center gap-2">
-      <label className="text-sm text-neutral-600">
+      <label className="text-sm text-[var(--wp-color-text-muted)]">
         <input
           type="checkbox"
           className="mr-2"
@@ -84,7 +84,7 @@ const FieldRow = ({
   onChange: (update: RequestFieldDefinition) => void;
   onRemove: () => void;
 }) => (
-  <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 md:flex-row md:items-end">
+  <div className="flex flex-col gap-2 rounded-lg border border-[var(--wp-color-border)] p-3 md:flex-row md:items-end">
     <div className="flex-1">
       <label className={labelClass}>Key</label>
       <input className={inputClass} value={field.key} onChange={(e) => onChange({ ...field, key: e.target.value })} />
@@ -112,7 +112,7 @@ const FieldRow = ({
       </select>
     </div>
     <div className="flex items-center gap-2">
-      <label className="text-sm text-neutral-600">
+      <label className="text-sm text-[var(--wp-color-text-muted)]">
         <input
           type="checkbox"
           className="mr-2"
@@ -218,8 +218,8 @@ export default function RequestFormBuilder() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Request form builder</h1>
-          <p className="text-sm text-neutral-500">
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Request form builder</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">
             Define request types, required fields, and attachment expectations before publishing the portal form.
           </p>
         </div>
@@ -229,10 +229,10 @@ export default function RequestFormBuilder() {
         <section className={cardClass}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900">Request types</h2>
-              <p className="text-sm text-neutral-500">Set required fields and attachment expectations.</p>
+              <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Request types</h2>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">Set required fields and attachment expectations.</p>
             </div>
-            {loadingTypes && <span className="text-xs text-neutral-500">Loading…</span>}
+            {loadingTypes && <span className="text-xs text-[var(--wp-color-text-muted)]">Loading…</span>}
           </div>
           <div className="mt-4 space-y-3">
             <div>
@@ -272,7 +272,7 @@ export default function RequestFormBuilder() {
               />
             </div>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-800">Attachments</h3>
+              <h3 className="text-sm font-semibold text-[var(--wp-color-text)]">Attachments</h3>
               <button
                 type="button"
                 className="text-sm font-semibold text-primary-600"
@@ -282,7 +282,7 @@ export default function RequestFormBuilder() {
               </button>
             </div>
             <div className="space-y-2">
-              {attachments.length === 0 && <p className="text-sm text-neutral-500">No attachments defined yet.</p>}
+              {attachments.length === 0 && <p className="text-sm text-[var(--wp-color-text-muted)]">No attachments defined yet.</p>}
               {attachments.map((attachment, index) => (
                 <AttachmentRow
                   key={attachment.key || index}
@@ -296,7 +296,7 @@ export default function RequestFormBuilder() {
             </div>
             <button
               type="button"
-              className="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60"
+              className="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-[var(--wp-color-text)] transition hover:bg-primary-700 disabled:opacity-60"
               onClick={handleCreateType}
               disabled={creatingType}
             >
@@ -308,8 +308,8 @@ export default function RequestFormBuilder() {
         <section className={cardClass}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900">Form designer</h2>
-              <p className="text-sm text-neutral-500">Bind a portal slug to a request type and validation schema.</p>
+              <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">Form designer</h2>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">Bind a portal slug to a request type and validation schema.</p>
             </div>
           </div>
           <div className="mt-4 space-y-3">
@@ -343,13 +343,13 @@ export default function RequestFormBuilder() {
             </div>
 
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-800">Fields</h3>
+              <h3 className="text-sm font-semibold text-[var(--wp-color-text)]">Fields</h3>
               <button type="button" className="text-sm font-semibold text-primary-600" onClick={addField}>
                 Add field
               </button>
             </div>
             <div className="space-y-2">
-              {fields.length === 0 && <p className="text-sm text-neutral-500">No fields configured yet.</p>}
+              {fields.length === 0 && <p className="text-sm text-[var(--wp-color-text-muted)]">No fields configured yet.</p>}
               {fields.map((field, index) => (
                 <FieldRow
                   key={field.key || index}
@@ -361,13 +361,13 @@ export default function RequestFormBuilder() {
             </div>
 
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-800">Attachment requirements</h3>
+              <h3 className="text-sm font-semibold text-[var(--wp-color-text)]">Attachment requirements</h3>
               <button type="button" className="text-sm font-semibold text-primary-600" onClick={addAttachment}>
                 Add requirement
               </button>
             </div>
             <div className="space-y-2">
-              {attachments.length === 0 && <p className="text-sm text-neutral-500">No attachment requirements yet.</p>}
+              {attachments.length === 0 && <p className="text-sm text-[var(--wp-color-text-muted)]">No attachment requirements yet.</p>}
               {attachments.map((attachment, index) => (
                 <AttachmentRow
                   key={`${attachment.key}-form-${index}`}
@@ -382,7 +382,7 @@ export default function RequestFormBuilder() {
 
             <button
               type="button"
-              className="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60"
+              className="rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-[var(--wp-color-text)] transition hover:bg-primary-700 disabled:opacity-60"
               onClick={handleSaveForm}
               disabled={savingForm}
             >
@@ -394,3 +394,4 @@ export default function RequestFormBuilder() {
     </div>
   );
 }
+

@@ -58,23 +58,23 @@ const QuickAddDialog = ({ open, mode, departments, onCancel, onConfirm }: QuickA
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4">
-      <div className="dark w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-6 text-white shadow-2xl">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[color-mix(in_srgb,var(--wp-color-background)_70%,transparent)] px-4">
+      <div className="dark w-full max-w-md rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] p-6 text-[var(--wp-color-text)] shadow-2xl">
         <div>
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
-          <p className="mt-2 text-sm text-white/70">{description}</p>
+          <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">{title}</h2>
+          <p className="mt-2 text-sm text-[var(--wp-color-text)]/70">{description}</p>
         </div>
 
         <div className="mt-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-white" htmlFor="quick-add-department">
+            <label className="block text-sm font-medium text-[var(--wp-color-text)]" htmlFor="quick-add-department">
               Department
             </label>
             <select
               id="quick-add-department"
               value={selectedDepartmentId}
               onChange={(event) => setSelectedDepartmentId(event.target.value)}
-              className="mt-2 w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="mt-2 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               {eligibleDepartments.map((department) => (
                 <option key={department.id} value={department.id}>
@@ -83,13 +83,13 @@ const QuickAddDialog = ({ open, mode, departments, onCancel, onConfirm }: QuickA
               ))}
             </select>
             {eligibleDepartments.length === 0 && (
-              <p className="mt-2 text-xs text-white/60">No departments available.</p>
+              <p className="mt-2 text-xs text-[var(--wp-color-text)]/60">No departments available.</p>
             )}
           </div>
 
           {mode === 'station' && (
             <div>
-              <label className="block text-sm font-medium text-white" htmlFor="quick-add-line">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)]" htmlFor="quick-add-line">
                 Line
               </label>
               <select
@@ -97,7 +97,7 @@ const QuickAddDialog = ({ open, mode, departments, onCancel, onConfirm }: QuickA
                 value={selectedLineId}
                 onChange={(event) => setSelectedLineId(event.target.value)}
                 disabled={!selectedDepartment || selectedDepartment.lines.length === 0}
-                className="mt-2 w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {(selectedDepartment?.lines ?? []).map((line) => (
                   <option key={line.id} value={line.id}>
@@ -106,7 +106,7 @@ const QuickAddDialog = ({ open, mode, departments, onCancel, onConfirm }: QuickA
                 ))}
               </select>
               {selectedDepartment && selectedDepartment.lines.length === 0 && (
-                <p className="mt-2 text-xs text-white/60">This department does not have any lines yet.</p>
+                <p className="mt-2 text-xs text-[var(--wp-color-text)]/60">This department does not have any lines yet.</p>
               )}
             </div>
           )}
@@ -134,3 +134,4 @@ const QuickAddDialog = ({ open, mode, departments, onCancel, onConfirm }: QuickA
 };
 
 export default QuickAddDialog;
+

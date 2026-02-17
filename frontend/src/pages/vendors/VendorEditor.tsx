@@ -103,15 +103,15 @@ const VendorEditor = () => {
   };
 
   if (isEdit && isLoading) {
-    return <p className="text-sm text-neutral-500">Loading vendor…</p>;
+    return <p className="text-sm text-[var(--wp-color-text-muted)]">Loading vendor…</p>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">{isEdit ? form.name || 'Vendor' : 'Add vendor'}</h1>
-          <p className="text-sm text-neutral-500">Maintain supplier records, contacts, and related POs.</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">{isEdit ? form.name || 'Vendor' : 'Add vendor'}</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Maintain supplier records, contacts, and related POs.</p>
         </div>
         {isEdit && (
           <div className="flex gap-2">
@@ -161,9 +161,9 @@ const VendorEditor = () => {
                 }
               />
               <div>
-                <label className="block text-sm font-medium text-neutral-700">Status</label>
+                <label className="block text-sm font-medium text-[var(--wp-color-text)]">Status</label>
                 <select
-                  className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2"
                   value={form.status ?? 'active'}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     setForm((prev) => ({ ...prev, status: e.target.value as Vendor['status'] }))
@@ -186,17 +186,17 @@ const VendorEditor = () => {
         </Card>
 
         <Card title="Spend" subtitle="Approved spend with this vendor" className="space-y-2">
-          <p className="text-3xl font-semibold text-neutral-900">${spend.toLocaleString()}</p>
-          <p className="text-sm text-neutral-500">Includes closed and open purchase orders.</p>
+          <p className="text-3xl font-semibold text-[var(--wp-color-text)]">${spend.toLocaleString()}</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Includes closed and open purchase orders.</p>
         </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Contacts" subtitle="Keep buyer and sales rep info up to date" className="lg:col-span-2 space-y-3">
-          {!contacts.length && <p className="text-sm text-neutral-500">No contacts added yet.</p>}
+          {!contacts.length && <p className="text-sm text-[var(--wp-color-text-muted)]">No contacts added yet.</p>}
           <div className="space-y-3">
             {contacts.map((contact, index) => (
-              <div key={contact.id} className="flex flex-col gap-2 rounded-md border border-neutral-200 p-3 md:flex-row md:items-center md:gap-4">
+              <div key={contact.id} className="flex flex-col gap-2 rounded-md border border-[var(--wp-color-border)] p-3 md:flex-row md:items-center md:gap-4">
                 <Input
                   label="Name"
                   value={contact.name}
@@ -242,12 +242,12 @@ const VendorEditor = () => {
         </Card>
 
         <Card title="Attachments" subtitle="Contracts, W-9s, and safety docs" className="space-y-3">
-          {!attachments.length && <p className="text-sm text-neutral-500">No attachments on file.</p>}
-          <ul className="space-y-2 text-sm text-neutral-700">
+          {!attachments.length && <p className="text-sm text-[var(--wp-color-text-muted)]">No attachments on file.</p>}
+          <ul className="space-y-2 text-sm text-[var(--wp-color-text)]">
             {attachments.map((file) => (
-              <li key={file.id} className="flex items-center justify-between rounded-md border border-neutral-200 px-3 py-2">
+              <li key={file.id} className="flex items-center justify-between rounded-md border border-[var(--wp-color-border)] px-3 py-2">
                 <span>{file.name}</span>
-                <span className="text-xs text-neutral-500">
+                <span className="text-xs text-[var(--wp-color-text-muted)]">
                   {file.uploadedBy ? `Uploaded by ${file.uploadedBy}` : 'Uploaded'}{' '}
                   {file.uploadedAt ? formatDate(file.uploadedAt) : ''}
                 </span>
@@ -290,14 +290,14 @@ const VendorEditor = () => {
           </Button>
           <div className="space-y-3">
             {notes.map((note) => (
-              <div key={note.id} className="rounded-md border border-neutral-200 p-3">
-                <p className="text-sm text-neutral-800">{note.body}</p>
-                <p className="mt-1 text-xs text-neutral-500">
+              <div key={note.id} className="rounded-md border border-[var(--wp-color-border)] p-3">
+                <p className="text-sm text-[var(--wp-color-text)]">{note.body}</p>
+                <p className="mt-1 text-xs text-[var(--wp-color-text-muted)]">
                   {note.author ?? 'System'} • {note.createdAt ? formatDate(note.createdAt) : 'Just now'}
                 </p>
               </div>
             ))}
-            {!notes.length && <p className="text-sm text-neutral-500">No notes yet.</p>}
+            {!notes.length && <p className="text-sm text-[var(--wp-color-text-muted)]">No notes yet.</p>}
           </div>
         </Card>
       </div>
@@ -306,3 +306,4 @@ const VendorEditor = () => {
 };
 
 export default VendorEditor;
+

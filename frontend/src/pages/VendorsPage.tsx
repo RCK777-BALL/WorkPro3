@@ -43,8 +43,8 @@ const VendorsPage = () => {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Vendors</h1>
-          <p className="text-sm text-neutral-500">Manage preferred suppliers and keep contact details current.</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Vendors</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Manage preferred suppliers and keep contact details current.</p>
         </div>
         <Button as={Link} to="/vendors/new" variant="primary">
           Add vendor
@@ -99,3 +99,4 @@ const VendorsPage = () => {
 };
 
 export default VendorsPage;
+

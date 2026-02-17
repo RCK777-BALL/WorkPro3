@@ -122,12 +122,12 @@ export default function Login() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-black">
-      <div className="w-96 space-y-6 rounded-lg bg-zinc-900 p-6 text-white">
+    <div className="flex h-screen items-center justify-center bg-[var(--wp-color-background)]">
+      <div className="w-96 space-y-6 rounded-lg bg-zinc-900 p-6 text-[var(--wp-color-text)]">
         <form onSubmit={handleLogin} className="space-y-4">
           <h2 className="text-center text-lg font-medium">Access your command center</h2>
           <input
-            className="w-full rounded bg-zinc-800 p-2 text-white"
+            className="w-full rounded bg-zinc-800 p-2 text-[var(--wp-color-text)]"
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -135,7 +135,7 @@ export default function Login() {
             autoComplete="email"
           />
           <input
-            className="w-full rounded bg-zinc-800 p-2 text-white"
+            className="w-full rounded bg-zinc-800 p-2 text-[var(--wp-color-text)]"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -145,7 +145,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="w-full rounded bg-indigo-600 p-2 text-[var(--wp-color-text)] hover:bg-indigo-500 disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
@@ -156,7 +156,7 @@ export default function Login() {
             onClick={() => {
               window.location.href = `/api/auth/oauth/google${stateQuery}`;
             }}
-            className="w-full rounded border border-white/20 p-2 text-sm font-medium hover:bg-white/10"
+            className="w-full rounded border border-white/20 p-2 text-sm font-medium hover:bg-[var(--wp-color-surface)]/10"
           >
             Continue with Google Workspace
           </button>
@@ -165,7 +165,7 @@ export default function Login() {
             onClick={() => {
               window.location.href = `/api/auth/oidc/azure${stateQuery}`;
             }}
-            className="w-full rounded border border-white/20 p-2 text-sm font-medium hover:bg-white/10"
+            className="w-full rounded border border-white/20 p-2 text-sm font-medium hover:bg-[var(--wp-color-surface)]/10"
           >
             Continue with Azure AD
           </button>
@@ -174,3 +174,4 @@ export default function Login() {
     </div>
   );
 }
+

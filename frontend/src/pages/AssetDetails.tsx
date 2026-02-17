@@ -55,88 +55,88 @@ const AssetDetails = () => {
     const downtimeMinutes = data.downtimeLogs?.reduce((sum, log) => sum + (log.durationMinutes ?? 0), 0) ?? 0;
     return (
       <div className="space-y-6">
-        <section className="rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-950 to-neutral-900/70 p-6">
+        <section className="rounded-3xl border border-[var(--wp-color-border)] bg-gradient-to-br from-neutral-950 to-neutral-900/70 p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wide text-indigo-300">Asset</p>
-              <h1 className="text-3xl font-bold text-white">{data.asset.name}</h1>
-              {data.asset.description && <p className="mt-2 text-sm text-neutral-300">{data.asset.description}</p>}
+              <p className="text-xs uppercase tracking-wide text-[var(--wp-color-primary)]">Asset</p>
+              <h1 className="text-3xl font-bold text-[var(--wp-color-text)]">{data.asset.name}</h1>
+              {data.asset.description && <p className="mt-2 text-sm text-[var(--wp-color-text-muted)]">{data.asset.description}</p>}
             </div>
-            <dl className="grid grid-cols-2 gap-4 text-sm text-neutral-300">
+            <dl className="grid grid-cols-2 gap-4 text-sm text-[var(--wp-color-text-muted)]">
               <div>
-                <dt className="text-xs uppercase text-neutral-500">Status</dt>
-                <dd className="text-lg font-semibold text-indigo-200">{formatField(data.asset.status)}</dd>
+                <dt className="text-xs uppercase text-[var(--wp-color-text-muted)]">Status</dt>
+                <dd className="text-lg font-semibold text-[var(--wp-color-primary)]">{formatField(data.asset.status)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-neutral-500">Criticality</dt>
-                <dd className="text-lg font-semibold text-neutral-100">{formatField(data.asset.criticality)}</dd>
+                <dt className="text-xs uppercase text-[var(--wp-color-text-muted)]">Criticality</dt>
+                <dd className="text-lg font-semibold text-[var(--wp-color-text)]">{formatField(data.asset.criticality)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-neutral-500">Type</dt>
+                <dt className="text-xs uppercase text-[var(--wp-color-text-muted)]">Type</dt>
                 <dd>{formatField(data.asset.type)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-neutral-500">Location</dt>
+                <dt className="text-xs uppercase text-[var(--wp-color-text-muted)]">Location</dt>
                 <dd>{formatField(data.asset.location)}</dd>
               </div>
             </dl>
           </div>
-          <dl className="mt-6 grid gap-4 text-sm text-neutral-300 md:grid-cols-2 lg:grid-cols-3">
+          <dl className="mt-6 grid gap-4 text-sm text-[var(--wp-color-text-muted)] md:grid-cols-2 lg:grid-cols-3">
             <div>
-              <dt className="text-xs uppercase text-neutral-500">Serial number</dt>
+              <dt className="text-xs uppercase text-[var(--wp-color-text-muted)]">Serial number</dt>
               <dd>{formatField(data.asset.serialNumber)}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase text-neutral-500">Manufacturer</dt>
+              <dt className="text-xs uppercase text-[var(--wp-color-text-muted)]">Manufacturer</dt>
               <dd>{formatField(data.asset.manufacturer)}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase text-neutral-500">Model</dt>
+              <dt className="text-xs uppercase text-[var(--wp-color-text-muted)]">Model</dt>
               <dd>{formatField(data.asset.modelName)}</dd>
             </div>
           </dl>
         </section>
         {data.reliability ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-              <p className="text-xs uppercase text-neutral-500">MTBF</p>
-              <p className="text-2xl font-semibold text-white">
-                {data.reliability.mtbfHours.toFixed(2)} <span className="text-sm text-neutral-400">hours</span>
+            <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+              <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">MTBF</p>
+              <p className="text-2xl font-semibold text-[var(--wp-color-text)]">
+                {data.reliability.mtbfHours.toFixed(2)} <span className="text-sm text-[var(--wp-color-text-muted)]">hours</span>
               </p>
-              <p className="text-xs text-neutral-400">Mean time between failures</p>
+              <p className="text-xs text-[var(--wp-color-text-muted)]">Mean time between failures</p>
             </div>
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-              <p className="text-xs uppercase text-neutral-500">MTTR</p>
-              <p className="text-2xl font-semibold text-white">
-                {data.reliability.mttrHours.toFixed(2)} <span className="text-sm text-neutral-400">hours</span>
+            <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+              <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">MTTR</p>
+              <p className="text-2xl font-semibold text-[var(--wp-color-text)]">
+                {data.reliability.mttrHours.toFixed(2)} <span className="text-sm text-[var(--wp-color-text-muted)]">hours</span>
               </p>
-              <p className="text-xs text-neutral-400">Mean time to repair</p>
+              <p className="text-xs text-[var(--wp-color-text-muted)]">Mean time to repair</p>
             </div>
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-              <p className="text-xs uppercase text-neutral-500">Recorded downtime</p>
-              <p className="text-2xl font-semibold text-white">
-                {(downtimeMinutes / 60).toFixed(1)} <span className="text-sm text-neutral-400">hours</span>
+            <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+              <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Recorded downtime</p>
+              <p className="text-2xl font-semibold text-[var(--wp-color-text)]">
+                {(downtimeMinutes / 60).toFixed(1)} <span className="text-sm text-[var(--wp-color-text-muted)]">hours</span>
               </p>
-              <p className="text-xs text-neutral-400">{data.downtimeLogs.length} events logged</p>
+              <p className="text-xs text-[var(--wp-color-text-muted)]">{data.downtimeLogs.length} events logged</p>
             </div>
           </div>
         ) : null}
         <div className="grid gap-6 lg:grid-cols-3">
-          <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
+          <section className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] p-4">
             <header className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">Recent history</h2>
+              <h2 className="text-base font-semibold text-[var(--wp-color-text)]">Recent history</h2>
             </header>
             <AssetHistoryTimeline entries={data.history.slice(0, 6)} isLoading={isLoading} />
           </section>
-          <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
+          <section className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] p-4">
             <header className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">Open work orders</h2>
+              <h2 className="text-base font-semibold text-[var(--wp-color-text)]">Open work orders</h2>
             </header>
             <AssetWorkOrderList workOrders={data.openWorkOrders.slice(0, 4)} isLoading={isLoading} />
           </section>
-          <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
+          <section className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] p-4">
             <header className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">Downtime</h2>
+              <h2 className="text-base font-semibold text-[var(--wp-color-text)]">Downtime</h2>
             </header>
             <DowntimeHistory logs={data.downtimeLogs} isLoading={isLoading} maxItems={5} />
           </section>
@@ -170,23 +170,23 @@ const AssetDetails = () => {
         return data?.asset ? (
           <AssetLifecycle asset={data.asset} />
         ) : (
-          <p className="text-sm text-neutral-500">Asset lifecycle data unavailable.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Asset lifecycle data unavailable.</p>
         );
       case 'comments':
         return id ? (
           <CommentThread entityType="Asset" entityId={id} />
         ) : (
-          <p className="text-sm text-neutral-500">Asset id required to load comments.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Asset id required to load comments.</p>
         );
       default:
-        return overviewContent ?? <p className="text-sm text-neutral-500">Select an asset to view details.</p>;
+        return overviewContent ?? <p className="text-sm text-[var(--wp-color-text-muted)]">Select an asset to view details.</p>;
     }
   };
 
   if (!id) {
     return (
       <div className="p-6">
-        <p className="text-sm text-neutral-500">Provide an asset id to view details.</p>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">Provide an asset id to view details.</p>
       </div>
     );
   }
@@ -194,8 +194,8 @@ const AssetDetails = () => {
   return (
     <div className="space-y-6 p-6">
       <header>
-        <p className="text-xs uppercase tracking-wide text-indigo-300">Asset insights</p>
-        <h1 className="text-3xl font-bold text-white">{assetName}</h1>
+        <p className="text-xs uppercase tracking-wide text-[var(--wp-color-primary)]">Asset insights</p>
+        <h1 className="text-3xl font-bold text-[var(--wp-color-text)]">{assetName}</h1>
         {!!error && (
           <p className="text-sm text-rose-300">
             {error instanceof Error ? error.message : 'Unable to load asset details.'}
@@ -214,7 +214,7 @@ const AssetDetails = () => {
             {warrantyStatus.status === 'expiring' && 'Warranty expiring soon'}
             {warrantyStatus.status === 'active' && 'Warranty active'}
             {warrantyStatus.daysRemaining !== undefined && (
-              <span className="text-[11px] font-normal text-white/70">
+              <span className="text-[11px] font-normal text-[var(--wp-color-text)]/70">
                 {Math.abs(warrantyStatus.daysRemaining)} day{Math.abs(warrantyStatus.daysRemaining) === 1 ? '' : 's'} remaining
               </span>
             )}
@@ -240,8 +240,8 @@ const AssetDetails = () => {
             className={clsx(
               'rounded-full px-4 py-2 text-sm font-semibold transition',
               activeTab === tab.id
-                ? 'bg-indigo-500/90 text-white shadow'
-                : 'bg-neutral-900/60 text-neutral-300 hover:text-white',
+                ? 'bg-indigo-500/90 text-[var(--wp-color-text)] shadow'
+                : 'bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] text-[var(--wp-color-text-muted)] hover:text-[var(--wp-color-text)]',
             )}
             onClick={() => setActiveTab(tab.id)}
           >
@@ -249,7 +249,7 @@ const AssetDetails = () => {
           </button>
         ))}
       </nav>
-      <section className="rounded-3xl border border-neutral-900/80 bg-neutral-950/60 p-6">
+      <section className="rounded-3xl border border-[var(--wp-color-border)]/80 bg-[color-mix(in_srgb,var(--wp-color-background)_70%,transparent)] p-6">
         {renderTabContent()}
       </section>
     </div>
@@ -257,3 +257,4 @@ const AssetDetails = () => {
 };
 
 export default AssetDetails;
+

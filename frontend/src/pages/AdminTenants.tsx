@@ -131,3 +131,4 @@ const AdminTenants = () => {
 };
 
 export default AdminTenants;
+

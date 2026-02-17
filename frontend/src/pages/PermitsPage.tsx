@@ -281,8 +281,8 @@ export default function PermitsPage() {
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-neutral-900 dark:text-white">Permits</h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          <h1 className="text-3xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Permits</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
             Monitor pending approvals, active work permits, and isolation readiness.
           </p>
         </div>
@@ -306,28 +306,28 @@ export default function PermitsPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Permit-to-work builder" subtitle="Strictly typed inputs for new permits and approvals">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+            <label className="text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Permit number
               <input
-                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                className="mt-1 w-full rounded border border-[var(--wp-color-border)] p-2 dark:border-[var(--wp-color-border)]"
                 value={builder.permitNumber}
                 onChange={(e) => setBuilder((prev) => ({ ...prev, permitNumber: e.target.value }))}
                 placeholder="PTW-001"
               />
             </label>
-            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+            <label className="text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Type
               <input
-                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                className="mt-1 w-full rounded border border-[var(--wp-color-border)] p-2 dark:border-[var(--wp-color-border)]"
                 value={builder.type}
                 onChange={(e) => setBuilder((prev) => ({ ...prev, type: e.target.value }))}
                 placeholder="Hot work"
               />
             </label>
-            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+            <label className="text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Risk level
               <select
-                  className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                  className="mt-1 w-full rounded border border-[var(--wp-color-border)] p-2 dark:border-[var(--wp-color-border)]"
                   value={builder.riskLevel}
                   onChange={(e) => setBuilder((prev) => ({ ...prev, riskLevel: e.target.value as Permit['riskLevel'] }))}
                 >
@@ -337,38 +337,38 @@ export default function PermitsPage() {
                   <option value="critical">Critical</option>
                 </select>
             </label>
-            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+            <label className="text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Watchers (comma separated)
               <input
-                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                className="mt-1 w-full rounded border border-[var(--wp-color-border)] p-2 dark:border-[var(--wp-color-border)]"
                 value={builder.watchers}
                 onChange={(e) => setBuilder((prev) => ({ ...prev, watchers: e.target.value }))}
                 placeholder="ops@example.com"
               />
             </label>
           </div>
-          <label className="mt-3 block text-sm text-neutral-700 dark:text-neutral-200">
+          <label className="mt-3 block text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Description
             <textarea
-              className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+              className="mt-1 w-full rounded border border-[var(--wp-color-border)] p-2 dark:border-[var(--wp-color-border)]"
               value={builder.description}
               onChange={(e) => setBuilder((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Scope, hazards, and mitigating controls"
             />
           </label>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+            <label className="text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Approval roles (one per line)
               <textarea
-                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                className="mt-1 w-full rounded border border-[var(--wp-color-border)] p-2 dark:border-[var(--wp-color-border)]"
                 value={builder.approvals.join("\n")}
                 onChange={(e) => setBuilder((prev) => ({ ...prev, approvals: e.target.value.split("\n").filter(Boolean) }))}
               />
             </label>
-            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+            <label className="text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Isolation steps
               <textarea
-                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                className="mt-1 w-full rounded border border-[var(--wp-color-border)] p-2 dark:border-[var(--wp-color-border)]"
                 value={builder.isolationSteps.join("\n")}
                 onChange={(e) =>
                   setBuilder((prev) => ({ ...prev, isolationSteps: e.target.value.split("\n").filter(Boolean) }))
@@ -389,13 +389,13 @@ export default function PermitsPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-300">Permit</p>
-                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">
+                  <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Permit</p>
+                  <p className="font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                     {selectedPermit.permitNumber} · {selectedPermit.type}
                   </p>
                 </div>
                 <select
-                  className="rounded border border-neutral-200 p-2 text-sm dark:border-neutral-700"
+                  className="rounded border border-[var(--wp-color-border)] p-2 text-sm dark:border-[var(--wp-color-border)]"
                   value={selectedPermitId ?? ''}
                   onChange={(e) => setSelectedPermitId(e.target.value || null)}
                 >
@@ -411,10 +411,10 @@ export default function PermitsPage() {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Approval chain</p>
+                <p className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Approval chain</p>
                 <ul className="mt-2 space-y-2">
                   {(selectedPermit.approvalChain ?? []).map((step) => (
-                    <li key={step.sequence} className="flex items-center justify-between rounded border border-neutral-200 p-2 text-sm dark:border-neutral-700">
+                    <li key={step.sequence} className="flex items-center justify-between rounded border border-[var(--wp-color-border)] p-2 text-sm dark:border-[var(--wp-color-border)]">
                       <span>
                         {step.role} · {step.status}
                       </span>
@@ -432,14 +432,14 @@ export default function PermitsPage() {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Isolation steps</p>
+                <p className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Isolation steps</p>
                 <ul className="mt-2 space-y-2">
                   {(selectedPermit.isolationSteps ?? []).map((step, index) => (
-                    <li key={index} className="flex items-center justify-between rounded border border-neutral-200 p-2 text-sm dark:border-neutral-700">
+                    <li key={index} className="flex items-center justify-between rounded border border-[var(--wp-color-border)] p-2 text-sm dark:border-[var(--wp-color-border)]">
                       <div>
-                        <p className="font-medium text-neutral-800 dark:text-neutral-200">{step.description}</p>
+                        <p className="font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{step.description}</p>
                         {step.verificationNotes ? (
-                          <p className="text-xs text-neutral-500">Note: {step.verificationNotes}</p>
+                          <p className="text-xs text-[var(--wp-color-text-muted)]">Note: {step.verificationNotes}</p>
                         ) : null}
                       </div>
                       {step.completed ? (
@@ -452,10 +452,10 @@ export default function PermitsPage() {
                     </li>
                   ))}
                 </ul>
-                <label className="mt-2 block text-sm text-neutral-700 dark:text-neutral-300">
+                <label className="mt-2 block text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text-muted)]">
                   Verification notes
                   <input
-                    className="mt-1 w-full rounded border border-neutral-200 p-2 text-sm dark:border-neutral-700"
+                    className="mt-1 w-full rounded border border-[var(--wp-color-border)] p-2 text-sm dark:border-[var(--wp-color-border)]"
                     value={lockoutNote}
                     onChange={(e) => setLockoutNote(e.target.value)}
                     placeholder="Lock-out device applied and tested"
@@ -464,7 +464,7 @@ export default function PermitsPage() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-neutral-500">Create a permit to see the lockout workflow.</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">Create a permit to see the lockout workflow.</p>
           )}
         </Card>
       </div>
@@ -477,13 +477,13 @@ export default function PermitsPage() {
           {PRECONFIGURED_PERMITS.map((preset) => (
             <div
               key={preset.id}
-              className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-700 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 rounded-lg border border-[var(--wp-color-border)] p-4 dark:border-[var(--wp-color-border)] sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <p className="text-base font-medium text-neutral-900 dark:text-neutral-100">
+                <p className="text-base font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                   {preset.name}
                 </p>
-                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                <p className="mt-1 text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                   {preset.description}
                 </p>
               </div>
@@ -515,40 +515,40 @@ export default function PermitsPage() {
       </Card>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
+        <Card className="bg-gradient-to-br from-indigo-600 to-purple-600 text-[var(--wp-color-text)]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Total permits</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--wp-color-text)]/70">Total permits</p>
               <p className="mt-2 text-3xl font-semibold">{summary.total}</p>
             </div>
-            <CheckCircle2 className="h-10 w-10 text-white/70" />
+            <CheckCircle2 className="h-10 w-10 text-[var(--wp-color-text)]/70" />
           </div>
         </Card>
-        <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+        <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-[var(--wp-color-text)]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Pending approvals</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--wp-color-text)]/70">Pending approvals</p>
               <p className="mt-2 text-3xl font-semibold">{summary.pending}</p>
             </div>
-            <AlertCircle className="h-10 w-10 text-white/70" />
+            <AlertCircle className="h-10 w-10 text-[var(--wp-color-text)]/70" />
           </div>
         </Card>
-        <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+        <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 text-[var(--wp-color-text)]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Active permits</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--wp-color-text)]/70">Active permits</p>
               <p className="mt-2 text-3xl font-semibold">{summary.active}</p>
             </div>
-            <CheckCircle2 className="h-10 w-10 text-white/70" />
+            <CheckCircle2 className="h-10 w-10 text-[var(--wp-color-text)]/70" />
           </div>
         </Card>
-        <Card className="bg-gradient-to-br from-rose-500 to-pink-600 text-white">
+        <Card className="bg-gradient-to-br from-rose-500 to-pink-600 text-[var(--wp-color-text)]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Escalated</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--wp-color-text)]/70">Escalated</p>
               <p className="mt-2 text-3xl font-semibold">{summary.escalated}</p>
             </div>
-            <AlertCircle className="h-10 w-10 text-white/70" />
+            <AlertCircle className="h-10 w-10 text-[var(--wp-color-text)]/70" />
           </div>
         </Card>
       </section>
@@ -558,12 +558,12 @@ export default function PermitsPage() {
         subtitle="Status of work permits and associated timelines"
         headerActions={
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-200" htmlFor="permit-status-filter">
+            <label className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]" htmlFor="permit-status-filter">
               Status
             </label>
             <select
               id="permit-status-filter"
-              className="rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+              className="rounded-lg border border-[var(--wp-color-border)] px-3 py-1.5 text-sm text-[var(--wp-color-text)] focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
               value={statusFilter}
               onChange={(event) => handleFilterChange(event.target.value as PermitStatus | "all")}
               disabled={loading}
@@ -585,7 +585,7 @@ export default function PermitsPage() {
 
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full divide-y divide-neutral-200 text-sm">
-            <thead className="bg-shadow-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            <thead className="bg-shadow-50 text-left text-xs font-semibold uppercase tracking-wide text-[var(--wp-color-text-muted)]">
               <tr>
                 <th className="px-4 py-3">Permit #</th>
                 <th className="px-4 py-3">Type</th>
@@ -600,30 +600,30 @@ export default function PermitsPage() {
                 <tr>
                   <td className="px-4 py-6" colSpan={6}>
                     <div className="flex animate-pulse flex-col gap-3">
-                      <div className="h-3 rounded-full bg-neutral-200" />
-                      <div className="h-3 rounded-full bg-neutral-200" />
-                      <div className="h-3 rounded-full bg-neutral-200" />
+                      <div className="h-3 rounded-full bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)]" />
+                      <div className="h-3 rounded-full bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)]" />
+                      <div className="h-3 rounded-full bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)]" />
                     </div>
                   </td>
                 </tr>
               ) : filteredPermits.length ? (
                 filteredPermits.map((permit) => (
-                  <tr key={permit.id} className="hover:bg-neutral-50">
-                    <td className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">{permit.number}</td>
-                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-300">{permit.type}</td>
+                  <tr key={permit.id} className="hover:bg-[var(--wp-color-surface)]">
+                    <td className="px-4 py-3 font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{permit.number}</td>
+                    <td className="px-4 py-3 text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">{permit.type}</td>
                     <td className="px-4 py-3">
                       <Badge text={permit.status} type="status" size="sm" />
                     </td>
-                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-300">
+                    <td className="px-4 py-3 text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                       {permit.riskLevel ? permit.riskLevel : "—"}
                     </td>
-                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-300">{formatDate(permit.validTo)}</td>
-                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-300">{formatDate(permit.updatedAt)}</td>
+                    <td className="px-4 py-3 text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">{formatDate(permit.validTo)}</td>
+                    <td className="px-4 py-3 text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">{formatDate(permit.updatedAt)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td className="px-4 py-6 text-center text-neutral-500" colSpan={6}>
+                  <td className="px-4 py-6 text-center text-[var(--wp-color-text-muted)]" colSpan={6}>
                     No permits match the selected filters.
                   </td>
                 </tr>
@@ -635,4 +635,5 @@ export default function PermitsPage() {
     </div>
   );
 }
+
 

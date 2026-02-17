@@ -259,9 +259,9 @@ const NotificationsInbox = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Engagement</p>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Notification Center</h1>
-          <p className="text-sm text-neutral-500">Track new work assignments, SLA risks, stock issues, and PM reminders.</p>
+          <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Engagement</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Notification Center</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Track new work assignments, SLA risks, stock issues, and PM reminders.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button as={Link} to="/notifications/settings" variant="outline" icon={<SettingsIcon className="h-4 w-4" />}>
@@ -277,12 +277,12 @@ const NotificationsInbox = () => {
         <Card title="Channel preferences" className="lg:col-span-2" subtitle="Control where alerts are delivered">
           <div className="space-y-4">
             {toggleOptions.map(({ key, label, description, icon }) => (
-              <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white/60 p-3 dark:border-neutral-700 dark:bg-neutral-800" key={key}>
+              <div className="flex items-center justify-between rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/60 p-3 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]" key={key}>
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5">{icon}</div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">{label}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+                    <p className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{label}</p>
+                    <p className="text-xs text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">{description}</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -296,15 +296,15 @@ const NotificationsInbox = () => {
                       } as Partial<NotificationSettings>)
                     }
                   />
-                  <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" />
+                  <div className="w-11 h-6 bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] dark:bg-[var(--wp-color-surface-elevated)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--wp-color-surface)] after:border-[var(--wp-color-border)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" />
                 </label>
               </div>
             ))}
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">SMS number</label>
-              <p className="text-xs text-neutral-500">Required for SMS delivery.</p>
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">SMS number</label>
+              <p className="text-xs text-[var(--wp-color-text-muted)]">Required for SMS delivery.</p>
               <input
-                className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800"
+                className="mt-2 w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
                 value={notificationSettings.smsNumber}
                 onChange={(event) => setNotificationSettings({ smsNumber: event.target.value })}
                 placeholder="+15555555555"
@@ -320,8 +320,8 @@ const NotificationsInbox = () => {
                 <div className="flex items-start gap-3">
                   {icon}
                   <div>
-                    <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{label}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+                    <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{label}</p>
+                    <p className="text-xs text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">{description}</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -335,7 +335,7 @@ const NotificationsInbox = () => {
                       } as Partial<NotificationSettings>)
                     }
                   />
-                  <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" />
+                  <div className="w-11 h-6 bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] dark:bg-[var(--wp-color-surface-elevated)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--wp-color-surface)] after:border-[var(--wp-color-border)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" />
                 </label>
               </div>
             ))}
@@ -357,9 +357,9 @@ const NotificationsInbox = () => {
         ) : null}
 
         {alertsLoading ? (
-          <p className="text-sm text-neutral-500">Loading low stock alerts…</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Loading low stock alerts…</p>
         ) : lowStockAlerts.length === 0 ? (
-          <p className="text-sm text-neutral-500">No inventory alerts at the moment.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">No inventory alerts at the moment.</p>
         ) : (
           <ul className="space-y-3">
             {lowStockAlerts.map((alert) => {
@@ -367,7 +367,7 @@ const NotificationsInbox = () => {
               return (
                 <li
                   key={alert.id}
-                  className="flex items-start justify-between rounded-lg border border-neutral-200 bg-white/80 p-3 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+                  className="flex items-start justify-between rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/80 p-3 text-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -376,14 +376,14 @@ const NotificationsInbox = () => {
                       >
                         {severity === 'critical' ? 'Critical' : severity === 'warning' ? 'Low' : 'Healthy'}
                       </span>
-                      <span className="font-semibold text-neutral-800 dark:text-neutral-100">{alert.partName}</span>
+                      <span className="font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{alert.partName}</span>
                       {alert.acknowledged ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
                           <CheckCircle2 className="h-3 w-3" /> Acknowledged
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <p className="text-xs text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                       On hand: {alert.quantity} • Reorder point: {alert.reorderPoint}
                     </p>
                   </div>
@@ -415,7 +415,7 @@ const NotificationsInbox = () => {
             <select
               value={filter}
               onChange={(event) => setFilter(event.target.value as FilterKey)}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+              className="rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
             >
               <option value="all">All categories</option>
               <option value="assigned">Assignments</option>
@@ -435,15 +435,15 @@ const NotificationsInbox = () => {
             return (
               <div
                 key={n.id}
-                className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800"
+                className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">{n.title}</p>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-300">{n.message}</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                      <span className="rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">{n.category.replace('_', ' ')}</span>
-                      <span className="rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">{n.type}</span>
+                    <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{n.title}</p>
+                    <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">{n.message}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--wp-color-text-muted)]">
+                      <span className="rounded-full bg-[var(--wp-color-surface-elevated)] px-2 py-1 dark:bg-[var(--wp-color-surface-elevated)]">{n.category.replace('_', ' ')}</span>
+                      <span className="rounded-full bg-[var(--wp-color-surface-elevated)] px-2 py-1 dark:bg-[var(--wp-color-surface-elevated)]">{n.type}</span>
                       <span>{formatTime(n.createdAt)}</span>
                     </div>
                   </div>
@@ -468,7 +468,7 @@ const NotificationsInbox = () => {
           })}
 
           {filteredNotifications.length === 0 && !loading && (
-            <p className="text-center text-neutral-500">No notifications</p>
+            <p className="text-center text-[var(--wp-color-text-muted)]">No notifications</p>
           )}
 
           {hasMore && (
@@ -485,3 +485,4 @@ const NotificationsInbox = () => {
 };
 
 export default NotificationsInbox;
+

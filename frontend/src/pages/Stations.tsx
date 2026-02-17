@@ -49,8 +49,8 @@ const Stations: React.FC = () => {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-100">Stations</h1>
-        <p className="text-sm text-neutral-400">
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Stations</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">
           Explore stations grouped under the currently selected plant.
         </p>
       </header>
@@ -59,7 +59,7 @@ const Stations: React.FC = () => {
           <p className="text-sm text-red-400">{error}</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-neutral-700 text-sm text-neutral-200">
+            <table className="min-w-full divide-y divide-neutral-700 text-sm text-[var(--wp-color-text)]">
               <thead>
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">Station</th>
@@ -77,7 +77,7 @@ const Stations: React.FC = () => {
                 ) : (
                   stations.map((station) => (
                     <tr key={station._id}>
-                      <td className="px-3 py-3 font-medium text-white">{station.name}</td>
+                      <td className="px-3 py-3 font-medium text-[var(--wp-color-text)]">{station.name}</td>
                       <td className="px-3 py-3">{station.lineId}</td>
                       <td className="px-3 py-3">{station.departmentId}</td>
                     </tr>
@@ -100,3 +100,4 @@ const Stations: React.FC = () => {
 };
 
 export default Stations;
+

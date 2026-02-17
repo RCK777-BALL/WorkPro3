@@ -32,7 +32,7 @@ export default function RequestStatus() {
           value={token}
           onChange={(e) => setToken(e.target.value)}
         />
-        <button className="bg-blue-600 text-white px-4 py-2 rounded" disabled={loading} type="submit">
+        <button className="bg-[var(--wp-color-primary)] text-[var(--wp-color-text)] px-4 py-2 rounded" disabled={loading} type="submit">
           {loading ? 'Loading...' : 'Check'}
         </button>
       </form>
@@ -57,3 +57,4 @@ export default function RequestStatus() {
     </div>
   );
 }
+

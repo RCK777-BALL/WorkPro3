@@ -62,7 +62,7 @@ const levelLabel: Record<Alert['level'], string> = {
 const statusClasses: Record<SensorDevice['status'], string> = {
   online: 'bg-emerald-900/40 text-emerald-200',
   offline: 'bg-rose-900/40 text-rose-200',
-  unknown: 'bg-slate-800/80 text-slate-200',
+  unknown: 'bg-[var(--wp-color-surface-elevated)]/80 text-[var(--wp-color-text)]',
 };
 
 const flattenAssetOptions = (
@@ -213,15 +213,15 @@ const IotMonitoring = () => {
         key={`${series.assetId}-${series.metric}`}
         title={`${series.assetName ?? 'Asset'} • ${series.metric}`}
         subtitle={`Last update ${formatRelativeTime(series.updatedAt)}`}
-        className="bg-slate-900/80"
+        className="bg-[color-mix(in_srgb,var(--wp-color-surface)_82%,transparent)]"
       >
-        <div className="mb-4 flex flex-wrap items-center gap-4 text-sm text-slate-300">
+        <div className="mb-4 flex flex-wrap items-center gap-4 text-sm text-[var(--wp-color-text-muted)]">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Latest value</p>
-            <p className="text-xl font-semibold text-slate-100">{formatValue(series.latestValue)}</p>
+            <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Latest value</p>
+            <p className="text-xl font-semibold text-[var(--wp-color-text)]">{formatValue(series.latestValue)}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Change</p>
+            <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Change</p>
             <p className={`text-lg font-semibold ${series.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {series.change >= 0 ? '+' : ''}
               {numberFormatter.format(series.change ?? 0)}
@@ -239,18 +239,18 @@ const IotMonitoring = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-white">IoT Monitoring</h1>
-          <p className="text-sm text-slate-300">
+          <h1 className="text-3xl font-semibold text-[var(--wp-color-text)]">IoT Monitoring</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">
             Observe live telemetry from connected assets and review automated alert history.
           </p>
         </div>
         <div className="flex flex-wrap gap-3 text-sm">
-          <label className="flex flex-col gap-1 text-xs uppercase tracking-wide text-slate-400">
+          <label className="flex flex-col gap-1 text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">
             Asset
             <select
               value={assetFilter}
               onChange={(event) => setAssetFilter(event.target.value)}
-              className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none"
+              className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] focus:border-primary-500 focus:outline-none"
             >
               <option value="all">All assets</option>
               {assetOptions.map((option) => (
@@ -260,12 +260,12 @@ const IotMonitoring = () => {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-xs uppercase tracking-wide text-slate-400">
+          <label className="flex flex-col gap-1 text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">
             Metric
             <select
               value={metricFilter}
               onChange={(event) => setMetricFilter(event.target.value)}
-              className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none"
+              className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] focus:border-primary-500 focus:outline-none"
             >
               <option value="all">All metrics</option>
               {metricsOptions.map((metric) => (
@@ -278,12 +278,12 @@ const IotMonitoring = () => {
         </div>
       </div>
 
-      <Card title="Log meter reading" className="bg-slate-900/80">
+      <Card title="Log meter reading" className="bg-[color-mix(in_srgb,var(--wp-color-surface)_82%,transparent)]">
         <div className="grid gap-3 md:grid-cols-[2fr,1fr,auto] md:items-end">
-          <label className="flex flex-col gap-1 text-sm text-slate-200">
+          <label className="flex flex-col gap-1 text-sm text-[var(--wp-color-text)]">
             Meter
             <select
-              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+              className="rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               value={meterFilter}
               onChange={(event) => setMeterFilter(event.target.value)}
             >
@@ -295,69 +295,69 @@ const IotMonitoring = () => {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm text-slate-200">
+          <label className="flex flex-col gap-1 text-sm text-[var(--wp-color-text)]">
             Reading value
             <input
               type="number"
-              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+              className="rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               placeholder="0"
               value={meterValue}
               onChange={(event) => setMeterValue(event.target.value)}
             />
           </label>
           <button
-            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-[var(--wp-color-text)] transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={() => void submitMeterReading()}
             disabled={meterSubmitting}
           >
             {meterSubmitting ? 'Saving…' : 'Save reading'}
           </button>
         </div>
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-[var(--wp-color-text-muted)]">
           Offline? Readings are stored locally and automatically synced when connectivity returns.
         </p>
       </Card>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-          <div className="flex items-center gap-3 text-sm text-slate-300">
+        <div className="rounded-xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_75%,transparent)] p-5">
+          <div className="flex items-center gap-3 text-sm text-[var(--wp-color-text-muted)]">
             <span className="rounded-lg bg-primary-500/20 p-2 text-primary-300">
               <Activity className="h-5 w-5" />
             </span>
             Signals ingested
           </div>
-          <p className="mt-3 text-3xl font-semibold text-white">{summary.telemetryCount}</p>
-          <p className="text-xs text-slate-400">Last fetch window</p>
+          <p className="mt-3 text-3xl font-semibold text-[var(--wp-color-text)]">{summary.telemetryCount}</p>
+          <p className="text-xs text-[var(--wp-color-text-muted)]">Last fetch window</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-          <div className="flex items-center gap-3 text-sm text-slate-300">
+        <div className="rounded-xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_75%,transparent)] p-5">
+          <div className="flex items-center gap-3 text-sm text-[var(--wp-color-text-muted)]">
             <span className="rounded-lg bg-emerald-500/20 p-2 text-emerald-300">
               <RefreshCcw className="h-5 w-5" />
             </span>
             Metrics trending upward
           </div>
-          <p className="mt-3 text-3xl font-semibold text-white">{summary.trendingUp}</p>
-          <p className="text-xs text-slate-400">Based on last data point</p>
+          <p className="mt-3 text-3xl font-semibold text-[var(--wp-color-text)]">{summary.trendingUp}</p>
+          <p className="text-xs text-[var(--wp-color-text-muted)]">Based on last data point</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-          <div className="flex items-center gap-3 text-sm text-slate-300">
+        <div className="rounded-xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_75%,transparent)] p-5">
+          <div className="flex items-center gap-3 text-sm text-[var(--wp-color-text-muted)]">
             <span className="rounded-lg bg-rose-500/20 p-2 text-rose-200">
               <AlertTriangle className="h-5 w-5" />
             </span>
             IoT alerts (30 min)
           </div>
-          <p className="mt-3 text-3xl font-semibold text-white">{summary.alertCount}</p>
-          <p className="text-xs text-slate-400">Auto-generated actions</p>
+          <p className="mt-3 text-3xl font-semibold text-[var(--wp-color-text)]">{summary.alertCount}</p>
+          <p className="text-xs text-[var(--wp-color-text-muted)]">Auto-generated actions</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-          <div className="flex items-center gap-3 text-sm text-slate-300">
+        <div className="rounded-xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_75%,transparent)] p-5">
+          <div className="flex items-center gap-3 text-sm text-[var(--wp-color-text-muted)]">
             <span className="rounded-lg bg-emerald-500/20 p-2 text-emerald-200">
               <Radio className="h-5 w-5" />
             </span>
             Online sensors
           </div>
-          <p className="mt-3 text-3xl font-semibold text-white">{summary.onlineDevices}</p>
-          <p className="text-xs text-slate-400">Device registry health</p>
+          <p className="mt-3 text-3xl font-semibold text-[var(--wp-color-text)]">{summary.onlineDevices}</p>
+          <p className="text-xs text-[var(--wp-color-text-muted)]">Device registry health</p>
         </div>
       </div>
 
@@ -365,16 +365,16 @@ const IotMonitoring = () => {
         <Card
           title="Sensor registry"
           subtitle="Registered devices mapped to assets"
-          className="bg-slate-900/80"
+          className="bg-[color-mix(in_srgb,var(--wp-color-surface)_82%,transparent)]"
         >
           {devicesQuery.isLoading ? (
-            <p className="text-sm text-slate-400">Loading devices…</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">Loading devices…</p>
           ) : devices.length === 0 ? (
-            <p className="text-sm text-slate-400">No devices registered for this scope.</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">No devices registered for this scope.</p>
           ) : (
             <div className="overflow-x-auto text-sm">
               <table className="w-full min-w-[520px]">
-                <thead className="border-b border-slate-800 text-xs uppercase tracking-wide text-slate-400">
+                <thead className="border-b border-[var(--wp-color-border)] text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">
                   <tr>
                     <th className="py-2 text-left">Device</th>
                     <th className="py-2 text-left">Asset</th>
@@ -386,21 +386,21 @@ const IotMonitoring = () => {
                   {devices.map((device) => {
                     const status = deriveStatus(device);
                     return (
-                      <tr key={device._id} className="border-b border-slate-900/60 text-slate-200">
-                        <td className="py-2 font-medium text-slate-100">
+                      <tr key={device._id} className="border-b border-[var(--wp-color-border)]/60 text-[var(--wp-color-text)]">
+                        <td className="py-2 font-medium text-[var(--wp-color-text)]">
                           <div className="flex flex-col">
                             <span>{device.name ?? device.deviceId}</span>
-                            <span className="text-xs text-slate-400">{device.deviceId}</span>
+                            <span className="text-xs text-[var(--wp-color-text-muted)]">{device.deviceId}</span>
                           </div>
                         </td>
-                        <td className="py-2 text-slate-300">{assetNameMap.get(device.asset) ?? '—'}</td>
-                        <td className="py-2 text-slate-300">
+                        <td className="py-2 text-[var(--wp-color-text-muted)]">{assetNameMap.get(device.asset) ?? '—'}</td>
+                        <td className="py-2 text-[var(--wp-color-text-muted)]">
                           {device.lastMetric ? (
                             <div className="flex flex-col">
-                              <span className="font-medium text-slate-100">
+                              <span className="font-medium text-[var(--wp-color-text)]">
                                 {device.lastMetric}: {formatValue(device.lastValue)}
                               </span>
-                              <span className="text-xs text-slate-400">{formatRelativeTime(device.lastSeenAt)}</span>
+                              <span className="text-xs text-[var(--wp-color-text-muted)]">{formatRelativeTime(device.lastSeenAt)}</span>
                             </div>
                           ) : (
                             '—'
@@ -423,38 +423,38 @@ const IotMonitoring = () => {
         <Card
           title="Automation rules"
           subtitle="Thresholds that auto-generate work orders and alerts"
-          className="bg-slate-900/80"
+          className="bg-[color-mix(in_srgb,var(--wp-color-surface)_82%,transparent)]"
           headerActions={
-            <div className="inline-flex items-center gap-2 rounded-full bg-slate-800/80 px-3 py-1 text-xs text-slate-300">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[var(--wp-color-surface-elevated)]/80 px-3 py-1 text-xs text-[var(--wp-color-text-muted)]">
               <ScrollText className="h-4 w-4 text-primary-300" />
               {rules.length} rules configured
             </div>
           }
         >
           {rulesQuery.isLoading ? (
-            <p className="text-sm text-slate-400">Loading rules…</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">Loading rules…</p>
           ) : rules.length === 0 ? (
-            <p className="text-sm text-slate-400">No condition rules found yet.</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">No condition rules found yet.</p>
           ) : (
             <ul className="divide-y divide-slate-800 text-sm">
               {rules.map((rule) => (
                 <li key={rule._id} className="py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-slate-100">
+                      <p className="font-semibold text-[var(--wp-color-text)]">
                         {assetNameMap.get(rule.asset) ?? 'Asset'} • {rule.metric} {rule.operator} {rule.threshold}
                       </p>
-                      <p className="text-xs text-slate-400">{rule.workOrderTitle}</p>
+                      <p className="text-xs text-[var(--wp-color-text-muted)]">{rule.workOrderTitle}</p>
                     </div>
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${rule.active ? 'bg-emerald-900/40 text-emerald-200' : 'bg-slate-800 text-slate-300'
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${rule.active ? 'bg-emerald-900/40 text-emerald-200' : 'bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text-muted)]'
                         }`}
                     >
                       {rule.active ? 'Active' : 'Paused'}
                     </span>
                   </div>
                   {rule.workOrderDescription && (
-                    <p className="mt-1 text-xs text-slate-400">{rule.workOrderDescription}</p>
+                    <p className="mt-1 text-xs text-[var(--wp-color-text-muted)]">{rule.workOrderDescription}</p>
                   )}
                 </li>
               ))}
@@ -466,12 +466,12 @@ const IotMonitoring = () => {
       <div className="grid gap-6 lg:grid-cols-2">
         {signalsQuery.isLoading && (
           <Card title="Telemetry" className="lg:col-span-2">
-            <p className="text-sm text-slate-400">Loading telemetry...</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">Loading telemetry...</p>
           </Card>
         )}
         {!signalsQuery.isLoading && signals.length === 0 && (
           <Card title="Telemetry" className="lg:col-span-2">
-            <p className="text-sm text-slate-400">No telemetry found for the selected filters.</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">No telemetry found for the selected filters.</p>
           </Card>
         )}
         {!signalsQuery.isLoading && signals.map((series) => renderSignalCard(series))}
@@ -479,14 +479,14 @@ const IotMonitoring = () => {
 
       <Card title="Alert history" subtitle="Most recent IoT-driven events" className="overflow-hidden">
         {alertsQuery.isLoading ? (
-          <p className="text-sm text-slate-400">Loading alerts…</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Loading alerts…</p>
         ) : alerts.length === 0 ? (
-          <p className="text-sm text-slate-400">No IoT alerts have been generated yet.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">No IoT alerts have been generated yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px] text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-800 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b border-[var(--wp-color-border)] text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">
                   <th className="py-3">Alert</th>
                   <th>Asset</th>
                   <th>Metric</th>
@@ -496,16 +496,16 @@ const IotMonitoring = () => {
               </thead>
               <tbody>
                 {alerts.map((alert) => (
-                  <tr key={alert._id} className="border-b border-slate-900/60 text-slate-200">
-                    <td className="py-3 text-slate-100">{alert.message}</td>
-                    <td className="py-3 text-slate-300">{alert.assetName ?? alert.asset ?? '—'}</td>
-                    <td className="py-3 text-slate-300">{alert.metric ?? '—'}</td>
+                  <tr key={alert._id} className="border-b border-[var(--wp-color-border)]/60 text-[var(--wp-color-text)]">
+                    <td className="py-3 text-[var(--wp-color-text)]">{alert.message}</td>
+                    <td className="py-3 text-[var(--wp-color-text-muted)]">{alert.assetName ?? alert.asset ?? '—'}</td>
+                    <td className="py-3 text-[var(--wp-color-text-muted)]">{alert.metric ?? '—'}</td>
                     <td className="py-3">
                       <span className={`rounded-full px-3 py-1 text-xs font-medium ${levelClasses[alert.level]}`}>
                         {levelLabel[alert.level]}
                       </span>
                     </td>
-                    <td className="py-3 text-slate-300">
+                    <td className="py-3 text-[var(--wp-color-text-muted)]">
                       {formatRelativeTime(alert.timestamp ?? alert.createdAt)}
                     </td>
                   </tr>
@@ -520,3 +520,4 @@ const IotMonitoring = () => {
 };
 
 export default IotMonitoring;
+

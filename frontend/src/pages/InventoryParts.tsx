@@ -83,15 +83,15 @@ const ReceiveStockModal = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Receive stock">
       <div className="space-y-3">
         {part ? (
-          <p className="text-sm text-neutral-600">Add quantity to an existing location for {part.name}.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Add quantity to an existing location for {part.name}.</p>
         ) : (
-          <p className="text-sm text-neutral-600">Select a part to receive stock.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Select a part to receive stock.</p>
         )}
-        <label className="text-sm font-medium text-neutral-800">Location</label>
+        <label className="text-sm font-medium text-[var(--wp-color-text)]">Location</label>
         <select
           value={stockItemId}
           onChange={(event) => setStockItemId(event.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2 text-sm"
           disabled={!part || !locationsForPart.length}
         >
           <option value="">Select location</option>
@@ -155,9 +155,9 @@ export default function InventoryParts() {
     <div className="space-y-4">
       <header className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
         <div>
-          <p className="text-sm text-neutral-500">Inventory</p>
-          <h1 className="text-2xl font-semibold text-neutral-900">Parts library</h1>
-          <p className="text-sm text-neutral-600">Search, filter, and manage stock across all stores.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Inventory</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Parts library</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Search, filter, and manage stock across all stores.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button icon={<Package className="h-4 w-4" />} onClick={() => navigate("/inventory/items")}>View stock</Button>
@@ -175,7 +175,7 @@ export default function InventoryParts() {
         <Card.Header>
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--wp-color-text-muted)]" />
               <input
                 type="search"
                 value={search}
@@ -184,13 +184,13 @@ export default function InventoryParts() {
                   setPage(1);
                 }}
                 placeholder="Search parts, vendors, tags"
-                className="min-w-[220px] rounded-md border border-neutral-300 px-3 py-2 pl-8 text-sm"
+                className="min-w-[220px] rounded-md border border-[var(--wp-color-border)] px-3 py-2 pl-8 text-sm"
               />
             </div>
-            <label className="text-sm text-neutral-700">
+            <label className="text-sm text-[var(--wp-color-text)]">
               <span className="mr-2 font-medium">Tag</span>
               <select
-                className="rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                className="rounded-md border border-[var(--wp-color-border)] px-2 py-1 text-sm"
                 value={tagFilter}
                 onChange={(event) => {
                   setTagFilter(event.target.value);
@@ -207,20 +207,20 @@ export default function InventoryParts() {
         </Card.Header>
         <Card.Content>
           {partsQuery.isLoading ? (
-            <p className="text-sm text-neutral-500">Loading parts…</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">Loading parts…</p>
           ) : partsQuery.error ? (
             <p className="text-sm text-error-600">Unable to load parts.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-200 text-sm">
-                <thead className="bg-neutral-50">
+                <thead className="bg-[var(--wp-color-surface)]">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Number</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Stock</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Reorder point</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Status</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Actions</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Part</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Number</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Stock</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Reorder point</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Status</th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--wp-color-text)]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -228,15 +228,15 @@ export default function InventoryParts() {
                     const severity = part.alertState?.severity ?? "ok";
                     const badgeColor = severity === "critical" ? "error" : severity === "warning" ? "warning" : "success";
                     return (
-                      <tr key={part.id} className="hover:bg-neutral-50">
-                        <td className="px-3 py-2 text-neutral-900">
+                      <tr key={part.id} className="hover:bg-[var(--wp-color-surface)]">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           <div className="font-semibold">{part.name}</div>
-                          <p className="text-xs text-neutral-500">Vendor: {part.vendor?.name ?? "—"}</p>
+                          <p className="text-xs text-[var(--wp-color-text-muted)]">Vendor: {part.vendor?.name ?? "—"}</p>
                         </td>
-                        <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? "—"}</td>
-                        <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
-                        <td className="px-3 py-2 text-neutral-700">{part.reorderPoint}</td>
-                        <td className="px-3 py-2 text-neutral-700">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">{part.partNo ?? part.partNumber ?? "—"}</td>
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">{part.quantity}</td>
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">{part.reorderPoint}</td>
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           <div className="flex flex-wrap gap-2">
                             <Badge text={severity} color={badgeColor} />
                             {part.alertState?.needsReorder && (
@@ -244,7 +244,7 @@ export default function InventoryParts() {
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-2 text-neutral-700">
+                        <td className="px-3 py-2 text-[var(--wp-color-text)]">
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="outline" onClick={() => navigate(`/inventory/parts/${part.id}`)}>
                               View
@@ -264,7 +264,7 @@ export default function InventoryParts() {
                   })}
                   {!filteredParts.length && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={6}>
+                      <td className="px-3 py-6 text-center text-[var(--wp-color-text-muted)]" colSpan={6}>
                         No parts match the selected filters.
                       </td>
                     </tr>
@@ -274,7 +274,7 @@ export default function InventoryParts() {
             </div>
           )}
         </Card.Content>
-        <Card.Footer className="flex items-center justify-between text-sm text-neutral-700">
+        <Card.Footer className="flex items-center justify-between text-sm text-[var(--wp-color-text)]">
           <div>
             Page {page} of {totalPages}
           </div>
@@ -306,7 +306,7 @@ export default function InventoryParts() {
             required
             onBlur={(event) => event.target.value && handleSave({ name: event.target.value })}
           />
-          <div className="flex items-center gap-2 text-sm text-neutral-600">
+          <div className="flex items-center gap-2 text-sm text-[var(--wp-color-text-muted)]">
             <CheckCircle className="h-4 w-4 text-success-600" />
             <span>Save a name to create the record, then enrich details on the detail page.</span>
           </div>
@@ -317,3 +317,4 @@ export default function InventoryParts() {
     </div>
   );
 }
+

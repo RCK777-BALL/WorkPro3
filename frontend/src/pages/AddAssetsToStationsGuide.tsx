@@ -78,8 +78,8 @@ const AddAssetsToStationsGuide: React.FC = () => (
         <span className="text-sm font-medium">Guides / Asset Management / Add Assets to Stations</span>
       </div>
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-neutral-900">Add Assets to Stations</h1>
-        <p className="text-neutral-600 max-w-4xl">
+        <h1 className="text-3xl font-bold text-[var(--wp-color-text)]">Add Assets to Stations</h1>
+        <p className="text-[var(--wp-color-text-muted)] max-w-4xl">
           Place equipment at the right station to complete your hierarchy. Capture documents, photos, serial numbers,
           and maintenance intervals so technicians have everything they need when they open the asset record.
         </p>
@@ -97,12 +97,12 @@ const AddAssetsToStationsGuide: React.FC = () => (
     <Card className="bg-primary-50 border-primary-100">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-lg bg-white text-primary-700">
+          <div className="p-3 rounded-lg bg-[var(--wp-color-surface)] text-primary-700">
             <PackageCheck className="h-6 w-6" />
           </div>
           <div>
-            <p className="font-semibold text-neutral-900">Workflow</p>
-            <p className="text-neutral-700">
+            <p className="font-semibold text-[var(--wp-color-text)]">Workflow</p>
+            <p className="text-[var(--wp-color-text)]">
               Go to the Assets page and choose “Add Asset.” Walk through the hierarchy fields first, then attach
               supporting files before saving.
             </p>
@@ -120,8 +120,8 @@ const AddAssetsToStationsGuide: React.FC = () => (
           <div className="flex gap-3 items-start">
             <div className="h-10 w-10 rounded-lg bg-primary-50 flex items-center justify-center">{step.icon}</div>
             <div className="space-y-1">
-              <p className="font-semibold text-neutral-900">{step.title}</p>
-              <p className="text-sm text-neutral-700">{step.description}</p>
+              <p className="font-semibold text-[var(--wp-color-text)]">{step.title}</p>
+              <p className="text-sm text-[var(--wp-color-text)]">{step.description}</p>
             </div>
           </div>
         </Card>
@@ -135,23 +135,23 @@ const AddAssetsToStationsGuide: React.FC = () => (
         </div>
         <div className="flex-1 space-y-3">
           <div>
-            <h2 className="text-xl font-semibold text-neutral-900">Form requirements</h2>
-            <p className="text-neutral-700">
+            <h2 className="text-xl font-semibold text-[var(--wp-color-text)]">Form requirements</h2>
+            <p className="text-[var(--wp-color-text)]">
               Complete these fields to make sure each asset is anchored to the correct station and ready for PM planning.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {formRequirements.map((item) => (
-              <div key={item.label} className="rounded-lg border border-neutral-200 p-3 shadow-sm">
+              <div key={item.label} className="rounded-lg border border-[var(--wp-color-border)] p-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold text-neutral-900">{item.label}</p>
+                  <p className="font-semibold text-[var(--wp-color-text)]">{item.label}</p>
                   {item.required && (
                     <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-1 rounded-full">
                       Required
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-neutral-700">{item.detail}</p>
+                <p className="text-sm text-[var(--wp-color-text)]">{item.detail}</p>
               </div>
             ))}
           </div>
@@ -166,8 +166,8 @@ const AddAssetsToStationsGuide: React.FC = () => (
             <FileText className="h-5 w-5" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-neutral-900">Metadata checklist</h3>
-            <ul className="list-disc list-inside text-neutral-700 space-y-1">
+            <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">Metadata checklist</h3>
+            <ul className="list-disc list-inside text-[var(--wp-color-text)] space-y-1">
               {metadataChecklist.map((item) => (
                 <li key={item}>{item}</li>
               ))}
@@ -182,8 +182,8 @@ const AddAssetsToStationsGuide: React.FC = () => (
             <UploadCloud className="h-5 w-5" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-neutral-900">Documents & photos</h3>
-            <ul className="list-disc list-inside text-neutral-700 space-y-1">
+            <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">Documents & photos</h3>
+            <ul className="list-disc list-inside text-[var(--wp-color-text)] space-y-1">
               {uploadGuidance.map((item) => (
                 <li key={item}>{item}</li>
               ))}
@@ -193,15 +193,15 @@ const AddAssetsToStationsGuide: React.FC = () => (
       </Card>
     </div>
 
-    <Card className="bg-neutral-50">
+    <Card className="bg-[var(--wp-color-surface)]">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
-          <div className="p-3 rounded-lg bg-white text-primary-700">
+          <div className="p-3 rounded-lg bg-[var(--wp-color-surface)] text-primary-700">
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-neutral-900">Validation and success criteria</h3>
-            <p className="text-neutral-700">
+            <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">Validation and success criteria</h3>
+            <p className="text-[var(--wp-color-text)]">
               Use this checklist to confirm the asset was saved in the right place with everything technicians need.
             </p>
           </div>
@@ -212,9 +212,9 @@ const AddAssetsToStationsGuide: React.FC = () => (
       </div>
       <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         {successCriteria.map((item) => (
-          <div key={item} className="flex items-start gap-2 rounded-md bg-white p-3 shadow-sm">
+          <div key={item} className="flex items-start gap-2 rounded-md bg-[var(--wp-color-surface)] p-3 shadow-sm">
             <CheckCircle2 className="h-5 w-5 text-success-600 mt-0.5" />
-            <p className="text-neutral-800">{item}</p>
+            <p className="text-[var(--wp-color-text)]">{item}</p>
           </div>
         ))}
       </div>
@@ -226,8 +226,8 @@ const AddAssetsToStationsGuide: React.FC = () => (
           <Sparkles className="h-5 w-5" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-neutral-900">Pro tips for accurate placement</h3>
-          <ul className="list-disc list-inside text-neutral-700 space-y-1">
+          <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">Pro tips for accurate placement</h3>
+          <ul className="list-disc list-inside text-[var(--wp-color-text)] space-y-1">
             <li>Verify the station exists before saving—misplaced assets create reporting gaps.</li>
             <li>Reuse consistent naming patterns so imports and on-site labels always match.</li>
             <li>Capture maintenance intervals now to auto-generate preventive work without rework later.</li>
@@ -240,3 +240,4 @@ const AddAssetsToStationsGuide: React.FC = () => (
 );
 
 export default AddAssetsToStationsGuide;
+

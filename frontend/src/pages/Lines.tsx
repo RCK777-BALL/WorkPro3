@@ -49,8 +49,8 @@ const Lines: React.FC = () => {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-100">Plant Lines</h1>
-        <p className="text-sm text-neutral-400">
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Plant Lines</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">
           Review departments and associated production lines for the active plant.
         </p>
       </header>
@@ -59,7 +59,7 @@ const Lines: React.FC = () => {
           <p className="text-sm text-red-400">{error}</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-neutral-700 text-sm text-neutral-200">
+            <table className="min-w-full divide-y divide-neutral-700 text-sm text-[var(--wp-color-text)]">
               <thead>
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">Line</th>
@@ -77,7 +77,7 @@ const Lines: React.FC = () => {
                 ) : (
                   lines.map((line) => (
                     <tr key={line._id}>
-                      <td className="px-3 py-3 font-medium text-white">{line.name}</td>
+                      <td className="px-3 py-3 font-medium text-[var(--wp-color-text)]">{line.name}</td>
                       <td className="px-3 py-3">{line.departmentId}</td>
                       <td className="px-3 py-3">{line.stations.length}</td>
                     </tr>
@@ -100,3 +100,4 @@ const Lines: React.FC = () => {
 };
 
 export default Lines;
+

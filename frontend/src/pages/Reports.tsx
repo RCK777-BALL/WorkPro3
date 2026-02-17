@@ -451,17 +451,17 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-neutral-900">Reports</h2>
-          <p className="text-neutral-500">Monitor production effectiveness and downtime</p>
+          <h2 className="text-2xl font-bold text-[var(--wp-color-text)]">Reports</h2>
+          <p className="text-[var(--wp-color-text-muted)]">Monitor production effectiveness and downtime</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2">
-            <label htmlFor="range" className="text-sm text-neutral-600">
+            <label htmlFor="range" className="text-sm text-[var(--wp-color-text-muted)]">
               Range
             </label>
             <select
               id="range"
-              className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
+              className="border border-[var(--wp-color-border)] rounded-md px-2 py-1 text-sm"
               value={range}
               onChange={(event) => setRange(Number(event.target.value))}
             >
@@ -473,12 +473,12 @@ export default function Reports() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="site" className="text-sm text-neutral-600">
+            <label htmlFor="site" className="text-sm text-[var(--wp-color-text-muted)]">
               Site
             </label>
             <select
               id="site"
-              className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
+              className="border border-[var(--wp-color-border)] rounded-md px-2 py-1 text-sm"
               value={selectedSite}
               onChange={(event) => {
                 setSelectedSite(event.target.value);
@@ -494,12 +494,12 @@ export default function Reports() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="asset" className="text-sm text-neutral-600">
+            <label htmlFor="asset" className="text-sm text-[var(--wp-color-text-muted)]">
               Asset
             </label>
             <select
               id="asset"
-              className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
+              className="border border-[var(--wp-color-border)] rounded-md px-2 py-1 text-sm"
               value={selectedAsset}
               onChange={(event) => setSelectedAsset(event.target.value)}
             >
@@ -596,20 +596,20 @@ export default function Reports() {
         >
           {aiSummary ? (
             <div className="space-y-3">
-              <p className="text-sm text-slate-100 whitespace-pre-line">{aiSummary.summary}</p>
+              <p className="text-sm text-[var(--wp-color-text)] whitespace-pre-line">{aiSummary.summary}</p>
               {aiSummary.highlights.length > 0 && (
-                <ul className="list-disc pl-5 text-sm text-slate-100">
+                <ul className="list-disc pl-5 text-sm text-[var(--wp-color-text)]">
                   {aiSummary.highlights.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
               )}
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[var(--wp-color-text-muted)]">
                 Confidence {Math.round(aiSummary.confidence * 100)}%
               </p>
             </div>
           ) : (
-            <p className="text-sm text-slate-300">Summary will appear when enough data is available.</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">Summary will appear when enough data is available.</p>
           )}
         </Card>
         <Card title="Long-term KPI trends">
@@ -632,12 +632,12 @@ export default function Reports() {
           <form className="space-y-4" onSubmit={handleScheduleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col">
-                <label htmlFor="schedule-day" className="text-sm font-medium text-slate-200">
+                <label htmlFor="schedule-day" className="text-sm font-medium text-[var(--wp-color-text)]">
                   Day of month
                 </label>
                 <select
                   id="schedule-day"
-                  className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-2 py-1 text-sm"
+                  className="mt-1 border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text)] rounded-md px-2 py-1 text-sm"
                   value={scheduleForm.dayOfMonth}
                   onChange={(event) => handleScheduleChange('dayOfMonth', Number(event.target.value))}
                 >
@@ -649,33 +649,33 @@ export default function Reports() {
                 </select>
               </div>
               <div className="flex flex-col">
-                <label htmlFor="schedule-time" className="text-sm font-medium text-slate-200">
+                <label htmlFor="schedule-time" className="text-sm font-medium text-[var(--wp-color-text)]">
                   Delivery time (UTC)
                 </label>
                 <input
                   id="schedule-time"
                   type="time"
-                  className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-2 py-1 text-sm"
+                  className="mt-1 border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text)] rounded-md px-2 py-1 text-sm"
                   value={scheduleForm.hourUtc}
                   onChange={(event) => handleScheduleChange('hourUtc', event.target.value)}
                 />
               </div>
             </div>
             <div className="flex flex-col">
-              <label htmlFor="schedule-recipients" className="text-sm font-medium text-slate-200">
+              <label htmlFor="schedule-recipients" className="text-sm font-medium text-[var(--wp-color-text)]">
                 Recipients (comma separated)
               </label>
               <input
                 id="schedule-recipients"
                 type="text"
-                className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-3 py-2 text-sm placeholder:text-slate-400"
+                className="mt-1 border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text)] rounded-md px-3 py-2 text-sm placeholder:text-[var(--wp-color-text-muted)]"
                 placeholder="ops@example.com, finance@example.com"
                 value={scheduleForm.recipients}
                 onChange={(event) => handleScheduleChange('recipients', event.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 text-sm text-slate-100">
+              <label className="flex items-center gap-2 text-sm text-[var(--wp-color-text)]">
                 <input
                   type="checkbox"
                   checked={scheduleForm.sendEmail}
@@ -683,7 +683,7 @@ export default function Reports() {
                 />
                 Send monthly email
               </label>
-              <label className="flex items-center gap-2 text-sm text-slate-100">
+              <label className="flex items-center gap-2 text-sm text-[var(--wp-color-text)]">
                 <input
                   type="checkbox"
                   checked={scheduleForm.sendDownloadLink}
@@ -694,12 +694,12 @@ export default function Reports() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col">
-                <label htmlFor="schedule-format" className="text-sm font-medium text-slate-200">
+                <label htmlFor="schedule-format" className="text-sm font-medium text-[var(--wp-color-text)]">
                   Format
                 </label>
                 <select
                   id="schedule-format"
-                  className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-2 py-1 text-sm"
+                  className="mt-1 border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text)] rounded-md px-2 py-1 text-sm"
                   value={scheduleForm.format}
                   onChange={(event) => handleScheduleChange('format', event.target.value as 'pdf' | 'csv')}
                 >
@@ -708,13 +708,13 @@ export default function Reports() {
                 </select>
               </div>
               <div className="flex flex-col">
-                <label htmlFor="schedule-timezone" className="text-sm font-medium text-slate-200">
+                <label htmlFor="schedule-timezone" className="text-sm font-medium text-[var(--wp-color-text)]">
                   Timezone label
                 </label>
                 <input
                   id="schedule-timezone"
                   type="text"
-                  className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-2 py-1 text-sm"
+                  className="mt-1 border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text)] rounded-md px-2 py-1 text-sm"
                   value={scheduleForm.timezone}
                   onChange={(event) => handleScheduleChange('timezone', event.target.value)}
                 />
@@ -724,7 +724,7 @@ export default function Reports() {
             {scheduleError && <p className="text-sm text-red-600">{scheduleError}</p>}
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-md bg-[var(--wp-color-primary)] px-4 py-2 text-sm font-medium text-[var(--wp-color-text)] hover:opacity-90 disabled:opacity-60"
               disabled={scheduleSaving}
             >
               {scheduleSaving ? 'Saving…' : 'Save schedule'}
@@ -738,7 +738,7 @@ export default function Reports() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="text-left text-neutral-500">
+                <tr className="text-left text-[var(--wp-color-text-muted)]">
                   <th className="py-2 pr-4">Asset</th>
                   <th className="py-2 pr-4">OEE</th>
                   <th className="py-2 pr-4">Availability</th>
@@ -748,7 +748,7 @@ export default function Reports() {
               </thead>
               <tbody>
                 {kpis.benchmarks.assets.map((asset) => (
-                  <tr key={asset.id} className="border-t border-neutral-200">
+                  <tr key={asset.id} className="border-t border-[var(--wp-color-border)]">
                     <td className="py-2 pr-4 font-medium">{asset.name}</td>
                     <td className="py-2 pr-4">{(asset.oee * 100).toFixed(1)}%</td>
                     <td className="py-2 pr-4">{(asset.availability * 100).toFixed(1)}%</td>
@@ -768,10 +768,11 @@ export default function Reports() {
                 <span>{site.totalKwh.toFixed(1)} kWh</span>
               </div>
             ))}
-            {kpis.energy.perSite.length === 0 && <p className="text-sm text-neutral-500">No site level data</p>}
+            {kpis.energy.perSite.length === 0 && <p className="text-sm text-[var(--wp-color-text-muted)]">No site level data</p>}
           </div>
         </Card>
       </div>
     </div>
   );
 }
+

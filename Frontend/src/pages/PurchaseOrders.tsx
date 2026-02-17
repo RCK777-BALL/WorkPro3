@@ -14,17 +14,17 @@ const PurchaseOrders: React.FC = () => {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Purchase Orders</h1>
-          <p className="text-sm text-neutral-500">Track open POs and receive inventory.</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Purchase Orders</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Track open POs and receive inventory.</p>
         </div>
-        <button className="rounded bg-blue-600 px-4 py-2 text-sm text-white" onClick={() => setIsOpen(true)}>
+        <button className="rounded bg-[var(--wp-color-primary)] px-4 py-2 text-sm text-[var(--wp-color-text)]" onClick={() => setIsOpen(true)}>
           New PO
         </button>
       </header>
 
-      <div className="rounded-lg border border-neutral-200 bg-white">
+      <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]">
         <table className="w-full text-sm">
-          <thead className="border-b border-neutral-200 text-left text-xs uppercase text-neutral-500">
+          <thead className="border-b border-[var(--wp-color-border)] text-left text-xs uppercase text-[var(--wp-color-text-muted)]">
             <tr>
               <th className="px-4 py-2">PO</th>
               <th className="px-4 py-2">Status</th>
@@ -32,9 +32,9 @@ const PurchaseOrders: React.FC = () => {
           </thead>
           <tbody>
             {orders.map((order) => (
-              <tr key={String(order._id ?? order.id)} className="border-b border-neutral-100">
-                <td className="px-4 py-2 text-neutral-900">{String(order.poNumber ?? 'PO')}</td>
-                <td className="px-4 py-2 text-neutral-600">{String(order.status ?? 'draft')}</td>
+              <tr key={String(order._id ?? order.id)} className="border-b border-[var(--wp-color-border)]">
+                <td className="px-4 py-2 text-[var(--wp-color-text)]">{String(order.poNumber ?? 'PO')}</td>
+                <td className="px-4 py-2 text-[var(--wp-color-text-muted)]">{String(order.status ?? 'draft')}</td>
               </tr>
             ))}
           </tbody>
@@ -47,3 +47,4 @@ const PurchaseOrders: React.FC = () => {
 };
 
 export default PurchaseOrders;
+

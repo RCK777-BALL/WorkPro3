@@ -43,7 +43,7 @@ export function LowStockSummaryWidget() {
 
   const renderBody = () => {
     if (alertsLoading) {
-      return <div className="text-sm text-neutral-500">Loading low stock…</div>;
+      return <div className="text-sm text-[var(--wp-color-text-muted)]">Loading low stock…</div>;
     }
     if (alertsError) {
       return (
@@ -56,7 +56,7 @@ export function LowStockSummaryWidget() {
       );
     }
     if (sortedAlerts.length === 0) {
-      return <div className="text-sm text-neutral-500">No low stock parts right now.</div>;
+      return <div className="text-sm text-[var(--wp-color-text-muted)]">No low stock parts right now.</div>;
     }
 
     return (
@@ -72,19 +72,19 @@ export function LowStockSummaryWidget() {
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${statusTone[severity]}`}>
                       {severityLabel(severity)}
                     </span>
-                    <span className="text-neutral-700">{alert.partName}</span>
+                    <span className="text-[var(--wp-color-text)]">{alert.partName}</span>
                     {alert.acknowledged ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
                         <CheckCircle2 className="h-3 w-3" /> Acknowledged
                       </span>
                     ) : null}
                   </div>
-                  <p className="text-xs text-neutral-500">Threshold: {threshold} • On hand: {alert.quantity}</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">Threshold: {threshold} • On hand: {alert.quantity}</p>
                   {alert.assetNames?.length ? (
-                    <p className="text-xs text-neutral-500">Assets: {alert.assetNames.join(', ')}</p>
+                    <p className="text-xs text-[var(--wp-color-text-muted)]">Assets: {alert.assetNames.join(', ')}</p>
                   ) : null}
                 </div>
-                <div className="flex flex-col items-end gap-2 text-xs text-neutral-600">
+                <div className="flex flex-col items-end gap-2 text-xs text-[var(--wp-color-text-muted)]">
                   <div className="flex gap-2">
                     <Button
                       size="xs"
@@ -144,3 +144,4 @@ function severityLabel(severity: 'ok' | 'warning' | 'critical') {
   if (severity === 'warning') return 'Low';
   return 'Healthy';
 }
+

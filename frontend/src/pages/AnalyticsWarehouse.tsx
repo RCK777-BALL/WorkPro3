@@ -12,3 +12,4 @@ const AnalyticsWarehousePage: React.FC = () => (
 );
 
 export default AnalyticsWarehousePage;
+

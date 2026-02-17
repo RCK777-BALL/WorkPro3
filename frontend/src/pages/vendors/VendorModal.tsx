@@ -152,3 +152,4 @@ const VendorModal = ({ opened, vendor, onClose, onSaved }: Props) => {
 };
 
 export default VendorModal;
+

@@ -52,7 +52,7 @@ export default function WorkOrderChecklistEditor() {
           <option value="numeric">Numeric</option>
           <option value="text">Text</option>
         </select>
-        <button className="bg-gray-800 text-white px-3 rounded" onClick={addItem} type="button">
+        <button className="bg-gray-800 text-[var(--wp-color-text)] px-3 rounded" onClick={addItem} type="button">
           Add
         </button>
       </div>
@@ -70,7 +70,7 @@ export default function WorkOrderChecklistEditor() {
           </li>
         ))}
       </ul>
-      <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded" onClick={save} type="button">
+      <button className="mt-4 bg-[var(--wp-color-primary)] text-[var(--wp-color-text)] px-4 py-2 rounded" onClick={save} type="button">
         Save Checklist
       </button>
       {success && <p className="text-green-600 mt-2">Saved!</p>}
@@ -78,3 +78,4 @@ export default function WorkOrderChecklistEditor() {
     </div>
   );
 }
+

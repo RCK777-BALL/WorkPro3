@@ -125,9 +125,9 @@ const DepartmentTable = ({
   }, [normalizedDepartments]);
 
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
+    <div className="bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)] rounded-2xl border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] shadow-sm">
       {groupedDepartments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center text-neutral-500 dark:text-neutral-400">
+        <div className="flex flex-col items-center justify-center py-16 text-center text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
           <Layers className="h-10 w-10" />
           <p className="mt-3 text-sm">No departments match your filters.</p>
         </div>
@@ -148,12 +148,12 @@ const DepartmentTable = ({
                       {expandedPlant ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </span>
                     <span>
-                      <span className="flex items-center gap-2 text-base font-semibold text-neutral-900 dark:text-neutral-50">
+                      <span className="flex items-center gap-2 text-base font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                         <Factory className="h-4 w-4" />
                         {plant?.name ?? 'Unassigned Plant'}
                       </span>
                       {(plant?.location || plant?.description) && (
-                        <span className="mt-1 block text-sm text-neutral-500 dark:text-neutral-400">
+                        <span className="mt-1 block text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                           {plant?.location}
                           {plant?.location && plant?.description ? ' · ' : ''}
                           {plant?.description}
@@ -170,7 +170,7 @@ const DepartmentTable = ({
                   )}
                 </div>
                 {expandedPlant && (
-                  <div className="mt-4 rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+                  <div className="mt-4 rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]">
                     <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
                       {plantDepartments.map((department) => {
                         const expanded = expandedDepartments[department.id];
@@ -186,11 +186,11 @@ const DepartmentTable = ({
                                   {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                 </span>
                                 <span>
-                                  <span className="block text-base font-semibold text-neutral-900 dark:text-neutral-50">
+                                  <span className="block text-base font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                                     {department.name}
                                   </span>
                                   {department.description && (
-                                    <span className="mt-1 block text-sm text-neutral-500 dark:text-neutral-400">
+                                    <span className="mt-1 block text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                                       {department.description}
                                     </span>
                                   )}
@@ -205,7 +205,7 @@ const DepartmentTable = ({
                             {expanded && (
                               <div className="mt-4 space-y-4 sm:ml-9">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Lines</p>
+                                  <p className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text-muted)]">Lines</p>
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -215,7 +215,7 @@ const DepartmentTable = ({
                                   </Button>
                                 </div>
                                 {department.lines.length === 0 ? (
-                                  <div className="rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+                                  <div className="rounded-lg border border-dashed border-[var(--wp-color-border)] p-4 text-sm text-[var(--wp-color-text-muted)] dark:border-[var(--wp-color-border)] dark:text-[var(--wp-color-text-muted)]">
                                     <span>No lines added yet.</span>
                                   </div>
                                 ) : (
@@ -223,14 +223,14 @@ const DepartmentTable = ({
                                     const lineKey = `${department.id}-${line.id}`;
                                     const lineExpanded = expandedLines[lineKey];
                                     return (
-                                      <div key={line.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/60">
+                                      <div key={line.id} className="rounded-xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]/60">
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                           <button
                                             type="button"
                                             onClick={() => toggleLine(lineKey)}
                                             className="flex items-start text-left"
                                           >
-                                            <span className="mt-1 mr-3 rounded-full bg-neutral-200 p-1 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+                                            <span className="mt-1 mr-3 rounded-full bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] p-1 text-[var(--wp-color-text)] dark:bg-[var(--wp-color-surface-elevated)] dark:text-[var(--wp-color-text)]">
                                               {lineExpanded ? (
                                                 <ChevronDown className="h-4 w-4" />
                                               ) : (
@@ -238,11 +238,11 @@ const DepartmentTable = ({
                                               )}
                                             </span>
                                             <span>
-                                              <span className="block font-medium text-neutral-900 dark:text-neutral-50">
+                                              <span className="block font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                                                 {line.name}
                                               </span>
                                               {line.description && (
-                                                <span className="mt-1 block text-sm text-neutral-500 dark:text-neutral-400">
+                                                <span className="mt-1 block text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                                                   {line.description}
                                                 </span>
                                               )}
@@ -268,7 +268,7 @@ const DepartmentTable = ({
                                         {lineExpanded && (
                                           <div className="mt-4 space-y-3 sm:ml-9">
                                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Stations</p>
+                                              <p className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text-muted)]">Stations</p>
                                               <Button
                                                 variant="outline"
                                                 size="sm"
@@ -278,7 +278,7 @@ const DepartmentTable = ({
                                               </Button>
                                             </div>
                                             {line.stations.length === 0 ? (
-                                              <div className="rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+                                              <div className="rounded-lg border border-dashed border-[var(--wp-color-border)] p-4 text-sm text-[var(--wp-color-text-muted)] dark:border-[var(--wp-color-border)] dark:text-[var(--wp-color-text-muted)]">
                                                 <span>No stations available.</span>
                                               </div>
                                             ) : (
@@ -286,14 +286,14 @@ const DepartmentTable = ({
                                                 const stationKey = `${lineKey}-${station.id}`;
                                                 const stationExpanded = expandedStations[stationKey];
                                                 return (
-                                                  <div key={station.id} className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                                                  <div key={station.id} className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]">
                                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                                       <button
                                                         type="button"
                                                         onClick={() => toggleStation(stationKey)}
                                                         className="flex items-start text-left"
                                                       >
-                                                        <span className="mt-1 mr-3 rounded-full bg-neutral-100 p-1 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                                                        <span className="mt-1 mr-3 rounded-full bg-[var(--wp-color-surface-elevated)] p-1 text-[var(--wp-color-text)] dark:bg-[var(--wp-color-surface-elevated)] dark:text-[var(--wp-color-text)]">
                                                           {stationExpanded ? (
                                                             <ChevronDown className="h-4 w-4" />
                                                           ) : (
@@ -301,11 +301,11 @@ const DepartmentTable = ({
                                                           )}
                                                         </span>
                                                         <span>
-                                                          <span className="block font-medium text-neutral-900 dark:text-neutral-50">
+                                                          <span className="block font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                                                             {station.name}
                                                           </span>
                                                           {station.description && (
-                                                            <span className="mt-1 block text-sm text-neutral-500 dark:text-neutral-400">
+                                                            <span className="mt-1 block text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                                                               {station.description}
                                                             </span>
                                                           )}
@@ -331,7 +331,7 @@ const DepartmentTable = ({
                                                     {stationExpanded && (
                                                       <div className="mt-4 space-y-3 sm:ml-9">
                                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                                          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Assets</p>
+                                                          <p className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text-muted)]">Assets</p>
                                                           <Button
                                                             variant="outline"
                                                             size="sm"
@@ -341,18 +341,18 @@ const DepartmentTable = ({
                                                           </Button>
                                                         </div>
                                                         {station.assets.length === 0 ? (
-                                                          <p className="rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+                                                          <p className="rounded-lg border border-dashed border-[var(--wp-color-border)] p-4 text-sm text-[var(--wp-color-text-muted)] dark:border-[var(--wp-color-border)] dark:text-[var(--wp-color-text-muted)]">
                                                             No assets in this station.
                                                           </p>
                                                         ) : (
                                                           station.assets.map((asset) => (
                                                             <div
                                                               key={asset.id}
-                                                              className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-700 dark:bg-neutral-800/50"
+                                                              className="flex flex-col gap-4 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)]/50"
                                                             >
                                                               <div>
                                                                 <div className="flex flex-wrap items-center gap-3">
-                                                                  <span className="font-medium text-neutral-900 dark:text-neutral-50">
+                                                                  <span className="font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                                                                     {asset.name}
                                                                   </span>
                                                                   {asset.type && (
@@ -360,7 +360,7 @@ const DepartmentTable = ({
                                                                       text={asset.type}
                                                                       className={
                                                                         typeBadges[asset.type] ??
-                                                                        'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
+                                                                        'bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] text-[var(--wp-color-text)] dark:bg-[var(--wp-color-surface-elevated)] dark:text-[var(--wp-color-text)]'
                                                                       }
                                                                     />
                                                                   )}
@@ -369,14 +369,14 @@ const DepartmentTable = ({
                                                                   )}
                                                                 </div>
                                                                 {(asset.description || asset.location) && (
-                                                                  <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+                                                                  <p className="mt-2 text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                                                                     {asset.description}
                                                                     {asset.description && asset.location && ' · '}
                                                                     {asset.location}
                                                                   </p>
                                                                 )}
                                                                 {asset.lastServiced && (
-                                                                  <p className="mt-1 text-xs text-neutral-400">
+                                                                  <p className="mt-1 text-xs text-[var(--wp-color-text-muted)]">
                                                                     Last serviced on {asset.lastServiced}
                                                                   </p>
                                                                 )}
@@ -430,3 +430,4 @@ const DepartmentTable = ({
 };
 
 export default DepartmentTable;
+

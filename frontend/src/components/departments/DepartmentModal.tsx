@@ -337,7 +337,7 @@ const DepartmentModal = ({
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Plant<span className="text-error-500">*</span>
           </label>
           <select
@@ -346,7 +346,7 @@ const DepartmentModal = ({
               setPlantId(event.target.value);
               setPlantTouched(true);
             }}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-[var(--wp-color-text)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
             disabled={plantsLoading || plants.length === 0}
           >
             <option value="" disabled>
@@ -366,20 +366,20 @@ const DepartmentModal = ({
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Name
           </label>
           <input
             value={name}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
             onBlur={() => setTouched(true)}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-[var(--wp-color-text)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
             placeholder="Department name"
           />
           {error && <p className="mt-1 text-sm text-error-600">{error}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Description
           </label>
           <textarea
@@ -387,14 +387,14 @@ const DepartmentModal = ({
             onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
               setDescription(event.target.value)
             }
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-[var(--wp-color-text)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
             rows={4}
             placeholder="Describe the department"
           />
         </div>
         <div>
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Lines</label>
+            <label className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Lines</label>
             <Button
               type="button"
               variant="ghost"
@@ -407,7 +407,7 @@ const DepartmentModal = ({
             </Button>
           </div>
           {lines.length === 0 ? (
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="mt-2 text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
               No lines added yet.
             </p>
           ) : (
@@ -415,11 +415,11 @@ const DepartmentModal = ({
               {lines.map((line, index) => (
                 <div
                   key={line.key}
-                  className="space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/40"
+                  className="space-y-3 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-3 dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)]"
                 >
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
-                      <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                      <label className="text-xs font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text-muted)]">
                         Line Name
                       </label>
                       <input
@@ -428,7 +428,7 @@ const DepartmentModal = ({
                           handleLineChange(index, event.target.value)
                         }
                         onBlur={() => handleLineBlur(index)}
-                        className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                        className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-[var(--wp-color-text)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
                         placeholder="Line name"
                       />
                       {lineErrors[index] && (
@@ -447,7 +447,7 @@ const DepartmentModal = ({
                   </div>
                   <div>
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-medium uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+                      <label className="text-xs font-medium uppercase tracking-wide text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                         Stations
                       </label>
                       <Button
@@ -461,7 +461,7 @@ const DepartmentModal = ({
                       </Button>
                     </div>
                     {line.stations.length === 0 ? (
-                      <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+                      <p className="mt-2 text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                         No stations added yet.
                       </p>
                     ) : (
@@ -475,7 +475,7 @@ const DepartmentModal = ({
                                   handleStationChange(index, stationIndex, event.target.value)
                                 }
                                 onBlur={() => handleStationBlur(index, stationIndex)}
-                                className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                                className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-[var(--wp-color-text)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:text-[var(--wp-color-text)]"
                                 placeholder="Station name"
                               />
                               <Button
@@ -507,3 +507,4 @@ const DepartmentModal = ({
 };
 
 export default DepartmentModal;
+

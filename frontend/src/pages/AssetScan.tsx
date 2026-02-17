@@ -113,8 +113,8 @@ const AssetScan: React.FC = () => {
     <div className="space-y-6 p-6">
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-primary-500">QR scanning</p>
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">Scan asset QR code</h1>
-        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+        <h1 className="text-3xl font-bold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Scan asset QR code</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
           Use your device camera to jump directly to an asset or open a corrective work order when issues are spotted on the floor.
         </p>
       </header>
@@ -141,14 +141,14 @@ const AssetScan: React.FC = () => {
         </div>
       )}
 
-      <div className="grid gap-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60 md:grid-cols-3">
+      <div className="grid gap-4 rounded-xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] md:grid-cols-3">
         <div className="flex items-start gap-3">
           <div className="mt-1 rounded-full bg-primary-100 p-2 text-primary-700 dark:bg-primary-900/50 dark:text-primary-200">
             <Scan className="h-4 w-4" />
           </div>
           <div>
-            <p className="font-semibold text-neutral-900 dark:text-neutral-50">Point and capture</p>
-            <p className="text-sm text-neutral-600 dark:text-neutral-300">The scanner uses your browser camera and works offline-friendly when cached.</p>
+            <p className="font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Point and capture</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">The scanner uses your browser camera and works offline-friendly when cached.</p>
           </div>
         </div>
         <div className="flex items-start gap-3">
@@ -156,8 +156,8 @@ const AssetScan: React.FC = () => {
             <Wand2 className="h-4 w-4" />
           </div>
           <div>
-            <p className="font-semibold text-neutral-900 dark:text-neutral-50">Navigate instantly</p>
-            <p className="text-sm text-neutral-600 dark:text-neutral-300">Valid asset codes open the asset page so technicians can review context right away.</p>
+            <p className="font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Navigate instantly</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Valid asset codes open the asset page so technicians can review context right away.</p>
           </div>
         </div>
         <div className="flex items-start gap-3">
@@ -165,13 +165,13 @@ const AssetScan: React.FC = () => {
             <ClipboardList className="h-4 w-4" />
           </div>
           <div>
-            <p className="font-semibold text-neutral-900 dark:text-neutral-50">Raise work orders</p>
-            <p className="text-sm text-neutral-600 dark:text-neutral-300">If an asset is missing or failing, open a corrective work order directly from the scan.</p>
+            <p className="font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Raise work orders</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">If an asset is missing or failing, open a corrective work order directly from the scan.</p>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+      <div className="flex flex-wrap gap-2 text-sm text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
         <span className="font-semibold">Need to scan again?</span>
         <span>Tap the retry button to request camera access or refresh the page if your browser revoked the permission.</span>
       </div>
@@ -188,3 +188,4 @@ const AssetScan: React.FC = () => {
 };
 
 export default AssetScan;
+

@@ -135,9 +135,9 @@ const PurchaseOrderDetailPage = () => {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm text-neutral-500">Purchase Order</p>
-          <h1 className="text-2xl font-semibold text-neutral-900">{purchaseOrder?.poNumber ?? purchaseOrder?.id ?? 'New PO'}</h1>
-          <p className="text-sm text-neutral-500">Create or update purchase orders and receive items.</p>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Purchase Order</p>
+          <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">{purchaseOrder?.poNumber ?? purchaseOrder?.id ?? 'New PO'}</h1>
+          <p className="text-sm text-[var(--wp-color-text-muted)]">Create or update purchase orders and receive items.</p>
         </div>
         <div className="flex gap-2">
           {!isNew && (
@@ -164,10 +164,10 @@ const PurchaseOrderDetailPage = () => {
             {timeline.map((item) => (
               <div key={item.status} className="flex items-center gap-2">
                 <div
-                  className={`h-3 w-3 rounded-full ${item.done ? 'bg-primary-600' : 'bg-neutral-300'}`}
+                  className={`h-3 w-3 rounded-full ${item.done ? 'bg-primary-600' : 'bg-[color-mix(in srgb,var(--wp-color-text) 20%, transparent)]'}`}
                   aria-hidden
                 />
-                <span className="text-sm text-neutral-800">{statusLabels[item.status]}</span>
+                <span className="text-sm text-[var(--wp-color-text)]">{statusLabels[item.status]}</span>
               </div>
             ))}
           </div>
@@ -175,13 +175,13 @@ const PurchaseOrderDetailPage = () => {
         <Card title="Audit trail" subtitle="Latest activity" className="space-y-3">
           {purchaseOrder?.activities?.length ? (
             purchaseOrder.activities.map((activity) => (
-              <div key={activity.id} className="rounded-md border border-neutral-200 p-3">
-                <p className="text-sm text-neutral-800">{activity.message}</p>
-                <p className="text-xs text-neutral-500">{formatDate(activity.createdAt)}</p>
+              <div key={activity.id} className="rounded-md border border-[var(--wp-color-border)] p-3">
+                <p className="text-sm text-[var(--wp-color-text)]">{activity.message}</p>
+                <p className="text-xs text-[var(--wp-color-text-muted)]">{formatDate(activity.createdAt)}</p>
               </div>
             ))
           ) : (
-            <p className="text-sm text-neutral-500">No activity recorded yet.</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">No activity recorded yet.</p>
           )}
         </Card>
       </div>
@@ -191,9 +191,9 @@ const PurchaseOrderDetailPage = () => {
           <form className="space-y-4" onSubmit={handleSave}>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-neutral-700">Vendor</label>
+                <label className="block text-sm font-medium text-[var(--wp-color-text)]">Vendor</label>
                 <select
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
+                  className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] px-3 py-2"
                   value={form.vendorId}
                   onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
                     setForm((prev) => ({ ...prev, vendorId: event.target.value }))
@@ -237,7 +237,7 @@ const PurchaseOrderDetailPage = () => {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-neutral-800">Line items</p>
+                <p className="text-sm font-semibold text-[var(--wp-color-text)]">Line items</p>
                 {isDraft && (
                   <Button size="sm" variant="outline" onClick={addLine}>
                     Add line
@@ -246,7 +246,7 @@ const PurchaseOrderDetailPage = () => {
               </div>
               <div className="space-y-3">
                 {form.lines.map((line, index) => (
-                  <div key={index} className="grid gap-3 rounded-md border border-neutral-200 p-3 md:grid-cols-4">
+                  <div key={index} className="grid gap-3 rounded-md border border-[var(--wp-color-border)] p-3 md:grid-cols-4">
                     <Input
                       label="Part"
                       value={line.part}
@@ -324,3 +324,4 @@ const PurchaseOrderDetailPage = () => {
 };
 
 export default PurchaseOrderDetailPage;
+

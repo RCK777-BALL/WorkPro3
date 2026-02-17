@@ -82,8 +82,8 @@ const AssetManagementGuide: React.FC = () => (
         <span className="text-sm font-medium">Guides / Asset Management</span>
       </div>
       <div>
-        <h1 className="text-3xl font-bold text-neutral-900">Asset Management Setup</h1>
-        <p className="text-neutral-600 mt-2 max-w-3xl">
+        <h1 className="text-3xl font-bold text-[var(--wp-color-text)]">Asset Management Setup</h1>
+        <p className="text-[var(--wp-color-text-muted)] mt-2 max-w-3xl">
           Build a clear asset hierarchy by selecting a plant, creating departments, adding lines and stations, and
           placing assets where work happens. Follow these steps to keep maintenance and reporting organized.
         </p>
@@ -104,14 +104,14 @@ const AssetManagementGuide: React.FC = () => (
             <div className="p-3 rounded-lg bg-primary-50">{step.icon}</div>
             <div className="flex-1 space-y-3">
               <div>
-                <h2 className="text-xl font-semibold text-neutral-900">{step.title}</h2>
-                <p className="text-neutral-600 mt-1">{step.description}</p>
+                <h2 className="text-xl font-semibold text-[var(--wp-color-text)]">{step.title}</h2>
+                <p className="text-[var(--wp-color-text-muted)] mt-1">{step.description}</p>
               </div>
               <div className="space-y-2">
                 {step.actions.map((action) => (
                   <div key={action} className="flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-success-600 mt-0.5" />
-                    <p className="text-neutral-700">{action}</p>
+                    <p className="text-[var(--wp-color-text)]">{action}</p>
                   </div>
                 ))}
               </div>
@@ -127,3 +127,4 @@ const AssetManagementGuide: React.FC = () => (
 );
 
 export default AssetManagementGuide;
+

@@ -83,25 +83,25 @@ export default function Plants() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-100">Plants</h1>
-        <p className="text-sm text-slate-400">
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Plants</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">
           Manage each plant in your organization and define their locations.
         </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-slate-100"
+        className="rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4 text-[var(--wp-color-text)]"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--wp-color-text-muted)]">
             {editingPlantId ? 'Edit Plant' : 'Add Plant'}
           </h2>
           {editingPlantId && (
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="text-xs font-medium text-slate-400 hover:text-slate-200"
+              className="text-xs font-medium text-[var(--wp-color-text-muted)] hover:text-[var(--wp-color-text)]"
               disabled={loading}
             >
               Cancel edit
@@ -110,28 +110,28 @@ export default function Plants() {
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs uppercase text-slate-500">Name</label>
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]">Name</label>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+              className="rounded border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-2 py-1 text-sm text-[var(--wp-color-text)]"
               required
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs uppercase text-slate-500">Location</label>
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]">Location</label>
             <input
               value={location}
               onChange={(event) => setLocation(event.target.value)}
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+              className="rounded border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-2 py-1 text-sm text-[var(--wp-color-text)]"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs uppercase text-slate-500">Description</label>
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]">Description</label>
             <input
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100"
+              className="rounded border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-2 py-1 text-sm text-[var(--wp-color-text)]"
             />
           </div>
         </div>
@@ -139,18 +139,18 @@ export default function Plants() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400 disabled:opacity-50"
+            className="rounded-md bg-sky-500 px-4 py-2 text-sm font-medium text-[var(--wp-color-text)] hover:bg-sky-400 disabled:opacity-50"
           >
             {loading ? 'Saving…' : editingPlantId ? 'Save Changes' : 'Add Plant'}
           </button>
         </div>
       </form>
 
-      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-200">Existing Plants</h2>
+      <div className="rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+        <h2 className="mb-3 text-sm font-semibold text-[var(--wp-color-text)]">Existing Plants</h2>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-800 text-sm text-slate-200">
-            <thead className="bg-slate-900/60 text-xs uppercase text-slate-400">
+          <table className="min-w-full divide-y divide-slate-800 text-sm text-[var(--wp-color-text)]">
+            <thead className="bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] text-xs uppercase text-[var(--wp-color-text-muted)]">
               <tr>
                 <th className="px-3 py-2 text-left">Name</th>
                 <th className="px-3 py-2 text-left">Location</th>
@@ -162,8 +162,8 @@ export default function Plants() {
               {plants.map((plant) => (
                 <tr key={plant._id}>
                   <td className="px-3 py-2">{plant.name}</td>
-                  <td className="px-3 py-2 text-slate-400">{plant.location || '—'}</td>
-                  <td className="px-3 py-2 text-slate-400">{plant.description || '—'}</td>
+                  <td className="px-3 py-2 text-[var(--wp-color-text-muted)]">{plant.location || '—'}</td>
+                  <td className="px-3 py-2 text-[var(--wp-color-text-muted)]">{plant.description || '—'}</td>
                   <td className="px-3 py-2 text-right">
                     <button
                       type="button"
@@ -177,7 +177,7 @@ export default function Plants() {
               ))}
               {plants.length === 0 && (
                 <tr>
-                  <td className="px-3 py-4 text-slate-400" colSpan={4}>
+                  <td className="px-3 py-4 text-[var(--wp-color-text-muted)]" colSpan={4}>
                     No plants yet. Add your first plant above.
                   </td>
                 </tr>
@@ -189,3 +189,4 @@ export default function Plants() {
     </div>
   );
 }
+

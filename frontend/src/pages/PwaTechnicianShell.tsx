@@ -209,7 +209,7 @@ const PwaTechnicianShell: React.FC = () => {
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <header className="space-y-2 rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-primary-600 px-5 py-6 text-white shadow-lg">
+      <header className="space-y-2 rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-primary-600 px-5 py-6 text-[var(--wp-color-text)] shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-primary-200">PWA shell</p>
@@ -224,13 +224,13 @@ const PwaTechnicianShell: React.FC = () => {
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => void refreshAssignments()} className="flex items-center gap-2 text-white">
+          <Button size="sm" variant="outline" onClick={() => void refreshAssignments()} className="flex items-center gap-2 text-[var(--wp-color-text)]">
             <Download className="h-4 w-4" /> Refresh & cache WOs
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => void syncManager.sync()} className="flex items-center gap-2 text-white/90">
+          <Button size="sm" variant="ghost" onClick={() => void syncManager.sync()} className="flex items-center gap-2 text-[var(--wp-color-text)]/90">
             <Radio className="h-4 w-4" /> Sync now
           </Button>
-          <Button size="sm" variant="ghost" onClick={warmOfflineCaches} disabled={warmingCache} className="flex items-center gap-2 text-white/90">
+          <Button size="sm" variant="ghost" onClick={warmOfflineCaches} disabled={warmingCache} className="flex items-center gap-2 text-[var(--wp-color-text)]/90">
             <ShieldCheck className="h-4 w-4" /> {warmingCache ? 'Caching…' : 'Cache PM / assets'}
           </Button>
           {installEvent && (
@@ -249,47 +249,47 @@ const PwaTechnicianShell: React.FC = () => {
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="space-y-3 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60 lg:col-span-2">
+        <section className="space-y-3 rounded-xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/80 p-4 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-wide text-primary-500">Camera</p>
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">QR / barcode scan for assets & WOs</h2>
+              <h2 className="text-lg font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">QR / barcode scan for assets & WOs</h2>
             </div>
             <Badge text={scanResult ? 'Scan detected' : 'Waiting…'} type={scanResult ? 'success' : 'info'} />
           </div>
           <QrScanner onDetected={handleScan} onError={(message) => setLastMessage(message ?? 'Camera error')} />
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
-              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Detected asset</p>
-              <p className="text-sm text-neutral-900 dark:text-neutral-100">{detectedAssetId ?? '—'}</p>
+            <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 p-3 dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)]">
+              <p className="text-xs font-semibold text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Detected asset</p>
+              <p className="text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{detectedAssetId ?? '—'}</p>
               <Button size="sm" variant="ghost" className="mt-2 flex items-center gap-2" onClick={checkInFromScan}>
                 <Fingerprint className="h-4 w-4" /> Queue check-in
               </Button>
             </div>
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
-              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Detected work order</p>
+            <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 p-3 dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)]">
+              <p className="text-xs font-semibold text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Detected work order</p>
               {detectedWorkOrder ? (
-                <div className="space-y-1 text-sm text-neutral-900 dark:text-neutral-100">
+                <div className="space-y-1 text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                   <p className="font-semibold">{detectedWorkOrder.title}</p>
-                  <p className="text-xs text-neutral-500">Status: {detectedWorkOrder.status}</p>
-                  <p className="text-xs text-neutral-500">Priority: {detectedWorkOrder.priority}</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">Status: {detectedWorkOrder.status}</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">Priority: {detectedWorkOrder.priority}</p>
                 </div>
               ) : (
-                <p className="text-sm text-neutral-500">—</p>
+                <p className="text-sm text-[var(--wp-color-text-muted)]">—</p>
               )}
             </div>
           </div>
         </section>
 
-        <section className="space-y-3 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+        <section className="space-y-3 rounded-xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/80 p-4 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-wide text-primary-500">Sync state</p>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">Offline queue</h3>
+              <h3 className="text-lg font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Offline queue</h3>
             </div>
             <Badge text={`${queueSize} queued`} type={queueSize > 0 ? 'warning' : 'success'} />
           </div>
-          <div className="space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
+          <div className="space-y-2 text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             <p className="flex items-center gap-2">
               {offline ? <WifiOff className="h-4 w-4" /> : <Wifi className="h-4 w-4" />} {offline ? 'Offline' : 'Online'}
             </p>
@@ -303,29 +303,29 @@ const PwaTechnicianShell: React.FC = () => {
               </div>
             )}
           </div>
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-3 text-sm dark:border-neutral-800 dark:bg-neutral-900/60">
-            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Cached work orders</p>
+          <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 p-3 text-sm dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]">
+            <p className="text-xs font-semibold text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Cached work orders</p>
             <ul className="mt-2 space-y-2">
               {cachedOrders.slice(0, 3).map((order) => (
-                <li key={order.id} className="flex items-center justify-between rounded-md bg-white/80 px-3 py-2 text-xs shadow-sm dark:bg-neutral-950/60">
+                <li key={order.id} className="flex items-center justify-between rounded-md bg-[var(--wp-color-surface)]/80 px-3 py-2 text-xs shadow-sm dark:bg-[color-mix(in_srgb,var(--wp-color-background)_70%,transparent)]">
                   <div>
-                    <p className="font-semibold text-neutral-900 dark:text-neutral-100">{order.title}</p>
-                    <p className="text-neutral-500">{order.asset?.name ?? 'Unlinked asset'}</p>
+                    <p className="font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{order.title}</p>
+                    <p className="text-[var(--wp-color-text-muted)]">{order.asset?.name ?? 'Unlinked asset'}</p>
                   </div>
                   <Badge text={order.status} type="status" size="sm" />
                 </li>
               ))}
-              {cachedOrders.length === 0 && <li className="text-xs text-neutral-500">No cached assignments yet.</li>}
+              {cachedOrders.length === 0 && <li className="text-xs text-[var(--wp-color-text-muted)]">No cached assignments yet.</li>}
             </ul>
           </div>
         </section>
       </div>
 
-      <section className="space-y-3 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+      <section className="space-y-3 rounded-xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/80 p-4 shadow-sm dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-wide text-primary-500">Touch cards</p>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">Tap-friendly technician shortcuts</h3>
+            <h3 className="text-lg font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Tap-friendly technician shortcuts</h3>
           </div>
           <Badge text="Packaged for offline" type="success" />
         </div>
@@ -335,12 +335,12 @@ const PwaTechnicianShell: React.FC = () => {
             { title: 'Mark complete', description: 'Queue completion for sync.', icon: Check },
             { title: 'Navigate asset', description: 'Open asset details in one tap.', icon: ArrowRightCircle },
           ].map((card) => (
-            <div key={card.title} className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-400 dark:border-neutral-800 dark:bg-neutral-900/60">
+            <div key={card.title} className="rounded-xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/80 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-400 dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]">
               <div className="flex items-center gap-2 text-primary-600 dark:text-primary-300">
                 <card.icon className="h-4 w-4" />
                 <p className="text-xs font-semibold uppercase tracking-wide">{card.title}</p>
               </div>
-              <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-200">{card.description}</p>
+              <p className="mt-2 text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{card.description}</p>
             </div>
           ))}
         </div>
@@ -352,3 +352,4 @@ const PwaTechnicianShell: React.FC = () => {
 };
 
 export default PwaTechnicianShell;
+

@@ -65,3 +65,4 @@ describe('LowStockSummaryWidget', () => {
     expect(useNotificationsStore.getState().lowStockAlerts).toHaveLength(1);
   });
 });
+

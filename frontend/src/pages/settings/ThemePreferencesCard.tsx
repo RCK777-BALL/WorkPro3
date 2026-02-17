@@ -116,10 +116,10 @@ export default function ThemePreferencesCard() {
   );
 
   return (
-    <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
+    <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-[var(--wp-color-text-muted)]" />}>
       <div className="space-y-6">
         <section className="space-y-3">
-          <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-200">Theme mode</h4>
+          <h4 className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Theme mode</h4>
           <div className="grid gap-3 md:grid-cols-3">
             {THEME_MODE_OPTIONS.map(({ value, label, description, icon: Icon }) => {
               const isActive = selectedThemeMode === value;
@@ -129,7 +129,7 @@ export default function ThemePreferencesCard() {
                   className={`relative flex cursor-pointer flex-col rounded-lg border p-4 transition-all ${
                     isActive
                       ? 'border-primary-500 bg-primary-50 text-primary-900 dark:border-primary-500/80 dark:bg-primary-500/10 dark:text-primary-50'
-                      : 'border-neutral-200 bg-white hover:border-primary-200 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-primary-500/40'
+                      : 'border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] hover:border-primary-200 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:hover:border-primary-500/40'
                   }`}
                 >
                   <input
@@ -144,15 +144,15 @@ export default function ThemePreferencesCard() {
                     <span
                       className={`flex h-10 w-10 items-center justify-center rounded-full border text-lg ${
                         isActive
-                          ? 'border-primary-500 bg-primary-500 text-white'
-                          : 'border-neutral-200 bg-neutral-100 text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                          ? 'border-primary-500 bg-primary-500 text-[var(--wp-color-text)]'
+                          : 'border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] text-[var(--wp-color-text-muted)] dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface-elevated)] dark:text-[var(--wp-color-text-muted)]'
                       }`}
                     >
                       <Icon className="h-5 w-5" />
                     </span>
                     <div>
                       <p className="text-sm font-semibold">{label}</p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+                      <p className="text-xs text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">{description}</p>
                     </div>
                   </div>
                 </label>
@@ -162,7 +162,7 @@ export default function ThemePreferencesCard() {
         </section>
 
         <section className="space-y-3">
-          <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-200">Color scheme</h4>
+          <h4 className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Color scheme</h4>
           <div className="grid gap-3 md:grid-cols-3">
             {COLOR_SCHEME_OPTIONS.map(({ value, label, swatch }) => {
               const isSelected = selectedColorScheme === value;
@@ -172,7 +172,7 @@ export default function ThemePreferencesCard() {
                   className={`group flex cursor-pointer flex-col rounded-lg border p-4 transition-all ${
                     isSelected
                       ? 'border-primary-500 bg-primary-50 dark:border-primary-500/80 dark:bg-primary-500/10'
-                      : 'border-neutral-200 bg-white hover:border-primary-200 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-primary-500/40'
+                      : 'border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] hover:border-primary-200 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)] dark:hover:border-primary-500/40'
                   }`}
                 >
                   <input
@@ -185,8 +185,8 @@ export default function ThemePreferencesCard() {
                   />
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{label}</p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Accent color presets</p>
+                      <p className="text-sm font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{label}</p>
+                      <p className="text-xs text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Accent color presets</p>
                     </div>
                     <div className="flex items-center gap-1">
                       {swatch.map((color) => (
@@ -208,8 +208,8 @@ export default function ThemePreferencesCard() {
           {PREFERENCE_TOGGLES.map(({ key, label, description }) => (
             <div className="flex items-center justify-between" key={key}>
               <div>
-                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>
+                <p className="text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">{label}</p>
+                <p className="text-xs text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">{description}</p>
               </div>
               <label className="relative inline-flex cursor-pointer items-center">
                 <input
@@ -218,8 +218,8 @@ export default function ThemePreferencesCard() {
                   checked={Boolean(themeSettings[key])}
                   onChange={handleToggleChange(key)}
                 />
-                <div className="relative h-6 w-11 rounded-full bg-neutral-200 transition peer-checked:bg-primary-500 dark:bg-neutral-700">
-                  <div className="absolute top-1/2 left-1 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
+                <div className="relative h-6 w-11 rounded-full bg-[color-mix(in srgb,var(--wp-color-text) 12%, transparent)] transition peer-checked:bg-primary-500 dark:bg-[var(--wp-color-surface-elevated)]">
+                  <div className="absolute top-1/2 left-1 h-4 w-4 -translate-y-1/2 rounded-full bg-[var(--wp-color-surface)] shadow transition peer-checked:translate-x-5" />
                 </div>
               </label>
             </div>
@@ -229,3 +229,4 @@ export default function ThemePreferencesCard() {
     </Card>
   );
 }
+

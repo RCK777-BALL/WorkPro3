@@ -109,29 +109,29 @@ const AssetModal = ({ open, initial, loading = false, onClose, onSave, onDelete 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Asset name
             </label>
             <input
               value={name}
               onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
               onBlur={() => setTouched(true)}
-              className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]"
               placeholder="Asset name"
             />
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-[var(--wp-color-text-muted)]">
               Suggested format: {assetNameTemplate}
             </p>
             {error && <p className="mt-1 text-sm text-error-600">{error}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">Type</label>
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">Type</label>
             <select
               value={type}
               onChange={(event: ChangeEvent<HTMLSelectElement>) =>
                 setType(event.target.value as Asset['type'])
               }
-              className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]"
             >
               {assetTypes.map((option) => (
                 <option key={option} value={option}>
@@ -141,13 +141,13 @@ const AssetModal = ({ open, initial, loading = false, onClose, onSave, onDelete 
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Status
             </label>
             <select
               value={status}
               onChange={(event: ChangeEvent<HTMLSelectElement>) => setStatus(event.target.value)}
-              className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]"
             >
               {statusOptions.map((option) => (
                 <option key={option} value={option}>
@@ -157,48 +157,48 @@ const AssetModal = ({ open, initial, loading = false, onClose, onSave, onDelete 
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
               Last serviced
             </label>
             <input
               type="date"
               value={lastServiced}
               onChange={(event: ChangeEvent<HTMLInputElement>) => setLastServiced(event.target.value)}
-              className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]"
             />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Location
           </label>
           <input
             value={location}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setLocation(event.target.value)}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]"
             placeholder="Location"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Description
           </label>
           <textarea
             value={description}
             onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value)}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]"
             rows={3}
             placeholder="Short description"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             Notes
           </label>
           <textarea
             value={notes}
             onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setNotes(event.target.value)}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-1 w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-[var(--wp-color-border)] dark:bg-[var(--wp-color-surface)]"
             rows={3}
             placeholder="Internal notes"
           />
@@ -209,3 +209,4 @@ const AssetModal = ({ open, initial, loading = false, onClose, onSave, onDelete 
 };
 
 export default AssetModal;
+

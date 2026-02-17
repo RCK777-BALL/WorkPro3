@@ -60,30 +60,30 @@ export default function SubmitRequest() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 rounded-3xl bg-white p-6 shadow-lg">
+    <div className="mx-auto max-w-3xl space-y-6 rounded-3xl bg-[var(--wp-color-surface)] p-6 shadow-lg">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-neutral-900">Submit a request</h1>
-        <p className="text-sm text-neutral-500">Capture a new maintenance request and share contact details.</p>
+        <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Submit a request</h1>
+        <p className="text-sm text-[var(--wp-color-text-muted)]">Capture a new maintenance request and share contact details.</p>
       </header>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Title
             <input
               required
               value={payload.title}
               onChange={(evt) => handleChange('title', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
               placeholder="Short summary"
             />
           </label>
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Priority
             <select
               value={payload.priority}
               onChange={(evt) => handleChange('priority', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -93,87 +93,87 @@ export default function SubmitRequest() {
           </label>
         </div>
 
-        <label className="block space-y-1 text-sm font-medium text-neutral-700">
+        <label className="block space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
           Description
           <textarea
             required
             value={payload.description}
             onChange={(evt) => handleChange('description', evt.target.value)}
-            className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
             rows={4}
             placeholder="What do you need help with?"
           />
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Your name
             <input
               required
               value={payload.requesterName}
               onChange={(evt) => handleChange('requesterName', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
               placeholder="Taylor User"
             />
           </label>
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Email
             <input
               type="email"
               value={payload.requesterEmail}
               onChange={(evt) => handleChange('requesterEmail', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
               placeholder="you@example.com"
             />
           </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Phone
             <input
               value={payload.requesterPhone}
               onChange={(evt) => handleChange('requesterPhone', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
               placeholder="(555) 123-4567"
             />
           </label>
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Location
             <input
               value={payload.location}
               onChange={(evt) => handleChange('location', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
               placeholder="Line A"
             />
           </label>
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Asset tag
             <input
               value={payload.assetTag}
               onChange={(evt) => handleChange('assetTag', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
               placeholder="AS-1024"
             />
           </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Request form slug
             <input
               value={payload.formSlug}
               onChange={(evt) => handleChange('formSlug', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
               placeholder="default"
             />
           </label>
-          <label className="space-y-1 text-sm font-medium text-neutral-700">
+          <label className="space-y-1 text-sm font-medium text-[var(--wp-color-text)]">
             Form ID (optional)
             <input
               value={payload.requestFormId}
               onChange={(evt) => handleChange('requestFormId', evt.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-[var(--wp-color-border)] px-3 py-2"
               placeholder="Form ObjectId"
             />
           </label>
@@ -181,7 +181,7 @@ export default function SubmitRequest() {
 
         <button
           type="submit"
-          className="inline-flex items-center rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="inline-flex items-center rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-[var(--wp-color-text)] disabled:opacity-60"
           disabled={submitting}
         >
           {submitting ? 'Submitting…' : 'Submit request'}
@@ -189,10 +189,11 @@ export default function SubmitRequest() {
       </form>
 
       {token && (
-        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
-          Request token: <span className="font-mono text-neutral-900">{token}</span>
+        <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4 text-sm text-[var(--wp-color-text)]">
+          Request token: <span className="font-mono text-[var(--wp-color-text)]">{token}</span>
         </div>
       )}
     </div>
   );
 }
+

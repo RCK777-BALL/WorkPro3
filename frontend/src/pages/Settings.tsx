@@ -640,34 +640,34 @@ const Settings: React.FC = () => {
   return (
     <SettingsLayout isLoading={isLoading}>
       {isLoading && (
-        <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] p-4 text-sm text-[var(--wp-color-text-muted)]">
           <LoadingSpinner fullscreen={false} size="sm" />
-          <span>Loading your saved settings…</span>
+          <span>Loading your saved settings...</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* General Settings */}
-          <Card title="General Settings" icon={<Sliders className="h-5 w-5 text-neutral-500" />}>
+          <Card title="General Settings" icon={<Sliders className="h-5 w-5 text-[var(--wp-color-text-muted)]" />}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Company Name
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                   value={general.companyName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGeneral({ companyName: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Timezone
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                   value={general.timezone}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ timezone: e.target.value })}
                 >
@@ -679,11 +679,11 @@ const Settings: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Date Format
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                   value={general.dateFormat}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ dateFormat: e.target.value })}
                 >
@@ -694,55 +694,55 @@ const Settings: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Language
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                   value={general.language}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ language: e.target.value })}
                 >
                   <option value="en-US">English (US)</option>
-                  <option value="es-ES">Español</option>
-                  <option value="fr-FR">Français</option>
+                  <option value="es-ES">Espanol</option>
+                  <option value="fr-FR">Francais</option>
                   <option value="de-DE">Deutsch</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Company Email Domain
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                   value={general.emailDomain}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setGeneral({ emailDomain: e.target.value })
                   }
                   placeholder="Enter your company email domain (e.g., cmms.com)"
                 />
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="mt-1 text-xs text-[var(--wp-color-text-muted)]">
                   Use this domain to automatically create employee email addresses.
                 </p>
               </div>
 
-              <div className="space-y-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
-                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+              <div className="space-y-3 rounded-lg border border-dashed border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] p-4">
+                <p className="text-sm font-medium text-[var(--wp-color-text)]">
                   Email structure preview
                 </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="text-xs text-[var(--wp-color-text-muted)]">
                   Enter a first and last name to preview the generated address.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1" htmlFor="preview-first-name">
+                    <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1" htmlFor="preview-first-name">
                       First name
                     </label>
                     <input
                       id="preview-first-name"
                       type="text"
-                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                      className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                       value={emailPreview.firstName}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setEmailPreview((prev) => ({ ...prev, firstName: e.target.value }))
@@ -750,13 +750,13 @@ const Settings: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1" htmlFor="preview-last-name">
+                    <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1" htmlFor="preview-last-name">
                       Last name
                     </label>
                     <input
                       id="preview-last-name"
                       type="text"
-                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                      className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                       value={emailPreview.lastName}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setEmailPreview((prev) => ({ ...prev, lastName: e.target.value }))
@@ -764,16 +764,16 @@ const Settings: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="rounded-md bg-white px-3 py-2 text-sm font-mono text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100">
+                <div className="rounded-md bg-[var(--wp-color-surface)] px-3 py-2 text-sm font-mono text-[var(--wp-color-text)] shadow-sm">
                   {generatedEmailPreview || 'Enter a name to preview the email address'}
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card title="Theme Presets" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
+          <Card title="Theme Presets" icon={<Palette className="h-5 w-5 text-[var(--wp-color-text-muted)]" />}>
             <div className="space-y-4">
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-[var(--wp-color-text-muted)]">
                 Quickly switch between theme modes across the application.
               </p>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -786,7 +786,7 @@ const Settings: React.FC = () => {
                       className={`flex h-full flex-col items-start gap-2 border-2 px-4 py-3 text-left transition-colors ${
                         isActive
                           ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-200'
-                          : 'border-neutral-200 text-neutral-700 hover:border-primary-200 hover:text-primary-700 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-primary-400 dark:hover:text-primary-200'
+                          : 'border-[var(--wp-color-border)] text-[var(--wp-color-text)] hover:border-[var(--wp-color-primary)] hover:text-[var(--wp-color-primary)]'
                       }`}
                       onClick={() => handleThemeModeChange(mode)}
                       disabled={isActive}
@@ -795,7 +795,7 @@ const Settings: React.FC = () => {
                         {icon}
                         {label}
                       </span>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400">{description}</span>
+                      <span className="text-xs text-[var(--wp-color-text-muted)]">{description}</span>
                     </Button>
                   );
                 })}
@@ -804,14 +804,14 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Theme Settings */}
-          <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
+          <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-[var(--wp-color-text-muted)]" />}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Theme
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                   value={themeMode}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value as 'light' | 'dark' | 'system';
@@ -825,11 +825,11 @@ const Settings: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">
                   Color Scheme
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-3 py-2 text-[var(--wp-color-text)]"
                   value={themeSettings.colorScheme ?? 'default'}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value;
@@ -846,8 +846,8 @@ const Settings: React.FC = () => {
               {themeOptions.map(({ label, description, key }) => (
                 <div className="flex items-center justify-between" key={key}>
                   <div>
-                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+                    <p className="text-sm font-medium text-[var(--wp-color-text)]">{label}</p>
+                    <p className="text-sm text-[var(--wp-color-text-muted)]">{description}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -858,7 +858,7 @@ const Settings: React.FC = () => {
                         applyThemeSettings({ [key]: e.target.checked })
                       }
                     />
-                    <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                    <div className="h-6 w-11 rounded-full bg-[var(--wp-color-border)] peer peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--wp-color-focus)] peer-checked:bg-[var(--wp-color-primary)] peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-[var(--wp-color-border)] after:bg-[var(--wp-color-surface)] after:transition-all after:content-['']"></div>
                   </label>
                 </div>
               ))}
@@ -866,13 +866,13 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Notification Settings */}
-          <Card title="Notification Settings" icon={<Bell className="h-5 w-5 text-neutral-500" />}>
+          <Card title="Notification Settings" icon={<Bell className="h-5 w-5 text-[var(--wp-color-text-muted)]" />}>
             <div className="space-y-4">
               {notificationOptions.map(({ key, label, description }) => (
                 <div className="flex items-center justify-between" key={key}>
                   <div>
-                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+                    <p className="text-sm font-medium text-[var(--wp-color-text)]">{label}</p>
+                    <p className="text-sm text-[var(--wp-color-text-muted)]">{description}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -883,7 +883,7 @@ const Settings: React.FC = () => {
                         setNotifications({ [key]: e.target.checked } as Partial<NotificationSettings>)
                       }
                     />
-                    <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" />
+                    <div className="h-6 w-11 rounded-full bg-[var(--wp-color-border)] peer peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--wp-color-focus)] peer-checked:bg-[var(--wp-color-primary)] peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-[var(--wp-color-border)] after:bg-[var(--wp-color-surface)] after:transition-all after:content-['']" />
                   </label>
                 </div>
               ))}
@@ -891,13 +891,13 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Email Preferences */}
-          <Card title="Email Preferences" icon={<Mail className="h-5 w-5 text-neutral-500" />}>
+          <Card title="Email Preferences" icon={<Mail className="h-5 w-5 text-[var(--wp-color-text-muted)]" />}>
             <div className="space-y-4">
               {emailPreferences.map(({ key, label, description }) => (
                 <div className="flex items-center justify-between" key={key}>
                   <div>
-                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+                    <p className="text-sm font-medium text-[var(--wp-color-text)]">{label}</p>
+                    <p className="text-sm text-[var(--wp-color-text-muted)]">{description}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -908,7 +908,7 @@ const Settings: React.FC = () => {
                         setEmail({ [key]: e.target.checked } as Partial<EmailSettings>)
                       }
                     />
-                    <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" />
+                    <div className="h-6 w-11 rounded-full bg-[var(--wp-color-border)] peer peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--wp-color-focus)] peer-checked:bg-[var(--wp-color-primary)] peer-checked:after:translate-x-full after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-[var(--wp-color-border)] after:bg-[var(--wp-color-surface)] after:transition-all after:content-['']" />
                   </label>
                 </div>
               ))}
@@ -916,8 +916,8 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Theme Customization */}
-          <Card title="Theme Customization" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+          <Card title="Theme Customization" icon={<Palette className="h-5 w-5 text-[var(--wp-color-text-muted)]" />}>
+            <p className="text-sm text-[var(--wp-color-text-muted)] mb-4">
               Choose how WorkPro looks for you.
             </p>
             <div className="flex items-center gap-2">
@@ -946,25 +946,25 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Documentation Upload */}
-          <Card title="Documentation" icon={<Book className="h-5 w-5 text-neutral-500" />} className="lg:col-span-2">
+          <Card title="Documentation" icon={<Book className="h-5 w-5 text-[var(--wp-color-text-muted)]" />} className="lg:col-span-2">
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">Upload Documentation</h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+                <h3 className="text-lg font-medium text-[var(--wp-color-text)] mb-2">Upload Documentation</h3>
+                <p className="text-sm text-[var(--wp-color-text-muted)] mb-4">
                   Upload PDF, Word, or Excel documents to add to the documentation library
                 </p>
                 <DocumentUploader onUpload={handleDocumentUpload} />
                 {(isUploadingDocuments || isLoadingDocuments) && (
-                  <div className="flex items-center gap-2 mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+                  <div className="flex items-center gap-2 mt-3 text-sm text-[var(--wp-color-text-muted)]">
                     <LoadingSpinner fullscreen={false} size="sm" />
-                    <span>{isUploadingDocuments ? 'Uploading documents…' : 'Loading documents…'}</span>
+                    <span>{isUploadingDocuments ? 'Uploading documents...' : 'Loading documents...'}</span>
                   </div>
                 )}
               </div>
 
               {documents.length > 0 ? (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Uploaded Documents</h3>
+                  <h3 className="text-lg font-medium text-[var(--wp-color-text)]">Uploaded Documents</h3>
                   {documents.map((doc) => (
                     <DocumentViewer
                       key={doc.id ?? doc.metadata.id ?? doc.metadata.title}
@@ -977,7 +977,7 @@ const Settings: React.FC = () => {
                 </div>
               ) : (
                 !isLoadingDocuments && !isUploadingDocuments && (
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <p className="text-sm text-[var(--wp-color-text-muted)]">
                     No documents uploaded yet.
                   </p>
                 )
@@ -990,3 +990,4 @@ const Settings: React.FC = () => {
 };
 
 export default Settings;
+

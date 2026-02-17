@@ -82,12 +82,12 @@ const DowntimeEventsDashboard = () => {
       <Card title="Downtime Events" subtitle="Track downtime incidents with root-cause detail.">
         <div className="flex flex-wrap gap-4">
           <div className="flex flex-col">
-            <label className="text-xs uppercase text-slate-400" htmlFor="downtime-asset">
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]" htmlFor="downtime-asset">
               Asset
             </label>
             <select
               id="downtime-asset"
-              className="mt-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               value={filters.assetId ?? ''}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, assetId: event.target.value || undefined }))
@@ -102,12 +102,12 @@ const DowntimeEventsDashboard = () => {
             </select>
           </div>
           <div className="flex flex-col">
-            <label className="text-xs uppercase text-slate-400" htmlFor="downtime-workorder">
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]" htmlFor="downtime-workorder">
               Work order
             </label>
             <select
               id="downtime-workorder"
-              className="mt-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               value={filters.workOrderId ?? ''}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, workOrderId: event.target.value || undefined }))
@@ -122,13 +122,13 @@ const DowntimeEventsDashboard = () => {
             </select>
           </div>
           <div className="flex flex-col">
-            <label className="text-xs uppercase text-slate-400" htmlFor="downtime-cause">
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]" htmlFor="downtime-cause">
               Cause code
             </label>
             <input
               id="downtime-cause"
               type="text"
-              className="mt-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               placeholder="e.g. electrical"
               value={filters.causeCode ?? ''}
               onChange={(event) =>
@@ -137,13 +137,13 @@ const DowntimeEventsDashboard = () => {
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-xs uppercase text-slate-400" htmlFor="downtime-start">
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]" htmlFor="downtime-start">
               Start date
             </label>
             <input
               id="downtime-start"
               type="date"
-              className="mt-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               value={filters.start ?? ''}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, start: event.target.value || undefined }))
@@ -151,13 +151,13 @@ const DowntimeEventsDashboard = () => {
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-xs uppercase text-slate-400" htmlFor="downtime-end">
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]" htmlFor="downtime-end">
               End date
             </label>
             <input
               id="downtime-end"
               type="date"
-              className="mt-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               value={filters.end ?? ''}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, end: event.target.value || undefined }))
@@ -165,12 +165,12 @@ const DowntimeEventsDashboard = () => {
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-xs uppercase text-slate-400" htmlFor="downtime-active">
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]" htmlFor="downtime-active">
               Status
             </label>
             <select
               id="downtime-active"
-              className="mt-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               value={filters.activeOnly ? 'active' : 'all'}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, activeOnly: event.target.value === 'active' }))

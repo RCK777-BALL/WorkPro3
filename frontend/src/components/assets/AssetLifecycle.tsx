@@ -67,10 +67,10 @@ interface AssetLifecycleProps {
 }
 
 const MetricCard = ({ title, value, helper }: { title: string; value: string; helper?: string }) => (
-  <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-    <p className="text-xs uppercase tracking-wide text-neutral-500">{title}</p>
-    <p className="mt-1 text-xl font-semibold text-neutral-100">{value}</p>
-    {helper && <p className="text-sm text-neutral-400">{helper}</p>}
+  <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+    <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">{title}</p>
+    <p className="mt-1 text-xl font-semibold text-[var(--wp-color-text)]">{value}</p>
+    {helper && <p className="text-sm text-[var(--wp-color-text-muted)]">{helper}</p>}
   </div>
 );
 
@@ -109,17 +109,17 @@ const AssetLifecycle = ({ asset }: AssetLifecycleProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-900/80 p-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_82%,transparent)] p-4">
         <div className="flex items-center gap-3">
           {tone && <StatusBadge tone={tone}>{warrantyStatus.status === 'active' ? 'Warranty active' : `Warranty ${warrantyStatus.status}`}</StatusBadge>}
           <div>
-            <p className="text-sm font-semibold text-neutral-100">Warranty coverage</p>
-            <p className="text-sm text-neutral-300">
+            <p className="text-sm font-semibold text-[var(--wp-color-text)]">Warranty coverage</p>
+            <p className="text-sm text-[var(--wp-color-text-muted)]">
               {warrantyStatus.status === 'none'
                 ? 'No warranty dates recorded'
                 : `${formatDate(warrantyStatus.startDate)} – ${formatDate(warrantyStatus.endDate)}`}
             </p>
-            {warrantyHelper && <p className="text-xs text-neutral-400">{warrantyHelper}</p>}
+            {warrantyHelper && <p className="text-xs text-[var(--wp-color-text-muted)]">{warrantyHelper}</p>}
           </div>
         </div>
       </div>
@@ -144,34 +144,34 @@ const AssetLifecycle = ({ asset }: AssetLifecycleProps) => {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-          <h3 className="text-sm font-semibold text-neutral-200">Replacement planning</h3>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-300">
-            <li className="flex justify-between rounded-lg bg-neutral-900/50 px-3 py-2">
+        <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+          <h3 className="text-sm font-semibold text-[var(--wp-color-text)]">Replacement planning</h3>
+          <ul className="mt-3 space-y-2 text-sm text-[var(--wp-color-text-muted)]">
+            <li className="flex justify-between rounded-lg bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] px-3 py-2">
               <span>Replacement target</span>
-              <span className="font-semibold text-neutral-100">{formatDate(projectedReplacementDate)}</span>
+              <span className="font-semibold text-[var(--wp-color-text)]">{formatDate(projectedReplacementDate)}</span>
             </li>
-            <li className="flex justify-between rounded-lg bg-neutral-900/50 px-3 py-2">
+            <li className="flex justify-between rounded-lg bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] px-3 py-2">
               <span>Months to plan</span>
-              <span className="font-semibold text-neutral-100">{monthsRemaining !== undefined ? `${monthsRemaining} mo` : '—'}</span>
+              <span className="font-semibold text-[var(--wp-color-text)]">{monthsRemaining !== undefined ? `${monthsRemaining} mo` : '—'}</span>
             </li>
-            <li className="flex justify-between rounded-lg bg-neutral-900/50 px-3 py-2">
+            <li className="flex justify-between rounded-lg bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] px-3 py-2">
               <span>Budget to allocate</span>
-              <span className="font-semibold text-neutral-100">{formatCurrency(reservePerMonth)}</span>
+              <span className="font-semibold text-[var(--wp-color-text)]">{formatCurrency(reservePerMonth)}</span>
             </li>
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-          <h3 className="text-sm font-semibold text-neutral-200">Lifecycle notes</h3>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-300">
-            <li className="rounded-lg bg-neutral-900/50 px-3 py-2">
+        <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+          <h3 className="text-sm font-semibold text-[var(--wp-color-text)]">Lifecycle notes</h3>
+          <ul className="mt-3 space-y-2 text-sm text-[var(--wp-color-text-muted)]">
+            <li className="rounded-lg bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] px-3 py-2">
               Keep warranty documentation linked to this asset to streamline claims.
             </li>
-            <li className="rounded-lg bg-neutral-900/50 px-3 py-2">
+            <li className="rounded-lg bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] px-3 py-2">
               Schedule a condition assessment 90 days before the projected replacement date.
             </li>
-            <li className="rounded-lg bg-neutral-900/50 px-3 py-2">
+            <li className="rounded-lg bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)] px-3 py-2">
               Use the reserve amount to inform yearly budgeting and procurement planning.
             </li>
           </ul>
@@ -182,3 +182,4 @@ const AssetLifecycle = ({ asset }: AssetLifecycleProps) => {
 };
 
 export default AssetLifecycle;
+

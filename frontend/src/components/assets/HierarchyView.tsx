@@ -56,20 +56,20 @@ const HierarchyView: React.FC = () => {
   return (
     <div className="space-y-4">
       {!activePlant && !loading ? (
-        <div className="rounded border border-dashed border-neutral-600 p-4 text-sm text-neutral-400">
+        <div className="rounded border border-dashed border-[var(--wp-color-border)] p-4 text-sm text-[var(--wp-color-text-muted)]">
           Select a plant to view its hierarchy.
         </div>
       ) : null}
       {data.map((dep) => (
-        <div key={dep.id} className="rounded border border-neutral-700 bg-neutral-900/40 p-4">
-          <h3 className="font-semibold text-neutral-100">{dep.name}</h3>
+        <div key={dep.id} className="rounded border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-4">
+          <h3 className="font-semibold text-[var(--wp-color-text)]">{dep.name}</h3>
           {dep.lines.map((line: LineWithStations) => (
             <div key={line.id} className="ml-4 mt-2">
-              <p className="font-medium text-neutral-200">{line.name}</p>
+              <p className="font-medium text-[var(--wp-color-text)]">{line.name}</p>
               {line.stations.map((st: StationWithAssets) => (
                 <div key={st.id} className="ml-4 mt-1">
-                  <p className="text-neutral-200">{st.name}</p>
-                  <ul className="ml-4 list-disc text-neutral-300">
+                  <p className="text-[var(--wp-color-text)]">{st.name}</p>
+                  <ul className="ml-4 list-disc text-[var(--wp-color-text-muted)]">
                     {st.assets.map((a: Asset) => (
                       <li key={a.id}>{a.name}</li>
                     ))}
@@ -81,10 +81,11 @@ const HierarchyView: React.FC = () => {
         </div>
       ))}
       {loading ? (
-        <div className="text-sm text-neutral-400">Loading hierarchy…</div>
+        <div className="text-sm text-[var(--wp-color-text-muted)]">Loading hierarchy...</div>
       ) : null}
     </div>
   );
 };
 
 export default HierarchyView;
+

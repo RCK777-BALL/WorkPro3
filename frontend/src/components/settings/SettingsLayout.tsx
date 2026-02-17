@@ -67,7 +67,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({
       loading={isSaving}
       disabled={isSaving || isLoading}
     >
-      {isSaving ? 'Saving…' : 'Save Changes'}
+      {isSaving ? 'Saving...' : 'Save Changes'}
     </Button>
   );
 
@@ -95,3 +95,4 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({
 };
 
 export default SettingsLayout;
+

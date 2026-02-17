@@ -103,22 +103,22 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/80 p-6 backdrop-blur" role="dialog" aria-modal>
-      <div className="w-full max-w-xl rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl">
-        <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3">
-          <Search className="h-4 w-4 text-slate-400" />
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-[color-mix(in_srgb,var(--wp-color-background)_80%,transparent)] p-6 backdrop-blur" role="dialog" aria-modal>
+      <div className="w-full max-w-xl rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] text-[var(--wp-color-text)] shadow-2xl">
+        <div className="flex items-center gap-2 border-b border-[var(--wp-color-border)] px-4 py-3">
+          <Search className="h-4 w-4 text-[var(--wp-color-text-muted)]" />
           <input
             ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search destinations, commands, or modules"
-            className="flex-1 border-none bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
+            className="flex-1 border-none bg-transparent text-sm text-[var(--wp-color-text)] placeholder:text-[var(--wp-color-text-muted)] focus:outline-none"
             autoComplete="off"
           />
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="text-xs text-slate-400 transition hover:text-slate-200"
+            className="text-xs text-[var(--wp-color-text-muted)] transition hover:text-[var(--wp-color-text)]"
           >
             Esc
           </button>
@@ -126,7 +126,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
 
         <ul className="max-h-80 overflow-y-auto p-2">
           {results.length === 0 ? (
-            <li className="px-3 py-6 text-center text-sm text-slate-400">No results. Try a different keyword.</li>
+            <li className="px-3 py-6 text-center text-sm text-[var(--wp-color-text-muted)]">No results. Try a different keyword.</li>
           ) : (
             results.map((action) => (
               <li key={action.id}>
@@ -134,18 +134,18 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                   to={action.href}
                   onClick={() => onOpenChange(false)}
                   className={clsx(
-                    "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-200",
-                    "hover:bg-slate-800 hover:text-slate-50 focus:bg-slate-800 focus:outline-none",
+                    "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-[var(--wp-color-text)]",
+                    "hover:bg-[var(--wp-color-surface-elevated)] focus:bg-[var(--wp-color-surface-elevated)] focus:outline-none",
                   )}
                 >
                   <span>
-                    <span className="block font-medium text-slate-100">{action.label}</span>
-                    <span className="mt-0.5 block text-xs text-slate-400">
+                    <span className="block font-medium text-[var(--wp-color-text)]">{action.label}</span>
+                    <span className="mt-0.5 block text-xs text-[var(--wp-color-text-muted)]">
                       {action.description}
                     </span>
                   </span>
                   {action.shortcut ? (
-                    <kbd className="inline-flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-[10px] uppercase text-slate-300">
+                    <kbd className="inline-flex items-center gap-1 rounded-md border border-[var(--wp-color-border)] px-2 py-1 text-[10px] uppercase text-[var(--wp-color-text-muted)]">
                       <Command className="h-3 w-3" />
                       {action.shortcut}
                     </kbd>

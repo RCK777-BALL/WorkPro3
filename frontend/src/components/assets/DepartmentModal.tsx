@@ -14,9 +14,9 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', icon, className = '', ...props }) => {
   const base = 'inline-flex items-center justify-center rounded-md';
   const variants: Record<string, string> = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100',
-    outline: 'border border-neutral-300 text-neutral-700',
+    primary: 'bg-[var(--wp-color-primary)] text-[var(--wp-color-text)] hover:opacity-90',
+    ghost: 'bg-transparent text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface-elevated)]',
+    outline: 'border border-[var(--wp-color-border)] text-[var(--wp-color-text)]',
   };
   const sizes: Record<string, string> = {
     sm: 'px-2 py-1 text-sm',
@@ -210,22 +210,22 @@ const DepartmentModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-neutral-200">
-          <h2 className="text-lg font-semibold text-neutral-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color-mix(in_srgb,var(--wp-color-background)_70%,transparent)]">
+      <div className="bg-[var(--wp-color-surface)] rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-[var(--wp-color-border)]">
+          <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">
             {department ? 'Edit Department' : 'Create Department'}
           </h2>
-          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-700">
+          <button onClick={onClose} className="text-[var(--wp-color-text-muted)] hover:text-[var(--wp-color-text)]">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-6">
           <div>
-            <label className="block mb-1 text-sm font-medium text-neutral-900">Name</label>
+            <label className="block mb-1 text-sm font-medium text-[var(--wp-color-text)]">Name</label>
             <input
               type="text"
-              className="w-full px-3 py-2 bg-white border rounded-md border-neutral-300 text-neutral-900"
+              className="w-full px-3 py-2 bg-[var(--wp-color-surface)] border rounded-md border-[var(--wp-color-border)] text-[var(--wp-color-text)]"
               value={formData.name}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
               required
@@ -234,7 +234,7 @@ const DepartmentModal: React.FC<Props> = ({
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-900">Lines</h3>
+              <h3 className="text-sm font-semibold text-[var(--wp-color-text)]">Lines</h3>
               <Button variant="ghost" size="sm" icon={<PlusCircle size={16} />} onClick={addLine}>
                 Add Line
               </Button>
@@ -245,7 +245,7 @@ const DepartmentModal: React.FC<Props> = ({
                 <div className="flex items-center space-x-2">
                   <input
                     type="text"
-                    className="flex-1 px-3 py-1.5 border border-neutral-300 rounded-md"
+                    className="flex-1 px-3 py-1.5 border border-[var(--wp-color-border)] rounded-md"
                     value={line.name}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateLine(li, e.target.value)}
                     placeholder="Line name"
@@ -261,7 +261,7 @@ const DepartmentModal: React.FC<Props> = ({
 
                 <div className="ml-4 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-medium text-neutral-700">Stations</span>
+                    <span className="font-medium text-[var(--wp-color-text)]">Stations</span>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
@@ -293,7 +293,7 @@ const DepartmentModal: React.FC<Props> = ({
                       <div className="flex items-center space-x-2">
                         <input
                           type="text"
-                          className="flex-1 px-3 py-1.5 border border-neutral-300 rounded-md"
+                          className="flex-1 px-3 py-1.5 border border-[var(--wp-color-border)] rounded-md"
                           value={st.name}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStation(li, si, e.target.value)}
                           placeholder="St. 1"
@@ -309,7 +309,7 @@ const DepartmentModal: React.FC<Props> = ({
 
                       <div className="ml-4 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-neutral-700">Assets</span>
+                          <span className="text-sm font-medium text-[var(--wp-color-text)]">Assets</span>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -324,7 +324,7 @@ const DepartmentModal: React.FC<Props> = ({
                             <div className="flex items-center space-x-2">
                               <input
                                 type="text"
-                                className="flex-1 px-3 py-1.5 border border-neutral-300 rounded-md"
+                                className="flex-1 px-3 py-1.5 border border-[var(--wp-color-border)] rounded-md"
                                 value={a.name}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                   updateAsset(li, si, ai, { name: e.target.value })
@@ -341,7 +341,7 @@ const DepartmentModal: React.FC<Props> = ({
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                               <select
-                                className="px-3 py-1.5 border border-neutral-300 rounded-md"
+                                className="px-3 py-1.5 border border-[var(--wp-color-border)] rounded-md"
                                 value={a.type}
                               //onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateAsset(li, si, ai, { type: e.target.value})}
 
@@ -354,7 +354,7 @@ const DepartmentModal: React.FC<Props> = ({
                               </select>
                               <input
                                 type="text"
-                                className="px-3 py-1.5 border border-neutral-300 rounded-md"
+                                className="px-3 py-1.5 border border-[var(--wp-color-border)] rounded-md"
                                 value={a.location}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                   updateAsset(li, si, ai, { location: e.target.value })
@@ -362,7 +362,7 @@ const DepartmentModal: React.FC<Props> = ({
                                 placeholder="Location"
                               />
                               <select
-                                className="px-3 py-1.5 border border-neutral-300 rounded-md"
+                                className="px-3 py-1.5 border border-[var(--wp-color-border)] rounded-md"
                                 value={a.status}
                               //onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateAsset(li, si, ai, { status: e.target.value})}
 
@@ -376,27 +376,27 @@ const DepartmentModal: React.FC<Props> = ({
                           </div>
                         ))}
                         {st.assets.length === 0 && (
-                          <p className="ml-2 text-sm text-neutral-500">No assets</p>
+                          <p className="ml-2 text-sm text-[var(--wp-color-text-muted)]">No assets</p>
                         )}
                       </div>
                     </div>
                   ))}
 
                   {line.stations.length === 0 && (
-                    <p className="ml-2 text-sm text-neutral-500">No stations</p>
+                    <p className="ml-2 text-sm text-[var(--wp-color-text-muted)]">No stations</p>
                   )}
                 </div>
               </div>
             ))}
 
             {formData.lines.length === 0 && (
-              <p className="text-sm text-neutral-500">No lines</p>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">No lines</p>
             )}
           </div>
 
-          <div className="flex justify-end pt-4 space-x-3 border-t border-neutral-200">
+          <div className="flex justify-end pt-4 space-x-3 border-t border-[var(--wp-color-border)]">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel1
+              Cancel
             </Button>
             <Button type="submit" variant="primary" >
               {department ? 'Update' : 'Create'}
@@ -409,3 +409,4 @@ const DepartmentModal: React.FC<Props> = ({
 };
 
 export default DepartmentModal;
+

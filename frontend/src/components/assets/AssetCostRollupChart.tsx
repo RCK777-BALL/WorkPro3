@@ -15,11 +15,11 @@ const formatCurrency = (value?: number, currency = 'USD') =>
 
 const AssetCostRollupChart = ({ cost, isLoading }: AssetCostRollupChartProps) => {
   if (isLoading) {
-    return <p className="text-sm text-neutral-400">Calculating cost rollups…</p>;
+    return <p className="text-sm text-[var(--wp-color-text-muted)]">Calculating cost rollups...</p>;
   }
 
   if (!cost) {
-    return <p className="text-sm text-neutral-500">No cost history available.</p>;
+    return <p className="text-sm text-[var(--wp-color-text-muted)]">No cost history available.</p>;
   }
 
   const barData = cost.monthly.map((bucket) => ({ label: bucket.month, value: Math.round(bucket.total) }));
@@ -28,23 +28,23 @@ const AssetCostRollupChart = ({ cost, isLoading }: AssetCostRollupChartProps) =>
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <article>
-          <p className="text-xs uppercase text-neutral-400">Total</p>
-          <p className="text-2xl font-bold text-white">{formatCurrency(cost.total, cost.currency)}</p>
+          <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Total</p>
+          <p className="text-2xl font-bold text-[var(--wp-color-text)]">{formatCurrency(cost.total, cost.currency)}</p>
         </article>
         <article>
-          <p className="text-xs uppercase text-neutral-400">Labor</p>
-          <p className="text-xl font-semibold text-neutral-100">{formatCurrency(cost.labor, cost.currency)}</p>
+          <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Labor</p>
+          <p className="text-xl font-semibold text-[var(--wp-color-text)]">{formatCurrency(cost.labor, cost.currency)}</p>
         </article>
         <article>
-          <p className="text-xs uppercase text-neutral-400">Parts</p>
-          <p className="text-xl font-semibold text-neutral-100">{formatCurrency(cost.parts, cost.currency)}</p>
+          <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Parts</p>
+          <p className="text-xl font-semibold text-[var(--wp-color-text)]">{formatCurrency(cost.parts, cost.currency)}</p>
         </article>
         <article>
-          <p className="text-xs uppercase text-neutral-400">Reporting window</p>
-          <p className="text-base text-neutral-200">{cost.timeframe}</p>
+          <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">Reporting window</p>
+          <p className="text-base text-[var(--wp-color-text)]">{cost.timeframe}</p>
         </article>
       </div>
-      <div className="h-72 rounded-2xl border border-neutral-800 bg-neutral-950/50 p-4">
+      <div className="h-72 rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-4">
         <SimpleBarChart data={barData} />
       </div>
     </div>
@@ -52,3 +52,4 @@ const AssetCostRollupChart = ({ cost, isLoading }: AssetCostRollupChartProps) =>
 };
 
 export default AssetCostRollupChart;
+

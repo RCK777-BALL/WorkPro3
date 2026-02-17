@@ -55,39 +55,39 @@ const Header: React.FC = () => {
   );
 
   return (
-    <header className="flex flex-col gap-3 border-b border-slate-800 bg-slate-950/80 px-4 py-3 text-slate-100 backdrop-blur supports-[backdrop-filter]:bg-slate-950/70 md:flex-row md:items-center md:justify-between">
+    <header className="flex flex-col gap-3 border-b border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_88%,transparent)] px-4 py-3 text-[var(--wp-color-text)] backdrop-blur md:flex-row md:items-center md:justify-between">
       <button
         onClick={() => setSearchOpen(true)}
-        className="flex w-full items-center rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 shadow-sm transition hover:border-slate-600 hover:bg-slate-900/80 md:max-w-md md:flex-1"
+        className="flex w-full items-center rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)] shadow-sm transition hover:border-[var(--wp-color-border-strong)] hover:bg-[var(--wp-color-surface-elevated)] md:max-w-md md:flex-1"
       >
-        <Search size={18} className="text-slate-400" />
-        <span className="ml-2 hidden flex-1 text-left md:block text-slate-300">
+        <Search size={18} className="text-[var(--wp-color-text-muted)]" />
+        <span className="ml-2 hidden flex-1 text-left text-[var(--wp-color-text-muted)] md:block">
           {t('header.searchPlaceholder')}
         </span>
-        <kbd className="ml-auto hidden rounded border border-slate-700 bg-slate-800 px-1 text-xs text-slate-200 md:inline">
-          ⌘K
+        <kbd className="ml-auto hidden rounded border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-1 text-xs text-[var(--wp-color-text)] md:inline">
+          Ctrl/Cmd+K
         </kbd>
       </button>
       <div className="flex flex-wrap items-center gap-3 md:ml-4 md:flex-nowrap md:gap-4">
         <div
-          className="hidden items-center gap-2 rounded-md border border-slate-700/80 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 md:flex"
+          className="hidden items-center gap-2 rounded-md border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_80%,transparent)] px-3 py-2 text-xs text-[var(--wp-color-text)] md:flex"
           aria-live="polite"
         >
-          <span className="text-slate-400">{t('context.tenant')}:</span>
+          <span className="text-[var(--wp-color-text-muted)]">{t('context.tenant')}:</span>
           <span className="font-semibold">
             {loadingTenants ? t('context.loading') : activeTenant?.name ?? t('context.unassigned')}
           </span>
-          <span className="ml-2 text-slate-600" aria-hidden>
-            •
+          <span className="ml-2 text-[var(--wp-color-text-muted)]" aria-hidden>
+            |
           </span>
-          <span className="text-slate-400">{t('context.site')}:</span>
+          <span className="text-[var(--wp-color-text-muted)]">{t('context.site')}:</span>
           <span className="font-semibold">
             {loadingPlants ? t('context.loading') : activePlant?.name ?? t('context.unassigned')}
           </span>
         </div>
         <TenantSwitcher />
         <PlantSwitcher />
-        <span className="hidden text-sm font-medium text-slate-300 md:block">
+        <span className="hidden text-sm font-medium text-[var(--wp-color-text-muted)] md:block">
           {formattedDateTime}
         </span>
         <SyncStatusIndicator />
@@ -100,4 +100,5 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+
 

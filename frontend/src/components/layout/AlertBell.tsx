@@ -36,8 +36,8 @@ export default function AlertBell() {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={clsx(
-          'relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-slate-200 transition',
-          'hover:border-slate-600 hover:bg-slate-800',
+          'relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] text-[var(--wp-color-text)] transition',
+          'hover:border-[var(--wp-color-border-strong)] hover:bg-[var(--wp-color-surface-elevated)]',
         )}
       >
         <Bell size={18} />
@@ -48,22 +48,22 @@ export default function AlertBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-72 rounded-md border border-slate-700 bg-slate-900 p-2 shadow-lg">
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <div className="absolute right-0 z-30 mt-2 w-72 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-2 shadow-lg">
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--wp-color-text-muted)]">
             AI Alerts
           </h4>
-          <ul className="space-y-2 text-sm text-slate-200 max-h-64 overflow-y-auto">
+          <ul className="max-h-64 space-y-2 overflow-y-auto text-sm text-[var(--wp-color-text)]">
             {alerts.slice(0, 10).map((alert) => (
               <li
                 key={alert._id}
-                className="rounded border border-slate-800 bg-slate-950/50 px-2 py-2"
+                className="rounded border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] px-2 py-2"
               >
-                <p className="text-xs uppercase text-slate-500">{alert.plant}</p>
+                <p className="text-xs uppercase text-[var(--wp-color-text-muted)]">{alert.plant}</p>
                 <p>{alert.message}</p>
               </li>
             ))}
             {alerts.length === 0 && (
-              <li className="text-xs text-slate-400">No alerts.</li>
+              <li className="text-xs text-[var(--wp-color-text-muted)]">No alerts.</li>
             )}
           </ul>
         </div>

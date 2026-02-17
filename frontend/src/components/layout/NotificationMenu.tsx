@@ -154,8 +154,8 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
         onClick={() => onOpenChange(!open)}
         className={clsx(
           "relative flex h-10 w-10 items-center justify-center rounded-full",
-          "border border-slate-700 bg-slate-900 text-slate-200 transition",
-          "hover:border-slate-600 hover:bg-slate-900/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
+          "border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] text-[var(--wp-color-text)] transition",
+          "hover:border-[var(--wp-color-border-strong)] hover:bg-[var(--wp-color-surface-elevated)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--wp-color-focus)]",
         )}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -174,14 +174,14 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
           ref={panelRef}
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 z-30 mt-3 w-96 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/95 text-slate-100 shadow-2xl backdrop-blur"
+          className="absolute right-0 z-30 mt-3 w-96 overflow-hidden rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_92%,transparent)] text-[var(--wp-color-text)] shadow-2xl backdrop-blur"
         >
-          <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-200">
+          <header className="flex items-center justify-between border-b border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-4 py-3 text-sm font-medium text-[var(--wp-color-text)]">
             <span>Notifications</span>
             <div className="flex items-center gap-2 text-xs">
               <button
                 type="button"
-                className="text-primary-300 transition hover:text-primary-200 focus:outline-none"
+                className="text-[var(--wp-color-primary)] transition hover:opacity-90 focus:outline-none"
                 onClick={markAll}
                 disabled={items.length === 0}
               >
@@ -189,13 +189,13 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
               </button>
               <a
                 href="/notifications"
-                className="inline-flex items-center gap-1 text-primary-200 hover:text-primary-100"
+                className="inline-flex items-center gap-1 text-[var(--wp-color-primary)] hover:opacity-90"
               >
                 <Link2 className="h-3 w-3" /> Feed
               </a>
             </div>
           </header>
-          <div className="divide-y divide-slate-800 bg-slate-900/70">
+          <div className="divide-y divide-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_82%,transparent)]">
             {items.map((notification) => (
               <article key={notification.id} className="flex items-start gap-3 px-4 py-3">
                 <span
@@ -207,20 +207,20 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
                 >
                   {renderIcon(notification)}
                 </span>
-                <div className="flex-1 text-sm text-slate-200">
+                <div className="flex-1 text-sm text-[var(--wp-color-text)]">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium text-slate-100">{notification.title}</p>
-                    <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-400">
+                    <p className="font-medium text-[var(--wp-color-text)]">{notification.title}</p>
+                    <span className="rounded-full bg-[var(--wp-color-surface-elevated)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--wp-color-text-muted)]">
                       {notification.category.replace('_', ' ')}
                     </span>
                   </div>
-                  <p className="mt-1 text-slate-300">{notification.message}</p>
-                  <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                  <p className="mt-1 text-[var(--wp-color-text-muted)]">{notification.message}</p>
+                  <div className="mt-2 flex items-center justify-between text-xs text-[var(--wp-color-text-muted)]">
                     <span>{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
                     {!notification.read ? (
                       <button
                         type="button"
-                        className="text-primary-200 hover:text-primary-100"
+                        className="text-[var(--wp-color-primary)] hover:opacity-90"
                         onClick={() => markOne(notification.id)}
                       >
                         Mark read
@@ -234,11 +234,11 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
             ))}
 
             {items.length === 0 && !loading && (
-              <div className="px-4 py-8 text-center text-sm text-slate-500">No notifications yet</div>
+              <div className="px-4 py-8 text-center text-sm text-[var(--wp-color-text-muted)]">No notifications yet</div>
             )}
 
             {loading && (
-              <div className="px-4 py-4 text-center text-xs text-slate-400">Loading notifications…</div>
+              <div className="px-4 py-4 text-center text-xs text-[var(--wp-color-text-muted)]">Loading notifications...</div>
             )}
           </div>
         </div>

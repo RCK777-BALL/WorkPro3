@@ -28,31 +28,31 @@ const StationModal: React.FC<Props> = ({ isOpen, onClose, station, lines, onUpda
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm">
-        <div className="flex items-center justify-between p-4 border-b border-neutral-200">
-          <h2 className="text-lg font-semibold text-neutral-900">
+    <div className="fixed inset-0 bg-[color-mix(in_srgb,var(--wp-color-background)_70%,transparent)] flex items-center justify-center z-50">
+      <div className="bg-[var(--wp-color-surface)] rounded-lg shadow-xl w-full max-w-sm">
+        <div className="flex items-center justify-between p-4 border-b border-[var(--wp-color-border)]">
+          <h2 className="text-lg font-semibold text-[var(--wp-color-text)]">
             {station ? 'Edit Station' : 'Create Station'}
           </h2>
-          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-700">
+          <button onClick={onClose} className="text-[var(--wp-color-text-muted)] hover:text-[var(--wp-color-text)]">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-900 mb-1">Name</label>
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">Name</label>
             <input
               type="text"
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+              className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] bg-[var(--wp-color-surface)]"
               value={formData.name}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-900 mb-1">Line</label>
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] mb-1">Line</label>
             <select
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+              className="w-full px-3 py-2 border border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] bg-[var(--wp-color-surface)]"
               value={formData.line}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, line: e.target.value })}
             >
@@ -63,7 +63,7 @@ const StationModal: React.FC<Props> = ({ isOpen, onClose, station, lines, onUpda
               ))}
             </select>
           </div>
-          <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-[var(--wp-color-border)]">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
@@ -78,3 +78,4 @@ const StationModal: React.FC<Props> = ({ isOpen, onClose, station, lines, onUpda
 };
 
 export default StationModal;
+

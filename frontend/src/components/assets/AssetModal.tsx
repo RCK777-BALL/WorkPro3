@@ -261,15 +261,15 @@ const AssetModal: React.FC<AssetModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-neutral-950/50 dark:bg-neutral-950/80 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-transparent dark:border-neutral-700/80">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+    <div className="fixed inset-0 bg-[color-mix(in_srgb,var(--wp-color-background)_70%,transparent)] dark:bg-[color-mix(in_srgb,var(--wp-color-background)_80%,transparent)] flex items-center justify-center z-50">
+      <div className="bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface)] rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-transparent dark:border-[var(--wp-color-border)]/80">
+        <div className="flex items-center justify-between p-6 border-b border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)]">
+          <h2 className="text-xl font-semibold text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
             {asset ? "Edit Asset" : "Create Asset"}
           </h2>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+            className="text-[var(--wp-color-text-muted)] hover:text-[var(--wp-color-text)] dark:text-[var(--wp-color-text-muted)] dark:hover:text-[var(--wp-color-text)]"
           >
             <X size={20} />
           </button>
@@ -280,12 +280,12 @@ const AssetModal: React.FC<AssetModalProps> = ({
           <AssetQRCode value="ABC123" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Name
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("name", { required: "Name is required" })}
               />
               {errors.name && (
@@ -296,23 +296,23 @@ const AssetModal: React.FC<AssetModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Serial Number
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("serialNumber")}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
               Description
             </label>
             <textarea
-              className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+              className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
               rows={4}
               {...register("description")}
             />
@@ -320,23 +320,23 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Model
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("modelName")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Manufacturer
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("manufacturer")}
               />
             </div>
@@ -344,23 +344,23 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Purchase Date
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("purchaseDate")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Installation Date
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("installationDate")}
               />
             </div>
@@ -368,23 +368,23 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Warranty Start
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("warrantyStart")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Warranty End
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("warrantyEnd")}
               />
             </div>
@@ -392,59 +392,59 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Purchase Cost
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("purchaseCost")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Expected Life (months)
               </label>
               <input
                 type="number"
                 min="1"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("expectedLifeMonths")}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
               Planned Replacement Date
             </label>
             <input
               type="date"
-              className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+              className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
               {...register("replacementDate")}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Location
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("location")}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Type
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("type")}
               >
                 <option value="Electrical">Electrical</option>
@@ -457,11 +457,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Department
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 value={departmentId}
                 onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
                   departmentField.onChange(event);
@@ -481,11 +481,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Line
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 value={lineId}
                 onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
                   lineField.onChange(event);
@@ -505,11 +505,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Station
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 value={stationId}
                 onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
                   stationField.onChange(event);
@@ -531,11 +531,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Status
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("status")}
               >
                 <option value="Active">Active</option>
@@ -545,11 +545,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
                 Criticality
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                className="w-full px-3 py-2 border border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-md text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)]"
                 {...register("criticality")}
               >
                 <option value="high">High</option>
@@ -560,19 +560,19 @@ const AssetModal: React.FC<AssetModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+            <label className="block text-sm font-medium text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)] mb-1">
               Documents & Images
             </label>
             <div
               {...getRootProps()}
-              className="border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg p-6 text-center cursor-pointer hover:border-primary-500 dark:hover:border-primary-400 transition-colors bg-white/40 dark:bg-neutral-900/40"
+              className="border-2 border-dashed border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)] rounded-lg p-6 text-center cursor-pointer hover:border-primary-500 dark:hover:border-primary-400 transition-colors bg-[var(--wp-color-surface)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_65%,transparent)]"
             >
               <input {...getInputProps()} />
-              <Upload className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-500" />
-              <p className="mt-2 text-sm text-neutral-900 dark:text-neutral-100">
+              <Upload className="mx-auto h-12 w-12 text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]" />
+              <p className="mt-2 text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                 Drag & drop files here, or click to select files
               </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="text-xs text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">
                 Supports: Images, PDFs, and documents
               </p>
             </div>
@@ -581,11 +581,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
                 {files.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 bg-neutral-50 dark:bg-neutral-800 rounded-md"
+                    className="flex items-center justify-between p-2 bg-[var(--wp-color-surface)] dark:bg-[var(--wp-color-surface-elevated)] rounded-md"
                   >
                     <div className="flex items-center">
-                      <Download size={16} className="text-neutral-500 dark:text-neutral-400 mr-2" />
-                      <span className="text-sm text-neutral-900 dark:text-neutral-100">
+                      <Download size={16} className="text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)] mr-2" />
+                      <span className="text-sm text-[var(--wp-color-text)] dark:text-[var(--wp-color-text)]">
                         {file.name}
                       </span>
                     </div>
@@ -594,7 +594,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
                       onClick={() =>
                         setFiles(files.filter((_, i) => i !== index))
                       }
-                      className="text-neutral-400 hover:text-error-500 dark:text-neutral-500 dark:hover:text-error-400"
+                      className="text-[var(--wp-color-text-muted)] hover:text-error-500 dark:text-[var(--wp-color-text-muted)] dark:hover:text-error-400"
                     >
                       <X size={16} />
                     </button>
@@ -604,7 +604,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
             )}
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+          <div className="flex justify-end space-x-3 pt-6 border-t border-[var(--wp-color-border)] dark:border-[var(--wp-color-border)]">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
@@ -619,3 +619,4 @@ const AssetModal: React.FC<AssetModalProps> = ({
 };
 
 export default AssetModal;
+

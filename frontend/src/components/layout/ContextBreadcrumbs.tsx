@@ -53,9 +53,9 @@ const ContextBreadcrumbs = () => {
   }, [location.pathname, t]);
 
   return (
-    <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 px-4 py-3 text-slate-100 shadow-sm backdrop-blur">
+    <div className="rounded-xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_80%,transparent)] px-4 py-3 text-[var(--wp-color-text)] shadow-sm backdrop-blur">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between" role="navigation" aria-label={t('context.breadcrumbsLabel')}>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300" data-testid="breadcrumbs">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--wp-color-text-muted)]" data-testid="breadcrumbs">
           {breadcrumbs.map((crumb, index) => {
             const isLast = index === breadcrumbs.length - 1;
             return (
@@ -64,7 +64,7 @@ const ContextBreadcrumbs = () => {
                   type="button"
                   onClick={() => navigate(crumb.path)}
                   disabled={isLast}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-left transition disabled:cursor-default disabled:text-slate-100 enabled:hover:bg-slate-800"
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-left transition disabled:cursor-default disabled:text-[var(--wp-color-text)] enabled:hover:bg-[var(--wp-color-surface-elevated)]"
                   aria-current={isLast ? 'page' : undefined}
                 >
                   {index === 0 ? <Home size={14} aria-hidden /> : <Link2 size={14} aria-hidden />}
@@ -72,21 +72,21 @@ const ContextBreadcrumbs = () => {
                     {crumb.label}
                   </span>
                 </button>
-                {!isLast && <span className="text-slate-600">/</span>}
+                {!isLast && <span className="text-[var(--wp-color-text-muted)]">/</span>}
               </Fragment>
             );
           })}
         </div>
         <div className="flex flex-wrap items-center gap-2" aria-live="polite">
-          <div className="flex items-center gap-2 rounded-md border border-slate-700/80 bg-slate-800/60 px-3 py-2 text-xs md:text-sm">
-            <span className="text-slate-400">{t('context.tenant')}</span>
-            <span className="font-semibold text-slate-100">
+          <div className="flex items-center gap-2 rounded-md border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface-elevated)_70%,transparent)] px-3 py-2 text-xs md:text-sm">
+            <span className="text-[var(--wp-color-text-muted)]">{t('context.tenant')}</span>
+            <span className="font-semibold text-[var(--wp-color-text)]">
               {loadingTenants ? t('context.loading') : errors.tenant ?? activeTenant?.name ?? t('context.unassigned')}
             </span>
           </div>
-          <div className="flex items-center gap-2 rounded-md border border-slate-700/80 bg-slate-800/60 px-3 py-2 text-xs md:text-sm">
-            <span className="text-slate-400">{t('context.site')}</span>
-            <span className="font-semibold text-slate-100">
+          <div className="flex items-center gap-2 rounded-md border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface-elevated)_70%,transparent)] px-3 py-2 text-xs md:text-sm">
+            <span className="text-[var(--wp-color-text-muted)]">{t('context.site')}</span>
+            <span className="font-semibold text-[var(--wp-color-text)]">
               {loadingPlants ? t('context.loading') : errors.plant ?? activePlant?.name ?? t('context.unassigned')}
             </span>
           </div>

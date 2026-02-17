@@ -86,11 +86,11 @@ const MaintenanceMetricsDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+      <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_75%,transparent)] p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-100">Maintenance Analytics Dashboard</h1>
-            <p className="mt-2 text-sm text-slate-400">
+            <h1 className="text-2xl font-semibold text-[var(--wp-color-text)]">Maintenance Analytics Dashboard</h1>
+            <p className="mt-2 text-sm text-[var(--wp-color-text-muted)]">
               Track reliability, backlog, and preventive maintenance performance for the selected window.
             </p>
           </div>
@@ -105,13 +105,13 @@ const MaintenanceMetricsDashboard = () => {
         </div>
         <div className="mt-6 flex flex-wrap gap-4">
           <div className="flex flex-col">
-            <label className="text-xs uppercase text-slate-400" htmlFor="maintenance-start">
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]" htmlFor="maintenance-start">
               Start date
             </label>
             <input
               id="maintenance-start"
               type="date"
-              className="mt-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               value={formFilters.startDate ?? ''}
               onChange={(event) =>
                 setFormFilters((prev) => ({ ...prev, startDate: event.target.value || undefined }))
@@ -119,13 +119,13 @@ const MaintenanceMetricsDashboard = () => {
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-xs uppercase text-slate-400" htmlFor="maintenance-end">
+            <label className="text-xs uppercase text-[var(--wp-color-text-muted)]" htmlFor="maintenance-end">
               End date
             </label>
             <input
               id="maintenance-end"
               type="date"
-              className="mt-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+              className="mt-1 rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
               value={formFilters.endDate ?? ''}
               onChange={(event) =>
                 setFormFilters((prev) => ({ ...prev, endDate: event.target.value || undefined }))
@@ -150,7 +150,7 @@ const MaintenanceMetricsDashboard = () => {
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {metricsCards.map((card) => (
           <Card key={card.label} title={card.label} subtitle={card.subtext}>
-            <div className="text-2xl font-semibold text-slate-100">
+            <div className="text-2xl font-semibold text-[var(--wp-color-text)]">
               {isLoading ? 'Loading...' : card.value}
             </div>
           </Card>
@@ -160,19 +160,19 @@ const MaintenanceMetricsDashboard = () => {
       {data && (
         <Card title="Performance details">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-slate-800 bg-slate-950 p-4">
-              <p className="text-xs uppercase tracking-wide text-slate-400">PM completion</p>
-              <p className="mt-2 text-lg font-semibold text-slate-100">
+            <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] p-4">
+              <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">PM completion</p>
+              <p className="mt-2 text-lg font-semibold text-[var(--wp-color-text)]">
                 {data.pmCompliance.completed} completed / {data.pmCompliance.total} scheduled
               </p>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-[var(--wp-color-text-muted)]">
                 {formatNumber(data.pmCompliance.percentage, 1)}% compliance in this window.
               </p>
             </div>
-            <div className="rounded-lg border border-slate-800 bg-slate-950 p-4">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Backlog load</p>
-              <p className="mt-2 text-lg font-semibold text-slate-100">{data.backlog} open orders</p>
-              <p className="text-sm text-slate-400">
+            <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface-elevated)] p-4">
+              <p className="text-xs uppercase tracking-wide text-[var(--wp-color-text-muted)]">Backlog load</p>
+              <p className="mt-2 text-lg font-semibold text-[var(--wp-color-text)]">{data.backlog} open orders</p>
+              <p className="text-sm text-[var(--wp-color-text-muted)]">
                 Keep backlog under control by clearing overdue work orders and scheduling PM.
               </p>
             </div>

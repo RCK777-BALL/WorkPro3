@@ -11,24 +11,24 @@ export type AssetDocumentsListProps = {
 
 const AssetDocumentsList = ({ documents, isLoading }: AssetDocumentsListProps) => {
   if (isLoading) {
-    return <p className="text-sm text-neutral-400">Loading documents…</p>;
+    return <p className="text-sm text-[var(--wp-color-text-muted)]">Loading documents...</p>;
   }
 
   if (!documents?.length) {
-    return <p className="text-sm text-neutral-500">No documents linked to this asset.</p>;
+    return <p className="text-sm text-[var(--wp-color-text-muted)]">No documents linked to this asset.</p>;
   }
 
   return (
-    <ul className="divide-y divide-neutral-800 rounded-xl border border-neutral-800">
+    <ul className="divide-y divide-[var(--wp-color-border)] rounded-xl border border-[var(--wp-color-border)]">
       {documents.map((doc) => (
-        <li key={doc.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm text-neutral-200">
+        <li key={doc.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm text-[var(--wp-color-text)]">
           <div>
-            <p className="font-medium text-white">{doc.name ?? 'Untitled document'}</p>
-            <p className="text-xs text-neutral-400">{doc.type ?? 'file'} • {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'unknown date'}</p>
+            <p className="font-medium text-[var(--wp-color-text)]">{doc.name ?? 'Untitled document'}</p>
+            <p className="text-xs text-[var(--wp-color-text-muted)]">{doc.type ?? 'file'} | {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'unknown date'}</p>
           </div>
           <a
             href={doc.url}
-            className="text-xs font-semibold text-indigo-300 hover:text-indigo-200"
+            className="text-xs font-semibold text-[var(--wp-color-primary)] hover:text-[var(--wp-color-primary)]"
             target="_blank"
             rel="noreferrer"
           >
@@ -41,3 +41,4 @@ const AssetDocumentsList = ({ documents, isLoading }: AssetDocumentsListProps) =
 };
 
 export default AssetDocumentsList;
+

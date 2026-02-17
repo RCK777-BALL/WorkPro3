@@ -32,6 +32,17 @@ const PlantSwitcher: React.FC = () => {
       styles={{
         input: {
           minWidth: 160,
+          backgroundColor: 'var(--wp-color-surface)',
+          borderColor: 'var(--wp-color-border)',
+          color: 'var(--wp-color-text)',
+        },
+        dropdown: {
+          backgroundColor: 'var(--wp-color-surface)',
+          borderColor: 'var(--wp-color-border)',
+          color: 'var(--wp-color-text)',
+        },
+        option: {
+          color: 'var(--wp-color-text)',
         },
       }}
     />

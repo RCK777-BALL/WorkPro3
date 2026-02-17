@@ -117,7 +117,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
   const allVisibleSelected = filteredAssets.length > 0 && filteredAssets.every((asset) => selectedSet.has(asset.id));
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-800/60 bg-slate-900/70 shadow-xl shadow-slate-950/30">
+    <div className="overflow-hidden rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_75%,transparent)] shadow-xl shadow-black/25">
       <div className="md:hidden">
         {filteredAssets.map((asset) => {
           const statusText = asset.status?.trim() || 'Unknown';
@@ -130,7 +130,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
           return (
             <div
               key={asset.id}
-              className="border-b border-slate-800/80 px-4 py-4"
+              className="border-b border-[var(--wp-color-border)] px-4 py-4"
               role="button"
               tabIndex={0}
               onClick={() => onRowClick(asset)}
@@ -143,8 +143,8 @@ const AssetTable: React.FC<AssetTableProps> = ({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-100">{asset.name}</p>
-                  <p className="text-xs text-slate-400">{asset.type || 'Type not set'}</p>
+                  <p className="text-sm font-semibold text-[var(--wp-color-text)]">{asset.name}</p>
+                  <p className="text-xs text-[var(--wp-color-text-muted)]">{asset.type || 'Type not set'}</p>
                 </div>
                 <Badge text={statusText} type="status" size="sm" />
               </div>
@@ -200,10 +200,10 @@ const AssetTable: React.FC<AssetTableProps> = ({
                   Edit
                 </Button>
               </div>
-              <div className="mt-3 text-xs text-slate-400">
-                Location: {asset.location || 'N/A'} · Department: {asset.department || 'N/A'}
+              <div className="mt-3 text-xs text-[var(--wp-color-text-muted)]">
+                Location: {asset.location || 'N/A'} | Department: {asset.department || 'N/A'}
               </div>
-              <div className="mt-1 flex items-center gap-4 text-xs text-slate-400">
+              <div className="mt-1 flex items-center gap-4 text-xs text-[var(--wp-color-text-muted)]">
                 <span>MTBF {formatHours(asset.reliability?.mtbfHours)}</span>
                 <span>MTTR {formatHours(asset.reliability?.mttrHours)}</span>
                 <span>Downtime {asset.downtimeCount ?? 0}</span>
@@ -214,33 +214,33 @@ const AssetTable: React.FC<AssetTableProps> = ({
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-full divide-y divide-slate-800">
-          <thead className="bg-slate-900/80">
+        <table className="min-w-full divide-y divide-[var(--wp-color-border)]">
+          <thead className="bg-[color-mix(in_srgb,var(--wp-color-surface)_85%,transparent)]">
             <tr>
               {onSelectionChange && (
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">
                   <input
                     aria-label={allVisibleSelected ? 'Deselect all visible assets' : 'Select all visible assets'}
                     type="checkbox"
-                    className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-500"
+                    className="h-4 w-4 rounded border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] text-indigo-500"
                     checked={allVisibleSelected}
                     onChange={toggleAll}
                   />
                 </th>
               )}
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Asset</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Criticality / Health</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Location</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Department</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Last Maintenance</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Open WOs</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Recent Downtime</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">Reliability</th>
-              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Asset</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Criticality / Health</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Location</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Department</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Last Maintenance</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Open WOs</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Recent Downtime</th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Reliability</th>
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-[var(--wp-color-text-muted)]">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800 bg-slate-900/60">
+          <tbody className="divide-y divide-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]">
             {filteredAssets.map((asset) => {
               const statusText = asset.status?.trim() || 'Unknown';
               const criticality = asset.criticality ?? 'low';
@@ -252,7 +252,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
               return (
                 <tr
                   key={asset.id}
-                  className={`cursor-pointer transition-colors duration-150 hover:bg-slate-800/70 ${selectedSet.has(asset.id) ? 'bg-slate-800/60' : ''}`}
+                  className={`cursor-pointer transition-colors duration-150 hover:bg-[var(--wp-color-surface-elevated)] ${selectedSet.has(asset.id) ? 'bg-[var(--wp-color-surface-elevated)]' : ''}`}
                   onClick={() => onRowClick(asset)}
                   role="button"
                   tabIndex={0}
@@ -269,7 +269,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       <input
                         aria-label={`Select ${asset.name}`}
                         type="checkbox"
-                        className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-500"
+                        className="h-4 w-4 rounded border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] text-indigo-500"
                         checked={selectedSet.has(asset.id)}
                         onClick={(e) => e.stopPropagation()}
                         onChange={() => toggleRow(asset.id)}
@@ -282,50 +282,50 @@ const AssetTable: React.FC<AssetTableProps> = ({
                         {asset.image ? (
                           <img className="h-10 w-10 rounded-lg object-cover" src={asset.image} alt={asset.name} />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800">
-                            <span className="text-sm font-medium text-slate-200">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--wp-color-surface-elevated)]">
+                            <span className="text-sm font-medium text-[var(--wp-color-text)]">
                               {asset.name.substring(0, 2).toUpperCase()}
                             </span>
                           </div>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-100">{asset.name}</p>
-                        <p className="text-xs text-slate-400">{asset.type || 'Type not set'}</p>
+                        <p className="text-sm font-semibold text-[var(--wp-color-text)]">{asset.name}</p>
+                        <p className="text-xs text-[var(--wp-color-text-muted)]">{asset.type || 'Type not set'}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Badge text={statusText} type="status" size="sm" />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--wp-color-text-muted)]">
                     <div className="flex flex-col gap-1">
                       <Badge text={formatCriticality(criticality)} type="priority" size="sm" />
                       <Badge text={formatHealth(health)} type="status" size="sm" />
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{asset.location || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{asset.department || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">{lastMaintenance}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--wp-color-text-muted)]">{asset.location || 'N/A'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--wp-color-text-muted)]">{asset.department || 'N/A'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--wp-color-text-muted)]">{lastMaintenance}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--wp-color-text-muted)]">
                     <Badge text={formatOpenWorkOrders(openWorkOrders)} size="sm" />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--wp-color-text-muted)]">
                     <Badge text={formatDowntime(downtime)} size="sm" />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                    <div className="flex flex-col gap-1 text-xs text-slate-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--wp-color-text-muted)]">
+                    <div className="flex flex-col gap-1 text-xs text-[var(--wp-color-text-muted)]">
                       <div className="flex items-center gap-1" title="Mean time between failures in hours">
-                        <span className="text-slate-400">MTBF</span>
-                        <span className="font-semibold text-slate-100">{formatHours(asset.reliability?.mtbfHours)}</span>
+                        <span className="text-[var(--wp-color-text-muted)]">MTBF</span>
+                        <span className="font-semibold text-[var(--wp-color-text)]">{formatHours(asset.reliability?.mtbfHours)}</span>
                       </div>
                       <div className="flex items-center gap-1" title="Mean time to repair in hours">
-                        <span className="text-slate-400">MTTR</span>
-                        <span className="font-semibold text-slate-100">{formatHours(asset.reliability?.mttrHours)}</span>
+                        <span className="text-[var(--wp-color-text-muted)]">MTTR</span>
+                        <span className="font-semibold text-[var(--wp-color-text)]">{formatHours(asset.reliability?.mttrHours)}</span>
                       </div>
                       <div className="flex items-center gap-1" title="Number of recorded downtime events">
-                        <span className="text-slate-400">Downtime</span>
-                        <span className="font-semibold text-slate-100">{asset.downtimeCount ?? 0}</span>
+                        <span className="text-[var(--wp-color-text-muted)]">Downtime</span>
+                        <span className="font-semibold text-[var(--wp-color-text)]">{asset.downtimeCount ?? 0}</span>
                       </div>
                     </div>
                   </td>
@@ -414,8 +414,8 @@ const AssetTable: React.FC<AssetTableProps> = ({
 
       {filteredAssets.length === 0 && (
         <div className="py-12 text-center">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
-            <svg className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-[var(--wp-color-surface-elevated)]">
+            <svg className="h-8 w-8 text-[var(--wp-color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -424,11 +424,11 @@ const AssetTable: React.FC<AssetTableProps> = ({
               />
             </svg>
           </div>
-          <p className="text-slate-400">No assets found</p>
+          <p className="text-[var(--wp-color-text-muted)]">No assets found</p>
         </div>
       )}
       {!canEdit && readOnlyReason && (
-        <div className="border-t border-slate-800 bg-slate-900/70 px-6 py-3 text-left text-xs text-amber-200" role="note">
+        <div className="border-t border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_75%,transparent)] px-6 py-3 text-left text-xs text-amber-200" role="note">
           {readOnlyReason}
         </div>
       )}
@@ -437,3 +437,4 @@ const AssetTable: React.FC<AssetTableProps> = ({
 };
 
 export default AssetTable;
+

@@ -54,9 +54,14 @@ const sampleRequest: WorkRequestItem = {
   photos: [],
 };
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 const renderPublicPage = () =>
   render(
-    <MemoryRouter initialEntries={[{ pathname: '/request/default' }]}> 
+    <MemoryRouter future={routerFuture} initialEntries={[{ pathname: '/request/default' }]}> 
       <Routes>
         <Route path="/request/:slug" element={<PublicRequestPage />} />
       </Routes>

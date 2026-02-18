@@ -13,10 +13,16 @@ vi.mock('@/lib/api', () => ({
   getErrorMessage: () => 'error',
 }));
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 describe('BootstrapSetupPage', () => {
   it('renders secret and submits rotation payload', async () => {
     render(
       <MemoryRouter
+        future={routerFuture}
         initialEntries={[{ pathname: '/admin/setup', state: { rotationToken: 'token-1', mfaSecret: 'SECRET123' } }]}
       >
         <Routes>

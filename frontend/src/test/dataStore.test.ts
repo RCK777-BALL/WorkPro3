@@ -49,12 +49,14 @@ describe('dataStore offline cache and queue', () => {
   });
 
   it('drops requests that conflict on the server', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const apiMock = vi.fn().mockRejectedValue({ response: { status: 409 } });
     await enqueueRequest({ method: 'post', url: '/conflict', data: {} });
     await flushQueue(apiMock as unknown as AxiosInstance);
     expect(apiMock).toHaveBeenCalledTimes(1);
     const q = await loadQueue();
     expect(q).toHaveLength(0);
+    warnSpy.mockRestore();
   });
 });
 

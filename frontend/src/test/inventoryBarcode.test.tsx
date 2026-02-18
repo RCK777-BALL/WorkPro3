@@ -59,10 +59,15 @@ import InventoryLocations from '@/pages/InventoryLocations';
 import InventoryParts from '@/pages/InventoryParts';
 import { upsertLocation, upsertPart } from '@/api/inventory';
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 const renderWithClient = (ui: React.ReactElement) => {
   const client = new QueryClient();
   return render(
-    <MemoryRouter>
+    <MemoryRouter future={routerFuture}>
       <QueryClientProvider client={client}>{ui}</QueryClientProvider>
     </MemoryRouter>,
   );

@@ -112,11 +112,13 @@ describe('Settings page', () => {
 
   it('handles unauthorized errors', async () => {
     (http.post as any).mockRejectedValueOnce({ response: { status: 401 } });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     renderSettings();
     await waitFor(() => expect(http.get).toHaveBeenCalled());
     const [saveButton] = screen.getAllByRole('button', { name: /save changes/i });
     await userEvent.click(saveButton);
     expect(mockAddToast).toHaveBeenCalledWith('Unauthorized', 'error');
+    errorSpy.mockRestore();
   });
 
   it('falls back to defaults when the settings endpoint is missing', async () => {
@@ -157,11 +159,13 @@ describe('Settings page', () => {
       return Promise.reject(error);
     });
 
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     renderSettings();
 
     await waitFor(() => {
       expect(mockAddToast).toHaveBeenCalledWith('Failed to load settings', 'error');
       expect(screen.queryByText(/loading your saved settings/i)).not.toBeInTheDocument();
     });
+    errorSpy.mockRestore();
   });
 });

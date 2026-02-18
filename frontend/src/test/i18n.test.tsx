@@ -3,13 +3,19 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import Login from '@/pages/Login';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import ErrorFallback from '@/components/common/ErrorFallback';
 import i18n from '@/i18n';
+
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({
@@ -22,7 +28,7 @@ describe('i18n integration', () => {
   it('renders Login controls', async () => {
     render(
       <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
+        <MemoryRouter future={routerFuture}>
           <Login />
         </MemoryRouter>
       </I18nextProvider>
@@ -35,16 +41,20 @@ describe('i18n integration', () => {
   it('renders ForgotPasswordPage translations', async () => {
     render(
       <I18nextProvider i18n={i18n}>
-        <MemoryRouter>
+        <MemoryRouter future={routerFuture}>
           <ForgotPasswordPage />
         </MemoryRouter>
       </I18nextProvider>
     );
 
     expect(screen.getByText('Reset Password')).toBeInTheDocument();
-    i18n.changeLanguage('es');
+    await act(async () => {
+      await i18n.changeLanguage('es');
+    });
     expect(await screen.findByText('Restablecer contraseña')).toBeInTheDocument();
-    i18n.changeLanguage('en');
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
   });
 
   it('renders ErrorFallback translations', async () => {
@@ -55,9 +65,15 @@ describe('i18n integration', () => {
     );
 
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    i18n.changeLanguage('es');
+    await act(async () => {
+      await i18n.changeLanguage('es');
+    });
     expect(await screen.findByText('Algo salió mal')).toBeInTheDocument();
-    i18n.changeLanguage('en');
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
   });
 });
+
+
 

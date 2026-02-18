@@ -9,6 +9,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import VendorsPage from '@/pages/VendorsPage';
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 const mockUseVendors = vi.fn();
 const mockMutateAsync = vi.fn();
 const confirmSpy = vi.spyOn(window, 'confirm');
@@ -19,8 +24,8 @@ vi.mock('@/hooks/useVendors', () => ({
 }));
 
 describe('VendorsPage', () => {
-  const renderPage = () => render(
-    <MemoryRouter>
+const renderPage = () => render(
+    <MemoryRouter future={routerFuture}>
       <VendorsPage />
     </MemoryRouter>,
   );

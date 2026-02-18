@@ -86,8 +86,8 @@ export default function WebhookSubscriptionsPanel({ apiBase = '/api/webhooks/v2'
         </p>
       ) : null}
       <ul>
-        {hooks.map((hook) => (
-          <li key={hook._id}>
+        {hooks.map((hook, index) => (
+          <li key={hook._id ?? `${hook.name}-${hook.url}-${index}`}>
             {hook.name} - {hook.url} ({Array.isArray(hook.events) ? hook.events.join(', ') : ''})
             <button type="button" onClick={() => deleteHook(hook._id)}>
               Delete

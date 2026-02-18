@@ -5,6 +5,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import type { Mock } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 import http from '@/lib/http';
 
@@ -55,6 +56,11 @@ beforeAll(() => {
 
 import Analytics from '@/pages/Analytics';
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 const mockedGet = http.get as unknown as Mock;
 
 mockedGet.mockImplementation((url: string) => {
@@ -72,7 +78,11 @@ mockedGet.mockImplementation((url: string) => {
 
 describe('Analytics charts', () => {
   it('renders cost and downtime charts', async () => {
-    render(<Analytics />);
+    render(
+      <MemoryRouter future={routerFuture}>
+        <Analytics />
+      </MemoryRouter>,
+    );
     expect(await screen.findByText('Analytics')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /PM Compliance/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Downtime/i })).toBeInTheDocument();

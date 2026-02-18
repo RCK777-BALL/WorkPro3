@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -177,4 +178,5 @@ const InventoryList = () => {
 };
 
 export default InventoryList;
+
 

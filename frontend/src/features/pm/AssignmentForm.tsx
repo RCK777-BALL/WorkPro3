@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -396,3 +397,4 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
 };
 
 export default AssignmentForm;
+

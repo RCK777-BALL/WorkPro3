@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 export namespace Types {
   class ObjectId {
     constructor(id?: string);

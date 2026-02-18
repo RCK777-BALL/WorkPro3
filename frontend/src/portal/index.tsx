@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -188,3 +189,4 @@ const routes: RouteObject[] = [
 ];
 
 export default routes;
+

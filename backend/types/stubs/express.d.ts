@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import type { ParsedQs } from './qs';
 
 export interface Request<

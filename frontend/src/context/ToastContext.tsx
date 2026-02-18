@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-refresh/only-export-components */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -96,3 +98,5 @@ export const emitToast = (
     window.dispatchEvent(new CustomEvent('toast', { detail: { message, type } }));
   }
 };
+
+

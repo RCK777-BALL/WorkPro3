@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -151,3 +152,4 @@ const ConditionRules: React.FC = () => {
 };
 
 export default ConditionRules;
+

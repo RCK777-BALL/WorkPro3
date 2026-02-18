@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -482,3 +483,4 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+

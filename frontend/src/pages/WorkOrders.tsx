@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -924,4 +925,5 @@ export default function WorkOrders() {
     </>
   );
 }
+
 

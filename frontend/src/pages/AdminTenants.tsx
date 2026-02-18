@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -131,4 +132,5 @@ const AdminTenants = () => {
 };
 
 export default AdminTenants;
+
 

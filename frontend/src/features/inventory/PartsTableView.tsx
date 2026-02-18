@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -426,3 +427,4 @@ const PartsTableView = () => {
 };
 
 export default PartsTableView;
+

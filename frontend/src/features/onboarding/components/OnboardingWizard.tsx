@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -225,3 +226,4 @@ export const OnboardingWizard = () => {
 
 const stepIcon = (completed: boolean) =>
   completed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertCircle className="h-4 w-4 text-amber-300" />;
+

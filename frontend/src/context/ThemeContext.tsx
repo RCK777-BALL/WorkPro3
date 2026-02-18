@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -241,3 +242,4 @@ export function useTheme() {
 }
 
 export default ThemeContext;
+

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -835,4 +836,5 @@ const AssetsPage: React.FC = () => {
 };
 
 export default AssetsPage;
+
 

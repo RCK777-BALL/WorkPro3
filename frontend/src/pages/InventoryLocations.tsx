@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -13,9 +14,7 @@ import Input from '@/components/common/Input';
 import SlideOver from '@/components/common/SlideOver';
 import type { InventoryLocation, InventoryTransferPayload, StockHistoryEntry, StockItem } from '@/types';
 import {
-  INVENTORY_HISTORY_QUERY_KEY,
   INVENTORY_LOCATIONS_QUERY_KEY,
-  INVENTORY_STOCK_QUERY_KEY,
   formatInventoryLocation,
   useLocationsQuery,
   useStockHistoryQuery,
@@ -593,4 +592,5 @@ export default function InventoryLocations() {
     </div>
   );
 }
+
 

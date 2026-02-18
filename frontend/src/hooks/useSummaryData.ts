@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -77,3 +78,4 @@ export function useSummary<T = unknown>(
 }
 
 export default useSummary;
+

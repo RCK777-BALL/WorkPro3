@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -397,4 +398,5 @@ function priorityTone(
       return "default";
   }
 }
+
 

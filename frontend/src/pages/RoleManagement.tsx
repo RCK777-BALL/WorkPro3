@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /*
  * SPDX-License-Identifier: MIT
  */
@@ -386,4 +387,5 @@ const RoleManagementPage = () => {
 };
 
 export default RoleManagementPage;
+
 

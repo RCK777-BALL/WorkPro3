@@ -172,7 +172,7 @@ describe('Work Order Routes', () => {
   });
 
   it('fails to create a work order when required fields are missing', async () => {
-    await Asset.create({
+    const asset = await Asset.create({
       name: 'AssetNoDue',
       type: 'Mechanical',
       location: 'Area 1',

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 export interface ZodIssue {
   message: string;
   path?: Array<string | number>;

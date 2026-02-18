@@ -5,10 +5,13 @@
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Request, Response, NextFunction } from 'express';
 import type { ParsedQs } from 'qs';
+import { createHash } from 'crypto';
+import PDFDocument from 'pdfkit';
 
 import type { AuthedRequest } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
+import User from '../models/User';
 import WorkOrderChecklistLog, { type WorkOrderChecklistLogDocument } from '../models/WorkOrderChecklistLog';
 import InventoryItem from '../models/InventoryItem';
 import StockHistory from '../models/StockHistory';
@@ -147,6 +150,8 @@ const START_APPROVED_STATUSES = new Set(['approved', 'active']);
 const COMPLETION_ALLOWED_STATUSES = new Set(['active', 'approved', 'closed']);
 const APPROVAL_STATUS_VALUES = ['draft', 'pending', 'approved', 'rejected'] as const;
 type ApprovalStatus = (typeof APPROVAL_STATUS_VALUES)[number];
+const APPROVAL_REASON_CODES = ['operational', 'safety', 'quality', 'compliance', 'budget'] as const;
+type ApprovalReasonCode = (typeof APPROVAL_REASON_CODES)[number];
 
 const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>
   value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
@@ -366,6 +371,27 @@ const withLocationScope = <T extends object>(filter: T, scope: LocationScope): T
     (filter as any).siteId = scope.siteId;
   }
   return filter;
+};
+
+type DispatchShift = 'day' | 'swing' | 'night';
+
+const parseDispatchShift = (value: unknown): DispatchShift | undefined => {
+  if (value === 'day' || value === 'swing' || value === 'night') return value;
+  return undefined;
+};
+
+const parseIsoDate = (value: unknown): Date | undefined => {
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed;
+};
+
+const hoursOverlap = (startA: Date, endA: Date, startB: Date, endB: Date): number => {
+  const start = Math.max(startA.getTime(), startB.getTime());
+  const end = Math.min(endA.getTime(), endB.getTime());
+  if (end <= start) return 0;
+  return (end - start) / (1000 * 60 * 60);
 };
 
 const isRawPartArray = (
@@ -1003,6 +1029,411 @@ export async function updateWorkOrder(
   }
 }
 
+export async function getDispatchTechnicians(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const scope = resolveLocationScope(req);
+    const users = await User.find(
+      withLocationScope(
+        {
+          tenantId,
+          active: true,
+          roles: { $in: ['tech', 'technician', 'team_member', 'technical_team_member', 'planner'] },
+        },
+        scope,
+      ),
+    )
+      .select(['_id', 'name', 'email', 'skills', 'shift', 'weeklyCapacityHours', 'siteId'])
+      .lean();
+
+    const data = users.map((user: any) => ({
+      id: user._id.toString(),
+      name: user.name ?? user.email ?? 'Technician',
+      skills: Array.isArray(user.skills) ? user.skills : [],
+      shift: parseDispatchShift(user.shift) ?? 'day',
+      weeklyCapacityHours: typeof user.weeklyCapacityHours === 'number' ? user.weeklyCapacityHours : 40,
+      siteId: user.siteId ? user.siteId.toString() : undefined,
+    }));
+
+    sendResponse(res, data);
+    return;
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function validateDispatchAssignment(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const { workOrderId, technicianId } = (req.body ?? {}) as {
+      workOrderId?: string;
+      technicianId?: string;
+    };
+
+    if (!workOrderId || !Types.ObjectId.isValid(workOrderId) || !technicianId || !Types.ObjectId.isValid(technicianId)) {
+      sendResponse(res, null, 'workOrderId and technicianId are required', 400);
+      return;
+    }
+
+    const scope = resolveLocationScope(req);
+    const workOrder = await WorkOrder.findOne(
+      withLocationScope({ _id: workOrderId, tenantId }, scope),
+    )
+      .select(['requiredSkills'])
+      .lean();
+    if (!workOrder) {
+      sendResponse(res, null, 'Work order not found', 404);
+      return;
+    }
+
+    const technician = await User.findOne(
+      withLocationScope({ _id: technicianId, tenantId, active: true }, scope),
+    )
+      .select(['skills', 'name', 'email'])
+      .lean();
+    if (!technician) {
+      sendResponse(res, null, 'Technician not found', 404);
+      return;
+    }
+
+    const requiredSkills = Array.isArray((workOrder as any).requiredSkills) ? (workOrder as any).requiredSkills : [];
+    const technicianSkills = Array.isArray((technician as any).skills) ? (technician as any).skills : [];
+    const missingSkills = requiredSkills.filter((skill: string) => !technicianSkills.includes(skill));
+
+    sendResponse(res, {
+      isQualified: missingSkills.length === 0,
+      missingSkills,
+      requiredSkills,
+      technicianSkills,
+      technicianName: (technician as any).name ?? (technician as any).email ?? 'Technician',
+    });
+    return;
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateWorkOrderSchedule(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const { assigneeId, plannedStart, plannedEnd, plannedShift } = (req.body ?? {}) as {
+      assigneeId?: string;
+      plannedStart?: string;
+      plannedEnd?: string;
+      plannedShift?: DispatchShift;
+    };
+
+    const startDate = parseIsoDate(plannedStart);
+    const endDate = parseIsoDate(plannedEnd);
+    const shift = parseDispatchShift(plannedShift) ?? 'day';
+    if (!startDate || !endDate || endDate <= startDate) {
+      sendResponse(res, null, 'Valid plannedStart and plannedEnd are required', 400);
+      return;
+    }
+    if (assigneeId && !Types.ObjectId.isValid(assigneeId)) {
+      sendResponse(res, null, 'assigneeId is invalid', 400);
+      return;
+    }
+
+    const scope = resolveLocationScope(req);
+    const workOrder = await WorkOrder.findOne(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    );
+    if (!workOrder) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+
+    let qualification: { isQualified: boolean; missingSkills: string[] } = { isQualified: true, missingSkills: [] };
+    if (assigneeId) {
+      const technician = await User.findOne(
+        withLocationScope({ _id: assigneeId, tenantId, active: true }, scope),
+      )
+        .select(['skills'])
+        .lean();
+      if (!technician) {
+        sendResponse(res, null, 'Assignee not found', 404);
+        return;
+      }
+      const requiredSkills = Array.isArray(workOrder.requiredSkills) ? workOrder.requiredSkills : [];
+      const technicianSkills = Array.isArray((technician as any).skills) ? (technician as any).skills : [];
+      const missingSkills = requiredSkills.filter((skill) => !technicianSkills.includes(skill));
+      qualification = { isQualified: missingSkills.length === 0, missingSkills };
+    }
+
+    const before = workOrder.toObject();
+    workOrder.plannedStart = startDate;
+    workOrder.plannedEnd = endDate;
+    workOrder.plannedShift = shift;
+    if (assigneeId) {
+      const assigneeObjectId = new Types.ObjectId(assigneeId);
+      workOrder.assignedTo = assigneeObjectId;
+      workOrder.assignees = [assigneeObjectId] as any;
+      if (workOrder.status === 'requested' || workOrder.status === 'draft') {
+        workOrder.status = 'assigned';
+      }
+    }
+    const saved = await workOrder.save();
+
+    await auditAction(
+      req as unknown as Request,
+      'schedule',
+      'WorkOrder',
+      new Types.ObjectId(req.params.id),
+      before,
+      saved.toObject(),
+    );
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    sendResponse(res, {
+      workOrder: saved,
+      qualification,
+    });
+    return;
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getDispatchCapacity(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const fromDate = parseIsoDate(typeof req.query.from === 'string' ? req.query.from : undefined);
+    const toDate = parseIsoDate(typeof req.query.to === 'string' ? req.query.to : undefined);
+    if (!fromDate || !toDate || toDate <= fromDate) {
+      sendResponse(res, null, 'Valid from and to query dates are required', 400);
+      return;
+    }
+    const shiftFilter = parseDispatchShift(typeof req.query.shift === 'string' ? req.query.shift : undefined);
+    const scope = resolveLocationScope(req);
+
+    const users = await User.find(
+      withLocationScope(
+        {
+          tenantId,
+          active: true,
+          roles: { $in: ['tech', 'technician', 'team_member', 'technical_team_member', 'planner'] },
+          ...(shiftFilter ? { shift: shiftFilter } : {}),
+        },
+        scope,
+      ),
+    )
+      .select(['_id', 'name', 'email', 'weeklyCapacityHours', 'shift'])
+      .lean();
+
+    const technicianIds = users.map((user: any) => user._id);
+    const orders = await WorkOrder.find(
+      withLocationScope(
+        {
+          tenantId,
+          assignees: { $in: technicianIds },
+          plannedStart: { $lte: toDate },
+          plannedEnd: { $gte: fromDate },
+        },
+        scope,
+      ),
+    )
+      .select(['assignees', 'plannedStart', 'plannedEnd', 'plannedShift'])
+      .lean();
+
+    const days = Math.max(1, (toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    const rows = users.map((user: any) => {
+      const technicianId = user._id.toString();
+      const weeklyCapacityHours = typeof user.weeklyCapacityHours === 'number' ? user.weeklyCapacityHours : 40;
+      const capacityHours = Number(((weeklyCapacityHours / 7) * days).toFixed(2));
+
+      let assignedHours = 0;
+      for (const order of orders as any[]) {
+        const assignees = Array.isArray(order.assignees) ? order.assignees.map((id: any) => id.toString()) : [];
+        if (!assignees.includes(technicianId)) continue;
+        const plannedStart = order.plannedStart ? new Date(order.plannedStart) : undefined;
+        const plannedEnd = order.plannedEnd ? new Date(order.plannedEnd) : undefined;
+        if (!plannedStart || !plannedEnd) continue;
+        assignedHours += hoursOverlap(plannedStart, plannedEnd, fromDate, toDate);
+      }
+
+      const utilization = capacityHours > 0 ? (assignedHours / capacityHours) * 100 : 0;
+      return {
+        technicianId,
+        technicianName: user.name ?? user.email ?? 'Technician',
+        shift: parseDispatchShift(user.shift) ?? 'day',
+        capacityHours,
+        assignedHours: Number(assignedHours.toFixed(2)),
+        utilization: Number(utilization.toFixed(1)),
+        overCapacity: assignedHours > capacityHours,
+      };
+    });
+
+    sendResponse(res, rows.sort((a, b) => b.utilization - a.utilization));
+    return;
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function bulkDispatchUpdate(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const { workOrderIds, action, payload } = (req.body ?? {}) as {
+      workOrderIds?: string[];
+      action?: 'reassign' | 'move' | 'swap';
+      payload?: Record<string, unknown>;
+    };
+    if (!Array.isArray(workOrderIds) || workOrderIds.length === 0) {
+      sendResponse(res, null, 'workOrderIds array is required', 400);
+      return;
+    }
+    if (action !== 'reassign' && action !== 'move' && action !== 'swap') {
+      sendResponse(res, null, 'Valid action is required', 400);
+      return;
+    }
+
+    const normalizedIds = workOrderIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+    if (!normalizedIds.length) {
+      sendResponse(res, null, 'No valid work order IDs provided', 400);
+      return;
+    }
+
+    const scope = resolveLocationScope(req);
+    const workOrders = await WorkOrder.find(
+      withLocationScope({ _id: { $in: normalizedIds }, tenantId }, scope),
+    );
+    if (!workOrders.length) {
+      sendResponse(res, { updatedCount: 0, updatedIds: [] });
+      return;
+    }
+
+    const now = new Date();
+    const auditOps: Promise<void>[] = [];
+    const updatedIds: string[] = [];
+
+    if (action === 'swap') {
+      if (workOrders.length !== 2) {
+        sendResponse(res, null, 'Swap requires exactly 2 work orders', 400);
+        return;
+      }
+      const first = workOrders[0];
+      const second = workOrders[1];
+      const firstBefore = first.toObject();
+      const secondBefore = second.toObject();
+      const firstAssignee = first.assignedTo;
+      const firstAssignees = [...(first.assignees ?? [])];
+      const firstStart = first.plannedStart;
+      const firstEnd = first.plannedEnd;
+
+      first.assignedTo = second.assignedTo;
+      first.assignees = second.assignees;
+      first.plannedStart = second.plannedStart;
+      first.plannedEnd = second.plannedEnd;
+
+      second.assignedTo = firstAssignee;
+      second.assignees = firstAssignees as any;
+      second.plannedStart = firstStart;
+      second.plannedEnd = firstEnd;
+
+      await first.save();
+      await second.save();
+      updatedIds.push(first._id.toString(), second._id.toString());
+      auditOps.push(
+        auditAction(req as unknown as Request, 'dispatch_swap', 'WorkOrder', first._id, firstBefore, first.toObject()),
+      );
+      auditOps.push(
+        auditAction(req as unknown as Request, 'dispatch_swap', 'WorkOrder', second._id, secondBefore, second.toObject()),
+      );
+      emitWorkOrderUpdate(toWorkOrderUpdatePayload(first));
+      emitWorkOrderUpdate(toWorkOrderUpdatePayload(second));
+    } else {
+      for (const workOrder of workOrders) {
+        const before = workOrder.toObject();
+        if (action === 'reassign') {
+          const assigneeId = typeof payload?.assigneeId === 'string' ? payload.assigneeId : '';
+          if (!Types.ObjectId.isValid(assigneeId)) continue;
+          const assigneeObjectId = new Types.ObjectId(assigneeId);
+          workOrder.assignedTo = assigneeObjectId;
+          workOrder.assignees = [assigneeObjectId] as any;
+          if (workOrder.status === 'requested' || workOrder.status === 'draft') {
+            workOrder.status = 'assigned';
+          }
+        }
+        if (action === 'move') {
+          const date = parseIsoDate(payload?.date);
+          if (!date) continue;
+          const baseStart = workOrder.plannedStart ? new Date(workOrder.plannedStart) : now;
+          const baseEnd = workOrder.plannedEnd ? new Date(workOrder.plannedEnd) : new Date(baseStart.getTime() + 2 * 60 * 60 * 1000);
+          const duration = Math.max(30 * 60 * 1000, baseEnd.getTime() - baseStart.getTime());
+          const movedStart = new Date(date);
+          movedStart.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
+          workOrder.plannedStart = movedStart;
+          workOrder.plannedEnd = new Date(movedStart.getTime() + duration);
+          const shift = parseDispatchShift(payload?.shift);
+          if (shift) {
+            workOrder.plannedShift = shift;
+          }
+        }
+        await workOrder.save();
+        updatedIds.push(workOrder._id.toString());
+        auditOps.push(
+          auditAction(req as unknown as Request, `dispatch_${action}`, 'WorkOrder', workOrder._id, before, workOrder.toObject()),
+        );
+        emitWorkOrderUpdate(toWorkOrderUpdatePayload(workOrder));
+      }
+    }
+
+    await Promise.all(auditOps);
+    sendResponse(res, {
+      updatedCount: updatedIds.length,
+      updatedIds,
+    });
+    return;
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function bulkUpdateWorkOrders(
   req: AuthedRequest,
   res: Response,
@@ -1048,6 +1479,10 @@ export async function bulkUpdateWorkOrders(
       'line',
       'station',
       'dueDate',
+      'plannedStart',
+      'plannedEnd',
+      'plannedShift',
+      'requiredSkills',
       'customFields',
     ]);
 
@@ -1059,6 +1494,16 @@ export async function bulkUpdateWorkOrders(
       } else if (key === 'assignees' && Array.isArray(value)) {
         const validAssignees = value.filter((id) => Types.ObjectId.isValid(String(id)));
         updateBody.assignees = mapAssignees(validAssignees as string[]);
+      } else if (key === 'requiredSkills' && Array.isArray(value)) {
+        updateBody.requiredSkills = value.filter((skill) => typeof skill === 'string');
+      } else if ((key === 'plannedStart' || key === 'plannedEnd') && typeof value === 'string') {
+        const parsedDate = parseIsoDate(value);
+        if (parsedDate) {
+          updateBody[key] = parsedDate;
+        }
+      } else if (key === 'plannedShift') {
+        const shift = parseDispatchShift(value);
+        if (shift) updateBody.plannedShift = shift;
       } else if (key === 'customFields' && typeof value === 'object') {
         updateBody.customFields = value as Record<string, unknown>;
       } else {
@@ -1067,7 +1512,23 @@ export async function bulkUpdateWorkOrders(
     }
 
     const filter = withLocationScope({ _id: { $in: normalizedIds }, tenantId }, scope);
+    const matched = await WorkOrder.find(filter);
     const result = await WorkOrder.updateMany(filter, { $set: updateBody });
+
+    await Promise.all(
+      matched.map(async (workOrder) => {
+        const before = workOrder.toObject();
+        const after = { ...before, ...updateBody };
+        await auditAction(
+          req as unknown as Request,
+          'bulk_update',
+          'WorkOrder',
+          workOrder._id,
+          before,
+          after,
+        );
+      }),
+    );
 
     sendResponse(res, {
       matched: (result as any).matchedCount ?? (result as any).n,
@@ -1229,10 +1690,30 @@ export async function approveWorkOrder(
       sendResponse(res, null, 'Not authenticated', 401);
       return;
     }
-    const { status, note } = req.body as { status?: ApprovalStatus; note?: string };
+    const { status, note, reasonCode, signatureName } = req.body as {
+      status?: ApprovalStatus;
+      note?: string;
+      reasonCode?: ApprovalReasonCode;
+      signatureName?: string;
+    };
 
     if (!status || !APPROVAL_STATUS_VALUES.includes(status)) {
       sendResponse(res, null, 'Invalid status', 400);
+      return;
+    }
+    if ((status === 'approved' || status === 'rejected') && !reasonCode) {
+      sendResponse(res, null, 'Reason code is required', 400);
+      return;
+    }
+    if (
+      reasonCode &&
+      !(APPROVAL_REASON_CODES as readonly string[]).includes(reasonCode)
+    ) {
+      sendResponse(res, null, 'Invalid reason code', 400);
+      return;
+    }
+    if ((status === 'approved' || status === 'rejected') && (!signatureName || signatureName.trim().length < 3)) {
+      sendResponse(res, null, 'Signer full name is required', 400);
       return;
     }
 
@@ -1272,17 +1753,29 @@ export async function approveWorkOrder(
       workOrder.status = status === 'approved' ? 'approved' : workOrder.status;
     }
     const approvalLog = workOrder.approvalLog ?? (workOrder.approvalLog = [] as any);
+    const signedAt = new Date();
+    const normalizedSignature = signatureName?.trim();
+    const signatureHash = normalizedSignature
+      ? createHash('sha256')
+        .update(`${tenantId}:${workOrder._id.toString()}:${userObjectId.toString()}:${normalizedSignature}:${signedAt.toISOString()}`)
+        .digest('hex')
+      : undefined;
+
     approvalLog.push({
       approvedBy: userObjectId,
-      approvedAt: new Date(),
+      approvedAt: signedAt,
       note,
+      reasonCode,
+      signatureName: normalizedSignature,
+      signatureHash,
+      signedAt,
     });
     const approvalStates = workOrder.approvalStates ?? (workOrder.approvalStates = [] as any);
     approvalStates.push({
       state: status,
-      changedAt: new Date(),
+      changedAt: signedAt,
       changedBy: userObjectId,
-      note,
+      note: [reasonCode ? `Reason: ${reasonCode}` : '', note].filter(Boolean).join(' | '),
     });
 
     const saved = await workOrder.save();
@@ -1305,7 +1798,127 @@ export async function approveWorkOrder(
     return;
   }
 }
- 
+
+export async function exportWorkOrderCompliancePacket(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const scope = resolveLocationScope(req);
+    if (!scope.plantId) {
+      sendResponse(res, null, 'Active plant context required', 400);
+      return;
+    }
+    const workOrder = await WorkOrder.findOne(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    ).lean();
+    if (!workOrder) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    const permits = Array.isArray(workOrder.permits) && workOrder.permits.length
+      ? await Permit.find({ tenantId, _id: { $in: workOrder.permits } }).lean()
+      : [];
+
+    const packet = {
+      generatedAt: new Date().toISOString(),
+      workOrder: {
+        id: workOrder._id.toString(),
+        title: workOrder.title,
+        type: workOrder.type,
+        status: workOrder.status,
+        approvalStatus: workOrder.approvalStatus,
+        complianceStatus: workOrder.complianceStatus,
+        checklist: workOrder.checklist ?? [],
+        attachments: workOrder.attachments ?? [],
+        approvalLog: workOrder.approvalLog ?? [],
+        permitRequirements: workOrder.permitRequirements ?? [],
+      },
+      permits,
+    };
+    const packetJson = JSON.stringify(packet, null, 2);
+    const packetHash = createHash('sha256').update(packetJson).digest('hex');
+
+    const format = typeof req.query.format === 'string' ? req.query.format : 'pdf';
+    const safeTitle = workOrder.title.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase();
+    if (format === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('X-WorkOrder-Packet-Hash', packetHash);
+      res.send(JSON.stringify({ packet, hash: packetHash }, null, 2));
+      return;
+    }
+
+    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    doc.on('error', (error) => next(error));
+    doc.on('end', () => {
+      const pdf = Buffer.concat(chunks);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="workorder-${safeTitle || workOrder._id.toString()}-compliance-packet.pdf"`,
+      );
+      res.setHeader('X-WorkOrder-Packet-Hash', packetHash);
+      res.send(pdf);
+    });
+
+    doc.fontSize(18).text('Work Order Compliance Packet');
+    doc.moveDown(0.5);
+    doc.fontSize(10).fillColor('#555').text(`Generated: ${new Date().toLocaleString()}`);
+    doc.text(`Packet hash (SHA-256): ${packetHash}`);
+    doc.moveDown();
+    doc.fillColor('#000').fontSize(13).text(workOrder.title);
+    doc.fontSize(10).text(`Type: ${workOrder.type}`);
+    doc.text(`Status: ${workOrder.status}`);
+    doc.text(`Approval: ${workOrder.approvalStatus ?? 'draft'}`);
+    doc.text(`Compliance: ${workOrder.complianceStatus ?? 'not_required'}`);
+    doc.moveDown();
+
+    doc.fontSize(12).text('Approval Evidence', { underline: true });
+    const approvalEntries = workOrder.approvalLog ?? [];
+    if (!approvalEntries.length) {
+      doc.fontSize(10).text('No approval log entries.');
+    } else {
+      approvalEntries.forEach((entry: any, index: number) => {
+        doc.fontSize(10).text(
+          `${index + 1}. ${entry.approvedAt ? new Date(entry.approvedAt).toLocaleString() : 'Unknown time'} | ` +
+          `Reason: ${entry.reasonCode ?? 'n/a'} | Signer: ${entry.signatureName ?? 'n/a'}`,
+        );
+        if (entry.note) {
+          doc.text(`   Note: ${entry.note}`);
+        }
+      });
+    }
+    doc.moveDown();
+
+    doc.fontSize(12).text('Permits', { underline: true });
+    if (!permits.length) {
+      doc.fontSize(10).text('No linked permits.');
+    } else {
+      permits.forEach((permit, index) => {
+        doc.fontSize(10).text(`${index + 1}. ${permit.permitNumber} | ${permit.type} | ${permit.status}`);
+      });
+    }
+    doc.moveDown();
+
+    doc.fontSize(12).text('Checklist & Attachments', { underline: true });
+    doc.fontSize(10).text(`Checklist items: ${(workOrder.checklist ?? []).length}`);
+    doc.text(`Attachments: ${(workOrder.attachments ?? []).length}`);
+    doc.end();
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+}
+
 export async function assignWorkOrder(
   req: AuthedRequest,
   res: Response,
@@ -1521,6 +2134,16 @@ export async function completeWorkOrder(
         res,
         null,
         'Required checklist items must be completed with evidence before closure',
+        409,
+      );
+      return;
+    }
+    const approvalRequiredTypes = new Set(['safety', 'calibration']);
+    if (approvalRequiredTypes.has(workOrder.type) && workOrder.approvalStatus !== 'approved') {
+      sendResponse(
+        res,
+        null,
+        'Approval must be completed before closing this work order type',
         409,
       );
       return;

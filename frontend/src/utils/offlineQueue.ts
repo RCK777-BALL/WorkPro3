@@ -193,6 +193,21 @@ export const clearQueue = () => {
 };
 export const getQueueLength = () => loadQueue().length;
 
+export const retryFailedRequests = () => {
+  const queue = loadQueue();
+  const retriable = queue.map((item) => {
+    if ((item.retries ?? 0) < MAX_QUEUE_RETRIES) return item;
+    return {
+      ...item,
+      retries: Math.max(0, MAX_QUEUE_RETRIES - 1),
+      error: undefined,
+      nextAttempt: undefined,
+    };
+  });
+  saveQueue(retriable);
+  return retriable.length;
+};
+
 import http from '@/lib/http';
 
 type HttpClientResponse = { data?: unknown } | void;

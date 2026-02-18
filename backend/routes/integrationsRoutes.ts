@@ -8,6 +8,7 @@ import { requireAuth } from '../middleware/authMiddleware';
 import IntegrationHook from '../models/IntegrationHook';
 import ApiKey from '../models/ApiKey';
 import WebhookSubscription from '../models/WebhookSubscription';
+import WebhookDeliveryLog from '../models/WebhookDeliveryLog';
 import ExportJob from '../models/ExportJob';
 import { registerHook, dispatchEvent } from '../services/integrationHub';
 import { execute } from '../integrations/graphql';
@@ -21,6 +22,99 @@ router.get('/hooks', async (_req, res, next) => {
   try {
     const hooks = await IntegrationHook.find().lean().exec();
     res.json({ success: true, data: hooks });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/catalog', async (req, res, next) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    const [hooks, webhooks, apiKeys, recentDeliveries] = await Promise.all([
+      IntegrationHook.find().lean().exec(),
+      WebhookSubscription.find({ tenantId }).lean().exec(),
+      ApiKey.find({ tenantId }).lean().exec(),
+      WebhookDeliveryLog.find({ tenantId }).sort({ createdAt: -1 }).limit(50).lean().exec(),
+    ]);
+
+    const failedDeliveries = recentDeliveries.filter((entry: any) => entry.status === 'failed').length;
+    const successfulDeliveries = recentDeliveries.filter((entry: any) => entry.status === 'success').length;
+
+    const catalog = [
+      {
+        id: 'webhooks',
+        name: 'Webhooks',
+        authType: 'shared-secret',
+        syncMode: 'event-driven',
+        connected: webhooks.length > 0,
+        health: failedDeliveries > successfulDeliveries ? 'degraded' : 'healthy',
+        lastSuccessAt: recentDeliveries.find((entry: any) => entry.status === 'success')?.createdAt ?? null,
+        lastFailureAt: recentDeliveries.find((entry: any) => entry.status === 'failed')?.createdAt ?? null,
+      },
+      {
+        id: 'api-keys',
+        name: 'API Keys',
+        authType: 'token',
+        syncMode: 'on-demand',
+        connected: apiKeys.length > 0,
+        health: 'healthy',
+        lastSuccessAt: null,
+        lastFailureAt: null,
+      },
+      ...hooks.map((hook: any) => ({
+        id: hook._id.toString(),
+        name: hook.name,
+        authType: hook.type === 'sap' ? 'oauth/service-account' : 'token',
+        syncMode: hook.type === 'webhook' ? 'event-driven' : 'scheduled',
+        connected: true,
+        health: 'healthy',
+        lastSuccessAt: null,
+        lastFailureAt: null,
+      })),
+    ];
+
+    res.json({ success: true, data: catalog });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/observability', async (req, res, next) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    const [deliveries, exports] = await Promise.all([
+      WebhookDeliveryLog.find({ tenantId }).sort({ createdAt: -1 }).limit(200).lean().exec(),
+      ExportJob.find({ tenantId }).sort({ createdAt: -1 }).limit(100).lean().exec(),
+    ]);
+
+    const rows = [
+      ...deliveries.map((entry: any) => ({
+        id: entry._id.toString(),
+        connector: entry.event ?? 'webhook',
+        status: entry.status,
+        attempt: entry.attempt ?? 1,
+        timestamp: entry.createdAt,
+        detail: entry.errorMessage ?? 'delivery',
+      })),
+      ...exports.map((entry: any) => ({
+        id: entry._id.toString(),
+        connector: `export:${entry.type}`,
+        status: entry.status,
+        attempt: 1,
+        timestamp: entry.createdAt,
+        detail: entry.fileName ?? entry.format,
+      })),
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    const deadLetter = rows.filter((row) => row.status === 'failed').slice(0, 50);
+
+    res.json({
+      success: true,
+      data: {
+        rows,
+        deadLetter,
+      },
+    });
   } catch (err) {
     next(err);
   }

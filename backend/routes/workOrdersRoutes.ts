@@ -17,6 +17,7 @@ import {
   updateWorkOrder,
   deleteWorkOrder,
   approveWorkOrder,
+  exportWorkOrderCompliancePacket,
   assignWorkOrder,
   startWorkOrder,
   completeWorkOrder,
@@ -24,6 +25,11 @@ import {
   assistWorkOrder,
   updateWorkOrderChecklist,
   bulkUpdateWorkOrders,
+  getDispatchTechnicians,
+  getDispatchCapacity,
+  validateDispatchAssignment,
+  updateWorkOrderSchedule,
+  bulkDispatchUpdate,
 } from '../controllers/WorkOrderController';
 import {
   deleteWorkOrderPartLineItem,
@@ -57,9 +63,14 @@ router.use(tenantScope);
 
 router.get('/', requirePermission('workorders.read'), getAllWorkOrders);
 router.get('/search', requirePermission('workorders.read'), searchWorkOrders);
+router.get('/dispatch/technicians', requirePermission('workorders.read'), getDispatchTechnicians);
+router.get('/dispatch/capacity', requirePermission('workorders.read'), getDispatchCapacity);
+router.post('/dispatch/validate-assignment', requirePermission('workorders.read'), validateDispatchAssignment);
+router.post('/dispatch/bulk-update', requirePermission('workorders.write'), bulkDispatchUpdate);
 
 /** Bulk updates should come before "/:id" to avoid route collision */
 router.patch('/bulk', requirePermission('workorders.write'), bulkUpdateWorkOrders);
+router.patch('/:id/schedule', validateObjectId('id'), requirePermission('workorders.write'), updateWorkOrderSchedule);
 
 router.get('/:id', validateObjectId('id'), requirePermission('workorders.read'), getWorkOrderById);
 router.post(
@@ -78,6 +89,12 @@ router.post(
   requirePermission('workorders.approve'),
   requireRole(...APPROVAL_ROLES),
   approveWorkOrder,
+);
+router.get(
+  '/:id/compliance-packet',
+  validateObjectId('id'),
+  requirePermission('workorders.read'),
+  exportWorkOrderCompliancePacket,
 );
 
 router.post('/:id/assign', validateObjectId('id'), requirePermission('workorders.write'), assignWorkOrder);

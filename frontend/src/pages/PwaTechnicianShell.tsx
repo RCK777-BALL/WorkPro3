@@ -24,6 +24,7 @@ import QrScanner from '@/components/qr/QrScanner';
 import { useSyncStore } from '@/store/syncStore';
 import { cacheWorkOrders, getCachedWorkOrders } from '@/store/dataStore';
 import { addToQueue, loadQueue, onQueueChange } from '@/utils/offlineQueue';
+import { retryFailedRequests } from '@/utils/offlineQueue';
 import { syncManager } from '@/utils/syncManager';
 import PwaCapturePad from '@/features/technician/PwaCapturePad';
 import { registerSWIfAvailable } from '@/pwa';
@@ -35,6 +36,7 @@ import {
 } from '@/utils/scanRouting';
 import type { WorkOrder } from '@/types';
 import http from '@/lib/http';
+import { authenticateBiometric, isNativeShell } from '@/utils/secureAuthStorage';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -50,6 +52,8 @@ const PwaTechnicianShell: React.FC = () => {
   const [detectedWorkOrder, setDetectedWorkOrder] = useState<WorkOrder | null>(null);
   const [detectedAssetId, setDetectedAssetId] = useState<string | null>(null);
   const [warmingCache, setWarmingCache] = useState(false);
+  const [locked, setLocked] = useState(isNativeShell());
+  const [unlocking, setUnlocking] = useState(false);
   const syncState = useSyncStore();
   const cacheWarmTimeout = useRef<ReturnType<typeof setTimeout>>();
 
@@ -207,6 +211,57 @@ const PwaTechnicianShell: React.FC = () => {
     return 'All caught up.';
   }, [queueSize, syncState.status]);
 
+  const syncHealth = useMemo(() => {
+    const statuses = Object.values(syncState.itemStatuses);
+    const pending = statuses.filter((status) => status === 'pending' || status === 'retrying').length;
+    const synced = statuses.filter((status) => status === 'synced').length;
+    const failed = statuses.filter((status) => status === 'failed').length;
+    return { pending, synced, failed };
+  }, [syncState.itemStatuses]);
+
+  const unlockMobile = async () => {
+    setUnlocking(true);
+    try {
+      const ok = await authenticateBiometric('Unlock WorkPro mobile shell');
+      if (ok) {
+        setLocked(false);
+        setLastMessage('Biometric unlock successful.');
+      } else {
+        setLastMessage('Biometric unlock failed.');
+      }
+    } catch (error) {
+      console.error(error);
+      setLastMessage('Unable to perform biometric unlock.');
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
+  const retryFailedNow = async () => {
+    retryFailedRequests();
+    setQueueSize(loadQueue().length);
+    setLastMessage('Failed sync items were re-queued for retry.');
+    await syncManager.sync();
+  };
+
+  if (locked) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-6 text-center">
+          <h2 className="text-xl font-semibold text-[var(--wp-color-text)]">Mobile unlock required</h2>
+          <p className="mt-2 text-sm text-[var(--wp-color-text-muted)]">
+            Biometric unlock protects technician sessions on native mobile builds.
+          </p>
+          <div className="mt-4">
+            <Button onClick={() => void unlockMobile()} disabled={unlocking}>
+              {unlocking ? 'Unlocking...' : 'Unlock with biometrics'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 p-4 md:p-6">
       <header className="space-y-2 rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-primary-600 px-5 py-6 text-[var(--wp-color-text)] shadow-lg">
@@ -302,6 +357,23 @@ const PwaTechnicianShell: React.FC = () => {
                 <p>Review server vs local changes before retrying.</p>
               </div>
             )}
+            <div className="grid grid-cols-3 gap-2 rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 p-2 text-xs">
+              <div>
+                <p className="text-[var(--wp-color-text-muted)]">Pending</p>
+                <p className="font-semibold text-[var(--wp-color-text)]">{syncHealth.pending}</p>
+              </div>
+              <div>
+                <p className="text-[var(--wp-color-text-muted)]">Synced</p>
+                <p className="font-semibold text-[var(--wp-color-text)]">{syncHealth.synced}</p>
+              </div>
+              <div>
+                <p className="text-[var(--wp-color-text-muted)]">Failed</p>
+                <p className="font-semibold text-[var(--wp-color-text)]">{syncHealth.failed}</p>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => void retryFailedNow()}>
+              Retry failed now
+            </Button>
           </div>
           <div className="rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)]/70 p-3 text-sm dark:border-[var(--wp-color-border)] dark:bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)]">
             <p className="text-xs font-semibold text-[var(--wp-color-text-muted)] dark:text-[var(--wp-color-text-muted)]">Cached work orders</p>

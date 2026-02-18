@@ -18,9 +18,13 @@ const userCreateFields = [
   'colorScheme',
   'mfaEnabled',
   'mfaSecret',
+  'skills',
+  'shift',
+  'weeklyCapacityHours',
 ];
 
 const userUpdateFields = [...userCreateFields];
+const DEFAULT_NEW_USER_PASSWORD = 'cmms123';
 
 /**
  * @openapi
@@ -113,7 +117,11 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       return;
     }
     const payload = filterFields(req.body, userCreateFields);
-    const newItem = new User({ ...payload, tenantId });
+    const passwordHash =
+      typeof payload.passwordHash === 'string' && payload.passwordHash.trim().length > 0
+        ? payload.passwordHash
+        : DEFAULT_NEW_USER_PASSWORD;
+    const newItem = new User({ ...payload, passwordHash, tenantId });
     const saved = await newItem.save();
     const safeUser = saved.toObject({
       transform: (_doc, ret: Record<string, unknown>) => {

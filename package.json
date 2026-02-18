@@ -14,8 +14,12 @@
     "fix:frontend": "node fixWorkPro.js Frontend",
     "fix:all": "node fixWorkPro.js all",
     "lint": "npm --prefix Backend run lint && npm --prefix Frontend run lint",
+    "lint:biome": "biome check Backend Frontend",
     "typecheck": "npm --prefix Backend run typecheck && npm --prefix Frontend run typecheck",
     "test:unit": "npm --prefix Backend run test && npm --prefix Frontend run test",
+    "audit:backend": "npm audit --prefix Backend --audit-level=low",
+    "audit:frontend": "npm audit --prefix Frontend --audit-level=low",
+    "audit:prod": "npm audit --prefix Backend --omit=dev --audit-level=low && npm audit --prefix Frontend --omit=dev --audit-level=low",
     "build": "npm --prefix Backend run build && npm --prefix Frontend run build",
     "build:backend": "npm --prefix Backend run build",
     "build:frontend": "npm --prefix Frontend run build"
@@ -38,6 +42,7 @@
     "ts-morph": "^27.0.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.2.3",
     "jest": "^30.2.0",

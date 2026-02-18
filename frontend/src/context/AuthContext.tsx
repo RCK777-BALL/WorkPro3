@@ -18,6 +18,7 @@ import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser } from '@/types
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { emitToast } from './ToastContext';
 import { api, getErrorMessage } from '@/lib/api';
+import { clearAuthToken, getAuthToken, hydrateAuthToken, setAuthToken } from '@/utils/secureAuthStorage';
 
 const TOKEN_KEY = 'auth:token';
 const TENANT_KEY = 'auth:tenantId';
@@ -213,8 +214,7 @@ const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
 
 const persistAuthStorage = (user: AuthUser | null, token?: string) => {
   if (!user) {
-    safeLocalStorage.removeItem(TOKEN_KEY);
-    safeLocalStorage.removeItem(FALLBACK_TOKEN_KEY);
+    void clearAuthToken();
     safeLocalStorage.removeItem(TENANT_KEY);
     safeLocalStorage.removeItem(SITE_KEY);
     safeLocalStorage.removeItem(USER_STORAGE_KEY);
@@ -222,11 +222,9 @@ const persistAuthStorage = (user: AuthUser | null, token?: string) => {
   }
 
   if (token) {
-    safeLocalStorage.setItem(TOKEN_KEY, token);
-    safeLocalStorage.setItem(FALLBACK_TOKEN_KEY, token);
+    void setAuthToken(token);
   } else {
-    safeLocalStorage.removeItem(TOKEN_KEY);
-    safeLocalStorage.removeItem(FALLBACK_TOKEN_KEY);
+    void clearAuthToken();
   }
 
   if (user.tenantId) {
@@ -300,8 +298,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      await hydrateAuthToken();
       const storedToken =
-        safeLocalStorage.getItem(TOKEN_KEY) ?? safeLocalStorage.getItem(FALLBACK_TOKEN_KEY);
+        (await getAuthToken()) ??
+        safeLocalStorage.getItem(TOKEN_KEY) ??
+        safeLocalStorage.getItem(FALLBACK_TOKEN_KEY);
       if (!storedToken) {
         if (!cancelled) {
           handleSetUser(null);

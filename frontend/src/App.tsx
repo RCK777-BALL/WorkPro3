@@ -77,9 +77,12 @@ import Imports from "@/pages/Imports";
 import ApiKeysPage from "@/pages/integrations/ApiKeysPage";
 import ExportsPage from "@/pages/integrations/ExportsPage";
 import WebhooksPage from "@/pages/integrations/WebhooksPage";
+import IntegrationsCatalogPage from "@/pages/integrations/IntegrationsCatalogPage";
+import IntegrationsObservabilityPage from "@/pages/integrations/IntegrationsObservabilityPage";
 import Plants from "@/pages/Plants";
 import GlobalAnalyticsDashboard from "@/pages/GlobalAnalyticsDashboard";
 import AIDashboard from "@/pages/AIDashboard";
+import ReliabilityInsights from "@/pages/ReliabilityInsights";
 import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
 import PMAnalytics from "@/pages/PMAnalytics";
@@ -87,6 +90,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import BootstrapSetupPage from "@/modules/admin/setup";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
+import { clearAuthToken } from "@/utils/secureAuthStorage";
 import PublicRequestPage from "@/public/request";
 import RequestStatus from "@/pages/RequestStatus";
 import SubmitRequest from "@/pages/requests/SubmitRequest";
@@ -110,6 +114,7 @@ export default function App() {
 
   React.useEffect(() => {
     setUnauthorizedCallback(() => {
+      void clearAuthToken();
       safeLocalStorage.removeItem(FALLBACK_TOKEN_KEY);
       safeLocalStorage.removeItem(USER_STORAGE_KEY);
       safeLocalStorage.removeItem(TOKEN_KEY);
@@ -145,6 +150,7 @@ export default function App() {
           <Route path="/analytics/dashboard/v2" element={<AnalyticsDashboardV2 />} />
           <Route path="/analytics/operations" element={<AnalyticsWarehousePage />} />
           <Route path="/analytics/pm" element={<PMAnalytics />} />
+          <Route path="/analytics/reliability" element={<ReliabilityInsights />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route
             path="/downtime"
@@ -518,6 +524,22 @@ export default function App() {
             element={
               <RequirePermission permission="integrations.manage">
                 <ApiKeysPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/integrations/catalog"
+            element={
+              <RequirePermission permission="integrations.manage">
+                <IntegrationsCatalogPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/integrations/observability"
+            element={
+              <RequirePermission permission="integrations.manage">
+                <IntegrationsObservabilityPage />
               </RequirePermission>
             }
           />

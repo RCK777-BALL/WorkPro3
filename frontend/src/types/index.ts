@@ -335,6 +335,15 @@ export interface WorkOrder {
     note?: string;
     required?: boolean;
   }[];
+  approvalLog?: {
+    approvedBy?: string;
+    approvedAt?: string;
+    note?: string;
+    reasonCode?: string;
+    signatureName?: string;
+    signatureHash?: string;
+    signedAt?: string;
+  }[];
   currentApprovalStep?: number;
   approvedBy?: string;
   approvedAt?: string;
@@ -386,6 +395,10 @@ export interface WorkOrder {
   /** Date fields */
   scheduledDate?: string;
   dueDate?: string;
+  plannedStart?: string;
+  plannedEnd?: string;
+  plannedShift?: 'day' | 'swing' | 'night';
+  requiredSkills?: string[];
   createdAt?: string;
   completedAt?: string;
 

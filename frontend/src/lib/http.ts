@@ -10,6 +10,7 @@ import type {
 } from 'axios';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { unwrapApiPayload, type ApiPayload } from '@/utils/apiPayload';
+import { getAuthToken, getAuthTokenSync } from '@/utils/secureAuthStorage';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:5010/api';
 
@@ -63,7 +64,7 @@ const hasHeader = (headers: AxiosRequestHeaders, name: string): boolean => {
   return Object.keys(headers).some((key) => key.toLowerCase() === normalized);
 };
 
-http.interceptors.request.use((config) => {
+http.interceptors.request.use(async (config) => {
   if (config.baseURL && typeof config.url === 'string' && !/^https?:\/\//i.test(config.url)) {
     const baseHasTrailingSlash = config.baseURL.endsWith('/');
     const urlHasLeadingSlash = config.url.startsWith('/');
@@ -79,7 +80,10 @@ http.interceptors.request.use((config) => {
   const tenantId = safeLocalStorage.getItem(TENANT_KEY);
   const siteId = safeLocalStorage.getItem(SITE_KEY);
   const token =
-    safeLocalStorage.getItem(TOKEN_KEY) ?? safeLocalStorage.getItem(FALLBACK_TOKEN_KEY);
+    getAuthTokenSync() ??
+    (await getAuthToken()) ??
+    safeLocalStorage.getItem(TOKEN_KEY) ??
+    safeLocalStorage.getItem(FALLBACK_TOKEN_KEY);
   if (tenantId) headers['x-tenant-id'] = tenantId;
   if (siteId && !hasHeader(headers, 'x-site-id')) {
     headers['x-site-id'] = siteId;

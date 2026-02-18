@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, Warehouse, Settings, X } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Warehouse, Settings, X, TrendingUp, Activity } from 'lucide-react';
 import ExistingSidebar from '@/components/layout/Sidebar';
 
 interface SidebarProps {
@@ -13,6 +13,8 @@ const mobileLinks = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/work-orders', label: 'Work Orders', icon: ClipboardList },
   { to: '/assets', label: 'Assets', icon: Warehouse },
+  { to: '/analytics/reliability', label: 'Reliability', icon: TrendingUp },
+  { to: '/integrations/catalog', label: 'Integrations', icon: Activity },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

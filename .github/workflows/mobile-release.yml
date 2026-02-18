@@ -1,0 +1,46 @@
+name: mobile-release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "Frontend/**"
+      - ".github/workflows/mobile-release.yml"
+
+jobs:
+  build-mobile-artifacts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            Frontend/package-lock.json
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Build web bundle
+        run: npm run build
+
+      - name: Prepare Capacitor shell (if CLI installed)
+        run: |
+          npx cap sync || echo "Capacitor CLI not installed in this environment"
+
+      - name: Upload mobile release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: workpro-mobile-web-bundle
+          path: Frontend/dist
+

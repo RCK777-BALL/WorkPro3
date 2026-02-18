@@ -17,6 +17,7 @@ import Modal from '@/components/common/Modal';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import WorkOrderQueuePanel from '@/components/offline/WorkOrderQueuePanel';
 import ChecklistExecutionPanel from '@/workorders/ChecklistExecutionPanel';
+import ESignApprovalModal from '@/components/compliance/ESignApprovalModal';
 import { usePartsQuery, useStockItemsQuery } from '@/features/inventory';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/authStore';
@@ -58,6 +59,7 @@ const normalizeWorkOrder = (data: WorkOrderResponse): WorkOrder | null => {
     approvalState: data.approvalState,
     approvalStates: data.approvalStates,
     approvalSteps: data.approvalSteps,
+    approvalLog: data.approvalLog,
     currentApprovalStep: data.currentApprovalStep,
     approvedBy: data.approvedBy,
     approvedAt: data.approvedAt,
@@ -105,10 +107,8 @@ const WorkOrderDetail = () => {
   const [actionModal, setActionModal] = useState<
     { type: 'reserve' | 'issue' | 'return' | 'unreserve'; partId: string; quantity: number } | null
   >(null);
-  const [approvalNote, setApprovalNote] = useState('');
-  const [approvalReasonCode, setApprovalReasonCode] = useState('operational');
-  const [approverSignature, setApproverSignature] = useState('');
   const [approvalSubmitting, setApprovalSubmitting] = useState(false);
+  const [approvalModalAction, setApprovalModalAction] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const hasPartsError = Boolean(partsQuery.error);
 
   const checklistHistory = workOrder?.checklistHistory ?? [];
@@ -165,41 +165,61 @@ const WorkOrderDetail = () => {
     return Array.from(userRoles).some((role) => approvalRoles.has(role));
   }, [userRoles]);
 
-  const submitApproval = async (status: 'pending' | 'approved' | 'rejected') => {
+  const submitApproval = async (payload: {
+    status: 'pending' | 'approved' | 'rejected';
+    reasonCode?: string;
+    signatureName?: string;
+    note?: string;
+  }) => {
     if (!id) return;
-    if (status !== 'pending' && approverSignature.trim().length < 3) {
+    if (payload.status !== 'pending' && (payload.signatureName ?? '').trim().length < 3) {
       addToast('Approver signature name is required.', 'error');
       return;
     }
-    if (status === 'rejected' && approvalReasonCode.trim().length === 0) {
+    if (payload.status === 'rejected' && (payload.reasonCode ?? '').trim().length === 0) {
       addToast('Reason code is required for rejection.', 'error');
       return;
     }
     setApprovalSubmitting(true);
     try {
-      const composedNote = [
-        approvalReasonCode ? `Reason: ${approvalReasonCode}` : '',
-        approverSignature ? `Signed by: ${approverSignature}` : '',
-        approvalNote.trim(),
-      ]
-        .filter(Boolean)
-        .join(' | ');
       const res = await http.post<WorkOrderResponse>(`/workorders/${id}/approve`, {
-        status,
-        ...(composedNote ? { note: composedNote } : {}),
+        status: payload.status,
+        reasonCode: payload.reasonCode,
+        signatureName: payload.signatureName,
+        note: payload.note,
       });
       const normalized = normalizeWorkOrder(res.data);
       if (normalized) {
         setWorkOrder(normalized);
       }
-      setApprovalNote('');
-      setApproverSignature('');
-      addToast(`Approval ${status === 'pending' ? 'requested' : status}`, 'success');
+      setApprovalModalAction(null);
+      addToast(`Approval ${payload.status === 'pending' ? 'requested' : payload.status}`, 'success');
     } catch (err) {
       console.error(err);
       addToast('Unable to update approval status.', 'error');
     } finally {
       setApprovalSubmitting(false);
+    }
+  };
+
+  const exportCompliancePacket = async () => {
+    if (!id) return;
+    try {
+      const response = await http.get(`/workorders/${id}/compliance-packet`, {
+        params: { format: 'pdf' },
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `workorder-${id}-compliance-packet.pdf`;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
+      addToast('Compliance packet exported.', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Unable to export compliance packet.', 'error');
     }
   };
 
@@ -576,37 +596,13 @@ const WorkOrderDetail = () => {
                 </div>
               )}
               <div className="space-y-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[var(--wp-color-text-muted)]">Reason code</label>
-                  <select
-                    className="w-full rounded-md border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] px-3 py-2 text-sm text-[var(--wp-color-text)]"
-                    value={approvalReasonCode}
-                    onChange={(event) => setApprovalReasonCode(event.target.value)}
-                  >
-                    <option value="operational">Operational</option>
-                    <option value="safety">Safety</option>
-                    <option value="quality">Quality</option>
-                    <option value="compliance">Compliance</option>
-                    <option value="budget">Budget</option>
-                  </select>
-                </div>
-                <Input
-                  label="Approver signature (full name)"
-                  value={approverSignature}
-                  onChange={(event) => setApproverSignature(event.target.value)}
-                />
-                <Input
-                  label="Approval note"
-                  value={approvalNote}
-                  onChange={(event) => setApprovalNote(event.target.value)}
-                />
                 <div className="flex flex-wrap gap-2">
                   {workOrder.approvalStatus !== 'pending' && (
                     <Button
                       size="sm"
                       variant="outline"
                       disabled={approvalSubmitting}
-                      onClick={() => submitApproval('pending')}
+                      onClick={() => setApprovalModalAction('pending')}
                     >
                       Request approval
                     </Button>
@@ -616,7 +612,7 @@ const WorkOrderDetail = () => {
                       <Button
                         size="sm"
                         disabled={!canApprove || approvalSubmitting}
-                        onClick={() => submitApproval('approved')}
+                        onClick={() => setApprovalModalAction('approved')}
                       >
                         Approve
                       </Button>
@@ -624,16 +620,38 @@ const WorkOrderDetail = () => {
                         size="sm"
                         variant="outline"
                         disabled={!canApprove || approvalSubmitting}
-                        onClick={() => submitApproval('rejected')}
+                        onClick={() => setApprovalModalAction('rejected')}
                       >
                         Reject
                       </Button>
                     </>
                   )}
+                  <Button size="sm" variant="ghost" onClick={() => void exportCompliancePacket()}>
+                    Export packet
+                  </Button>
                   {!canApprove && workOrder.approvalStatus === 'pending' && (
                     <span className="text-xs text-[var(--wp-color-text-muted)]">Role required to approve.</span>
                   )}
                 </div>
+                {workOrder.approvalLog?.length ? (
+                  <div className="rounded-xl border border-[var(--wp-color-border)]/60 bg-[color-mix(in_srgb,var(--wp-color-surface)_60%,transparent)] p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--wp-color-text-muted)]">
+                      E-sign evidence timeline
+                    </p>
+                    <ul className="space-y-2 text-xs text-[var(--wp-color-text-muted)]">
+                      {workOrder.approvalLog.slice(-5).reverse().map((entry, index) => (
+                        <li key={`${entry.approvedAt ?? 'entry'}-${index}`} className="rounded-md bg-[var(--wp-color-surface)]/70 p-2">
+                          <p className="text-[var(--wp-color-text)]">
+                            {entry.approvedAt ? new Date(entry.approvedAt).toLocaleString() : 'Unknown time'}
+                          </p>
+                          <p>Reason: {entry.reasonCode ?? 'n/a'} · Signer: {entry.signatureName ?? 'n/a'}</p>
+                          {entry.signatureHash ? <p className="break-all">Hash: {entry.signatureHash}</p> : null}
+                          {entry.note ? <p>Note: {entry.note}</p> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
             </Card.Content>
           </Card>
@@ -882,6 +900,14 @@ const WorkOrderDetail = () => {
       ) : (
         <p className="text-sm text-[var(--wp-color-text-muted)]">Work order id required to load comments.</p>
       )}
+
+      <ESignApprovalModal
+        isOpen={Boolean(approvalModalAction)}
+        action={approvalModalAction}
+        submitting={approvalSubmitting}
+        onClose={() => setApprovalModalAction(null)}
+        onSubmit={submitApproval}
+      />
       <ConflictResolver
         conflict={conflict}
         onResolve={resolveConflict}

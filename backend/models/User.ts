@@ -36,6 +36,9 @@ export interface UserDocument extends Document {
   mfaSecret?: string;
   active: boolean;
   tokenVersion: number;
+  skills?: string[];
+  shift?: 'day' | 'swing' | 'night';
+  weeklyCapacityHours?: number;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -91,6 +94,13 @@ const userSchema = new Schema<UserDocument>(
     mfaSecret: { type: String },
     active: { type: Boolean, default: true, index: true },
     tokenVersion: { type: Number, default: 0 },
+    skills: { type: [String], default: [] },
+    shift: {
+      type: String,
+      enum: ['day', 'swing', 'night'],
+      default: 'day',
+    },
+    weeklyCapacityHours: { type: Number, default: 40 },
   },
   { timestamps: true }
 );

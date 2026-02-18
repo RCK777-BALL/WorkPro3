@@ -292,6 +292,13 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: Globe2,
     section: "analytics",
   },
+  "analytics-reliability": {
+    id: "analytics-reliability",
+    label: "Reliability Insights",
+    to: "/analytics/reliability",
+    icon: TrendingUp,
+    section: "analytics",
+  },
   "analytics-ai": {
     id: "analytics-ai",
     label: "AI Insights",
@@ -380,6 +387,22 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/mobile",
     icon: Globe2,
     section: "management",
+  },
+  "integrations-catalog": {
+    id: "integrations-catalog",
+    label: "Integrations Catalog",
+    to: "/integrations/catalog",
+    icon: Activity,
+    section: "management",
+    permission: "integrations.manage",
+  },
+  "integrations-observability": {
+    id: "integrations-observability",
+    label: "Integration Runs",
+    to: "/integrations/observability",
+    icon: BarChart3,
+    section: "management",
+    permission: "integrations.manage",
   },
   "notification-settings": {
     id: "notification-settings",

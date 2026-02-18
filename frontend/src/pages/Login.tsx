@@ -9,13 +9,12 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import type { AuthRole, AuthUser } from '@/types';
 import {
-  FALLBACK_TOKEN_KEY,
   SITE_KEY,
   TENANT_KEY,
-  TOKEN_KEY,
   USER_STORAGE_KEY,
 } from '@/lib/http';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
+import { setAuthToken } from '@/utils/secureAuthStorage';
 
 const sanitizeRedirect = (value: string | null): string => {
   if (!value || !value.startsWith('/')) {
@@ -66,8 +65,7 @@ export default function Login() {
       ...(siteId ? { siteId } : {}),
     };
 
-    safeLocalStorage.setItem(TOKEN_KEY, token);
-    safeLocalStorage.setItem(FALLBACK_TOKEN_KEY, token);
+    void setAuthToken(token);
     if (tenantId) {
       safeLocalStorage.setItem(TENANT_KEY, tenantId);
     } else {

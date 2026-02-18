@@ -155,6 +155,10 @@ export interface WorkOrder {
   siteId?: Types.ObjectId;
 
   dueDate?: Date;
+  plannedStart?: Date;
+  plannedEnd?: Date;
+  plannedShift?: 'day' | 'swing' | 'night';
+  requiredSkills?: Types.Array<string>;
   slaHours?: number;
   isSLABreached?: boolean;
   completedAt?: Date;
@@ -175,7 +179,15 @@ export interface WorkOrder {
     createdBy?: Types.ObjectId;
     type?: 'status' | 'comment' | 'approval' | 'sla';
   }>;
-  approvalLog?: Types.Array<{ approvedBy?: Types.ObjectId; approvedAt?: Date; note?: string }>;
+  approvalLog?: Types.Array<{
+    approvedBy?: Types.ObjectId;
+    approvedAt?: Date;
+    note?: string;
+    reasonCode?: string;
+    signatureName?: string;
+    signatureHash?: string;
+    signedAt?: Date;
+  }>;
   version?: number;
   etag?: string;
   lastSyncedAt?: Date;
@@ -474,6 +486,10 @@ const workOrderSchema = new Schema<WorkOrder>(
         approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
         approvedAt: { type: Date, default: Date.now },
         note: { type: String },
+        reasonCode: { type: String },
+        signatureName: { type: String },
+        signatureHash: { type: String, immutable: true },
+        signedAt: { type: Date, immutable: true },
       },
     ],
     downtime: { type: Number },
@@ -496,6 +512,15 @@ const workOrderSchema = new Schema<WorkOrder>(
     lastSyncedAt: { type: Date },
 
     dueDate: { type: Date },
+    plannedStart: { type: Date, index: true },
+    plannedEnd: { type: Date },
+    plannedShift: {
+      type: String,
+      enum: ['day', 'swing', 'night'],
+      default: 'day',
+      index: true,
+    },
+    requiredSkills: { type: [String], default: [] },
     slaHours: { type: Number },
     completedAt: Date,
   },

@@ -36,8 +36,11 @@ export type NavItemId =
   | 'pm-analytics'
   | 'iot-monitoring'
   | 'analytics-global'
+  | 'analytics-reliability'
   | 'analytics-ai'
   | 'executive'
+  | 'integrations-catalog'
+  | 'integrations-observability'
   | 'purchase-orders'
   | 'vendors'
   | 'messages'
@@ -79,8 +82,11 @@ const defaultOrder: NavItemId[] = [
   'pm-analytics',
   'iot-monitoring',
   'analytics-global',
+  'analytics-reliability',
   'analytics-ai',
   'executive',
+  'integrations-catalog',
+  'integrations-observability',
   'purchase-orders',
   'vendors',
   'messages',

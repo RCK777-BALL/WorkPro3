@@ -17,8 +17,8 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "swagger:check": "ts-node utils/swagger.ts",
-    "lint": "eslint .",
-    "prepare": "husky install",
+    "lint": "npm run typecheck",
+    "prepare": "husky",
     "fix:backend": "node ../fixWorkPro.js backend",
     "indexes:ensure": "ts-node scripts/ensure-indexes.ts"
   },
@@ -88,13 +88,8 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/twilio": "^3.19.2",
-    "@typescript-eslint/eslint-plugin": "^8.10.0",
-    "@typescript-eslint/parser": "^8.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "eslint": "^9.38.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.5",
     "express": "^4.22.1",
     "glob": "^13.0.3",
     "husky": "^9.1.1",
@@ -106,11 +101,11 @@
     "ts-morph": "^27.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.0",
-    "typescript-eslint": "^8.46.4",
     "vitest": "^4.0.9"
   },
   "overrides": {
     "qs": "6.15.0",
+    "fast-xml-parser": "5.3.6",
     "rollup": "4.46.2",
     "@rollup/*": "4.46.2"
   },
@@ -118,4 +113,3 @@
     "node": ">=18"
   }
 }
-

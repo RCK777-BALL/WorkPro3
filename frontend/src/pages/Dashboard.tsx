@@ -365,9 +365,9 @@ function SummaryCard({
   decimals = 0,
 }: SummaryCardProps) {
   const cardClasses = clsx(
-    "relative block overflow-hidden rounded-3xl border border-white/10 p-5 text-[var(--wp-color-text)] shadow-xl transition",
+    "relative block overflow-hidden rounded-3xl border border-white/10 p-5 text-(--wp-color-text) shadow-xl transition",
     "hover:shadow-2xl hover:border-white/20",
-    "bg-gradient-to-br",
+    "bg-linear-to-br",
     href
       ? "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
       : undefined,
@@ -378,18 +378,18 @@ function SummaryCard({
     <>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-[var(--wp-color-text)]/70">{title}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-(--wp-color-text)/70">{title}</p>
           {loading ? (
-            <div className="mt-3 h-8 w-24 animate-pulse rounded-full bg-[var(--wp-color-surface)]/30" />
+            <div className="mt-3 h-8 w-24 animate-pulse rounded-full bg-(--wp-color-surface)/30" />
           ) : (
             <div className="mt-3 flex items-baseline gap-1 text-3xl font-semibold">
               <AnimatedNumber value={value} decimals={decimals} />
               {suffix ? <span className="text-base font-medium">{suffix}</span> : null}
             </div>
           )}
-          <p className="mt-2 text-sm text-[var(--wp-color-text)]/80">{description}</p>
+          <p className="mt-2 text-sm text-(--wp-color-text)/80">{description}</p>
         </div>
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--wp-color-surface)]/15 text-[var(--wp-color-text)]">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-(--wp-color-surface)/15 text-(--wp-color-text)">
           <Icon className="h-6 w-6" />
         </span>
       </div>
@@ -404,7 +404,7 @@ function SummaryCard({
           <div className="h-12 w-32 rounded-lg border border-white/10" />
         )}
         {href ? (
-          <span className="inline-flex items-center text-sm font-semibold text-[var(--wp-color-text)]/90 transition group-hover:translate-x-0.5">
+          <span className="inline-flex items-center text-sm font-semibold text-(--wp-color-text)/90 transition group-hover:translate-x-0.5">
             View all
             <ArrowUpRight className="ml-1 h-4 w-4" />
           </span>
@@ -413,7 +413,7 @@ function SummaryCard({
             type="button"
             size="sm"
             variant="secondary"
-            className="rounded-full bg-[var(--wp-color-surface)]/20 text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface)]/30"
+            className="rounded-full bg-(--wp-color-surface)/20 text-(--wp-color-text) hover:bg-(--wp-color-surface)/30"
             onClick={onViewAll}
           >
             View all
@@ -520,19 +520,19 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
   };
 
   return (
-    <section className="rounded-3xl bg-gradient-to-br from-purple-800 via-indigo-700 to-blue-700 p-6 text-[var(--wp-color-text)] shadow-xl">
+    <section className="rounded-3xl bg-linear-to-br from-purple-800 via-indigo-700 to-blue-700 p-6 text-(--wp-color-text) shadow-xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Live pulse</h2>
-          <p className="text-sm text-[var(--wp-color-text)]/80">Real-time operational health indicators</p>
+          <p className="text-sm text-(--wp-color-text)/80">Real-time operational health indicators</p>
         </div>
-        <div className="flex items-center gap-3 text-sm text-[var(--wp-color-text)]/70">
+        <div className="flex items-center gap-3 text-sm text-(--wp-color-text)/70">
           <span>Updated {updatedLabel}</span>
           <Button
             type="button"
             size="sm"
             variant="ghost"
-            className="text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface)]/20"
+            className="text-(--wp-color-text) hover:bg-(--wp-color-surface)/20"
             onClick={onRefresh}
             disabled={loading}
           >
@@ -573,19 +573,19 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-[var(--wp-color-text)]/70">{title}</p>
+                    <p className="text-xs uppercase tracking-widest text-(--wp-color-text)/70">{title}</p>
                     <div className="mt-2 flex items-baseline gap-1 text-2xl font-semibold">
                       {loading ? "–" : <AnimatedNumber value={value} decimals={decimals ?? 0} />}
                       {suffix ? <span className="text-sm font-medium">{suffix}</span> : null}
                     </div>
-                    <p className="mt-1 text-xs text-[var(--wp-color-text)]/75">{detail}</p>
+                    <p className="mt-1 text-xs text-(--wp-color-text)/75">{detail}</p>
                   </div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--wp-color-surface)]/15">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-(--wp-color-surface)/15">
                     <Icon className="h-5 w-5" />
                   </span>
                 </div>
                 {isInteractive ? (
-                  <span className="mt-4 inline-flex items-center text-xs font-semibold text-[var(--wp-color-text)]/80">
+                  <span className="mt-4 inline-flex items-center text-xs font-semibold text-(--wp-color-text)/80">
                     View details
                     <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                   </span>
@@ -617,17 +617,17 @@ function RecentActivitySection({ items, loading, error, onRefresh, onNavigate }:
   };
 
   return (
-    <section className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-black p-6 text-[var(--wp-color-text)] shadow-xl">
+    <section className="rounded-3xl bg-linear-to-br from-slate-900 via-slate-950 to-black p-6 text-(--wp-color-text) shadow-xl">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Recent activity</h2>
-          <p className="text-sm text-[var(--wp-color-text)]/70">Latest updates across work orders, permits, and compliance</p>
+          <p className="text-sm text-(--wp-color-text)/70">Latest updates across work orders, permits, and compliance</p>
         </div>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          className="border-white/20 bg-[var(--wp-color-surface)]/10 text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface)]/20"
+          className="border-white/20 bg-(--wp-color-surface)/10 text-(--wp-color-text) hover:bg-(--wp-color-surface)/20"
           onClick={onRefresh}
           disabled={loading}
         >
@@ -644,11 +644,11 @@ function RecentActivitySection({ items, loading, error, onRefresh, onNavigate }:
       <div className="mt-5 space-y-3">
         {loading && items.length === 0
           ? Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-14 animate-pulse rounded-2xl bg-[var(--wp-color-surface)]/10" />
+              <div key={index} className="h-14 animate-pulse rounded-2xl bg-(--wp-color-surface)/10" />
             ))
           : null}
         {!loading && !items.length ? (
-          <p className="text-sm text-[var(--wp-color-text)]/70">No activity recorded in the last 24 hours.</p>
+          <p className="text-sm text-(--wp-color-text)/70">No activity recorded in the last 24 hours.</p>
         ) : null}
         {items.map((item) => {
           const Icon = resolveIcon(item.type);
@@ -658,28 +658,28 @@ function RecentActivitySection({ items, loading, error, onRefresh, onNavigate }:
               type="button"
               onClick={() => onNavigate(item.link)}
               className={clsx(
-                "w-full rounded-2xl border border-white/10 bg-[var(--wp-color-surface)]/5 p-4 text-left transition",
-                item.link ? "hover:border-white/30 hover:bg-[var(--wp-color-surface)]/10" : "cursor-default",
+                "w-full rounded-2xl border border-white/10 bg-(--wp-color-surface)/5 p-4 text-left transition",
+                item.link ? "hover:border-white/30 hover:bg-(--wp-color-surface)/10" : "cursor-default",
               )}
             >
               <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--wp-color-surface)]/10">
-                  <Icon className="h-5 w-5 text-[var(--wp-color-text)]" />
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-(--wp-color-surface)/10">
+                  <Icon className="h-5 w-5 text-(--wp-color-text)" />
                 </span>
                 <div className="flex flex-1 items-center justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-[var(--wp-color-text)]">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-(--wp-color-text)">
                       <span>{item.type}</span>
                       {item.ref ? (
-                        <span className="rounded-full bg-[var(--wp-color-surface)]/10 px-2 py-0.5 text-xs text-[var(--wp-color-text)]/80">
+                        <span className="rounded-full bg-(--wp-color-surface)/10 px-2 py-0.5 text-xs text-(--wp-color-text)/80">
                           {item.ref}
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-sm text-[var(--wp-color-text)]/80">{item.action}</p>
-                    <p className="text-xs text-[var(--wp-color-text)]/60">{item.user}</p>
+                    <p className="mt-1 text-sm text-(--wp-color-text)/80">{item.action}</p>
+                    <p className="text-xs text-(--wp-color-text)/60">{item.user}</p>
                   </div>
-                  <div className="whitespace-nowrap text-xs text-[var(--wp-color-text)]/60">
+                  <div className="whitespace-nowrap text-xs text-(--wp-color-text)/60">
                     {formatDistanceToNow(new Date(item.time), { addSuffix: true })}
                   </div>
                 </div>
@@ -700,14 +700,14 @@ type StatusSummaryProps = {
 
 function StatusSummary({ statuses, updatedAt, loading }: StatusSummaryProps) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-6 text-[var(--wp-color-text)] shadow-xl">
+    <section className="rounded-3xl border border-white/10 bg-[color-mix(in_srgb,var(--wp-color-surface)_70%,transparent)] p-6 text-(--wp-color-text) shadow-xl">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Status legend</h2>
-          <p className="text-sm text-[var(--wp-color-text)]/70">Live status definitions across the platform</p>
+          <p className="text-sm text-(--wp-color-text)/70">Live status definitions across the platform</p>
         </div>
         {updatedAt ? (
-          <span className="text-xs text-[var(--wp-color-text)]/60">
+          <span className="text-xs text-(--wp-color-text)/60">
             Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
           </span>
         ) : null}
@@ -715,12 +715,12 @@ function StatusSummary({ statuses, updatedAt, loading }: StatusSummaryProps) {
       <div className="mt-4 flex flex-wrap gap-3">
         {loading
           ? Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-9 w-32 animate-pulse rounded-full bg-[var(--wp-color-surface)]/10" />
+              <div key={index} className="h-9 w-32 animate-pulse rounded-full bg-(--wp-color-surface)/10" />
             ))
           : statuses.map((status) => (
               <div
                 key={status.label}
-                className="flex items-center gap-2 rounded-full border border-white/15 bg-[var(--wp-color-surface)]/5 px-3 py-1.5 text-sm text-[var(--wp-color-text)]"
+                className="flex items-center gap-2 rounded-full border border-white/15 bg-(--wp-color-surface)/5 px-3 py-1.5 text-sm text-(--wp-color-text)"
               >
                 <span className={clsx("h-2.5 w-2.5 rounded-full", mapStatusColorClass(status.color))} />
                 <StatusBadge status={status.label} size="sm" />
@@ -744,11 +744,11 @@ function AssetAvailabilityWidget({ overall, critical }: AssetAvailabilityProps) 
 
   const renderBar = (label: string, value: number, colorClass: string) => (
     <div key={label}>
-      <div className="flex items-center justify-between text-xs text-[var(--wp-color-text)]/60">
+      <div className="flex items-center justify-between text-xs text-(--wp-color-text)/60">
         <span>{label}</span>
         <span>{Math.round(clampPercent(value))}%</span>
       </div>
-      <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-[var(--wp-color-surface)]/10">
+      <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-(--wp-color-surface)/10">
         <div
           className={clsx("h-full rounded-full", colorClass)}
           style={{ width: `${clampPercent(value)}%` }}
@@ -758,13 +758,13 @@ function AssetAvailabilityWidget({ overall, critical }: AssetAvailabilityProps) 
   );
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[var(--wp-color-surface)]/5 p-4">
-      <p className="text-xs uppercase tracking-widest text-[var(--wp-color-text)]/60">Asset availability</p>
+    <div className="rounded-2xl border border-white/10 bg-(--wp-color-surface)/5 p-4">
+      <p className="text-xs uppercase tracking-widest text-(--wp-color-text)/60">Asset availability</p>
       <div className="mt-3 space-y-3">
         {renderBar("Overall fleet", overall, "bg-sky-400")}
         {renderBar("Critical assets", critical, "bg-rose-400")}
       </div>
-      <p className="mt-3 text-xs text-[var(--wp-color-text)]/60">
+      <p className="mt-3 text-xs text-(--wp-color-text)/60">
         Comparing uptime for all assets versus equipment marked as high criticality.
       </p>
     </div>
@@ -793,16 +793,16 @@ function DashboardFilters({ filters, departments, lines, loading, onChange }: Fi
     options: SelectOption[],
     field: keyof FilterState,
   ) => (
-    <label className="flex flex-col gap-1 text-sm text-[var(--wp-color-text)]/80">
-      <span className="text-xs uppercase tracking-widest text-[var(--wp-color-text)]/50">{label}</span>
+    <label className="flex flex-col gap-1 text-sm text-(--wp-color-text)/80">
+      <span className="text-xs uppercase tracking-widest text-(--wp-color-text)/50">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(field, event.target.value)}
         disabled={loading && options.length === 0}
-        className="w-full min-w-[10rem] rounded-2xl border border-white/10 bg-[var(--wp-color-surface)]/5 px-4 py-2 text-sm text-[var(--wp-color-text)] shadow-sm focus:border-white/40 focus:outline-none"
+        className="w-full min-w-40 rounded-2xl border border-white/10 bg-(--wp-color-surface)/5 px-4 py-2 text-sm text-(--wp-color-text) shadow-sm focus:border-white/40 focus:outline-none"
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value} className="text-[var(--wp-color-text)]">
+          <option key={option.value} value={option.value} className="text-(--wp-color-text)">
             {option.label}
           </option>
         ))}
@@ -1348,7 +1348,7 @@ export default function Dashboard() {
     ];
   }, [summary, summaryTrends]);
   return (
-    <div className="space-y-6 text-[var(--wp-color-text)]">
+    <div className="space-y-6 text-(--wp-color-text)">
       <SectionHeader
         title="Operations dashboard"
         subtitle="Monitor maintenance workload, compliance, and live system health at a glance."
@@ -1356,7 +1356,7 @@ export default function Dashboard() {
 
       <AlertBanner />
 
-      <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-2">
+      <div className="rounded-2xl border border-(--wp-color-border) bg-(--wp-color-surface) p-2">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {([
             { key: "overview", label: "Overview" },
@@ -1370,8 +1370,8 @@ export default function Dashboard() {
               className={clsx(
                 "rounded-xl px-4 py-2 text-sm font-semibold transition",
                 activeTab === tab.key
-                  ? "bg-[var(--wp-color-primary)] text-[var(--wp-color-primary-contrast)]"
-                  : "bg-transparent text-[var(--wp-color-text-muted)] hover:bg-[var(--wp-color-surface-hover)] hover:text-[var(--wp-color-text)]",
+                  ? "bg-(--wp-color-primary) text-(--wp-color-primary-contrast)"
+                  : "bg-transparent text-(--wp-color-text-muted) hover:bg-(--wp-color-surface-hover) hover:text-(--wp-color-text)",
               )}
               aria-pressed={activeTab === tab.key}
             >
@@ -1440,17 +1440,17 @@ export default function Dashboard() {
         <>
           <DashboardAnalyticsPanel />
 
-          <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-[var(--wp-color-text)]">
+          <Card className="bg-linear-to-br from-slate-900 to-slate-800 text-(--wp-color-text)">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Maintenance analytics</h2>
-                <p className="text-sm text-[var(--wp-color-text)]/70">Preventive trend highlights</p>
+                <p className="text-sm text-(--wp-color-text)/70">Preventive trend highlights</p>
               </div>
               <Button
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="rounded-full bg-[var(--wp-color-surface)]/15 text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface)]/25 disabled:opacity-60"
+                className="rounded-full bg-(--wp-color-surface)/15 text-(--wp-color-text) hover:bg-(--wp-color-surface)/25 disabled:opacity-60"
                 onClick={handleExportPdf}
                 disabled={exportingPdf}
               >
@@ -1460,13 +1460,13 @@ export default function Dashboard() {
             </div>
             {exportError ? <p className="mt-3 text-xs text-red-200">{exportError}</p> : null}
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-[var(--wp-color-surface)]/5 p-4">
-                <p className="text-xs uppercase tracking-widest text-[var(--wp-color-text)]/60">PM compliance trend</p>
+              <div className="rounded-2xl border border-white/10 bg-(--wp-color-surface)/5 p-4">
+                <p className="text-xs uppercase tracking-widest text-(--wp-color-text)/60">PM compliance trend</p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold">
                     {summary ? `${Math.round(summary.pmCompliance * 100)}%` : "--"}
                   </span>
-                  <span className="text-xs text-[var(--wp-color-text)]/60">last 10 periods</span>
+                  <span className="text-xs text-(--wp-color-text)/60">last 10 periods</span>
                 </div>
                 <Sparkline
                   data={(summaryTrends?.pmCompliance ?? []).map((value) => {
@@ -1477,13 +1477,13 @@ export default function Dashboard() {
                   className="mt-4 h-16 w-full"
                 />
               </div>
-              <div className="rounded-2xl border border-white/10 bg-[var(--wp-color-surface)]/5 p-4">
-                <p className="text-xs uppercase tracking-widest text-[var(--wp-color-text)]/60">SLA compliance</p>
+              <div className="rounded-2xl border border-white/10 bg-(--wp-color-surface)/5 p-4">
+                <p className="text-xs uppercase tracking-widest text-(--wp-color-text)/60">SLA compliance</p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold">
                     {summary ? `${(summary.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance).toFixed(1)}%` : "--"}
                   </span>
-                  <span className="text-xs text-[var(--wp-color-text)]/60">on-time commitments</span>
+                  <span className="text-xs text-(--wp-color-text)/60">on-time commitments</span>
                 </div>
                 <Sparkline
                   data={summaryTrends?.slaCompliance ?? []}
@@ -1491,13 +1491,13 @@ export default function Dashboard() {
                   className="mt-4 h-16 w-full"
                 />
               </div>
-              <div className="rounded-2xl border border-white/10 bg-[var(--wp-color-surface)]/5 p-4">
-                <p className="text-xs uppercase tracking-widest text-[var(--wp-color-text)]/60">Wrench time %</p>
+              <div className="rounded-2xl border border-white/10 bg-(--wp-color-surface)/5 p-4">
+                <p className="text-xs uppercase tracking-widest text-(--wp-color-text)/60">Wrench time %</p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold">
                     {summary ? `${(summary.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct).toFixed(1)}%` : "--"}
                   </span>
-                  <span className="text-xs text-[var(--wp-color-text)]/60">labor utilisation</span>
+                  <span className="text-xs text-(--wp-color-text)/60">labor utilisation</span>
                 </div>
                 <Sparkline
                   data={summaryTrends?.wrenchTimePct ?? []}
@@ -1505,22 +1505,22 @@ export default function Dashboard() {
                   className="mt-4 h-16 w-full"
                 />
               </div>
-              <div className="rounded-2xl border border-white/10 bg-[var(--wp-color-surface)]/5 p-4">
+              <div className="rounded-2xl border border-white/10 bg-(--wp-color-surface)/5 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-[var(--wp-color-text)]/60">PM completion</p>
+                    <p className="text-xs uppercase tracking-widest text-(--wp-color-text)/60">PM completion</p>
                     <div className="mt-3 flex items-baseline gap-2">
                       <span className="text-2xl font-semibold">
                         {pmTotals ? `${(pmTotals.completionRate ?? 0).toFixed(1)}%` : "--"}
                       </span>
-                      <span className="text-xs text-[var(--wp-color-text)]/60">last 6 months</span>
+                      <span className="text-xs text-(--wp-color-text)/60">last 6 months</span>
                     </div>
                   </div>
                   <Button
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="rounded-full bg-[var(--wp-color-surface)]/10 text-[var(--wp-color-text)] hover:bg-[var(--wp-color-surface)]/20"
+                    className="rounded-full bg-(--wp-color-surface)/10 text-(--wp-color-text) hover:bg-(--wp-color-surface)/20"
                     onClick={() => navigateTo("/analytics/pm")}
                   >
                     View
@@ -1532,17 +1532,17 @@ export default function Dashboard() {
                   color="rgba(59, 130, 246, 0.9)"
                   className="mt-4 h-16 w-full"
                 />
-                <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-[var(--wp-color-text)]/70">
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-(--wp-color-text)/70">
                   <div>
-                    <span className="block text-[11px] uppercase text-[var(--wp-color-text)]/50">On-time</span>
+                    <span className="block text-[11px] uppercase text-(--wp-color-text)/50">On-time</span>
                     <span className="font-semibold">{pmTotals?.onTime ?? 0}</span>
                   </div>
                   <div>
-                    <span className="block text-[11px] uppercase text-[var(--wp-color-text)]/50">Late</span>
+                    <span className="block text-[11px] uppercase text-(--wp-color-text)/50">Late</span>
                     <span className="font-semibold">{pmTotals?.late ?? 0}</span>
                   </div>
                   <div>
-                    <span className="block text-[11px] uppercase text-[var(--wp-color-text)]/50">Missed</span>
+                    <span className="block text-[11px] uppercase text-(--wp-color-text)/50">Missed</span>
                     <span className="font-semibold">{pmTotals?.missed ?? 0}</span>
                   </div>
                 </div>

@@ -335,7 +335,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
                         />
                         <div className="ml-4">
                           <div className="text-sm font-medium text-neutral-900 dark:text-white">
-                            <Link to={`/teams/${member.id}`} className="hover:underline">
+                            <Link to={`/team-members/${member.id}`} className="hover:underline">
                               {member.name}
                             </Link>
                           </div>

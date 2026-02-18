@@ -7,9 +7,9 @@ import { useParams, Link } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import Avatar from '@/components/common/Avatar';
 import WorkHistoryCard from '@/components/teams/WorkHistoryCard';
-import { teamMembers } from '@/utils/data';
 import http from '@/lib/http';
-import type { WorkHistory, PermitActivitySummary } from '@/types';
+import { useTeamMembers } from '@/store/useTeamMembers';
+import type { TeamMember, WorkHistory, PermitActivitySummary } from '@/types';
 import {
   createWorkHistory,
   fetchWorkHistoryByMember,
@@ -49,8 +49,8 @@ const EMPTY_WORK_HISTORY: WorkHistory = {
   recentWork: [],
 };
 const TeamMemberProfile = () => {
-  const { id } = useParams<{ id: string }>();
-  const member = teamMembers.find(m => m.id === id);
+  const { teamMemberId } = useParams<{ teamMemberId: string }>();
+  const { members, fetchMembers } = useTeamMembers();
   const [permitActivity, setPermitActivity] = useState<PermitActivitySummary | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
@@ -59,14 +59,31 @@ const TeamMemberProfile = () => {
   const [loadingWorkHistory, setLoadingWorkHistory] = useState(true);
   const [workHistoryError, setWorkHistoryError] = useState<string | null>(null);
 
-  if (!member) {
-    return (
-      <p className="text-[var(--wp-color-text-muted)]">Member not found.</p>
-    );
+  const [loadingMember, setLoadingMember] = useState(true);
+
+  const member = members.find((m) => m.id === teamMemberId);
+  const manager = member?.managerId ? members.find((m) => m.id === member.managerId) : null;
+  const subordinates = member ? members.filter((m) => m.managerId === member.id) : [];
+
+  useEffect(() => {
+    const loadMembers = async () => {
+      setLoadingMember(true);
+      try {
+        await fetchMembers();
+      } finally {
+        setLoadingMember(false);
+      }
+    };
+    void loadMembers();
+  }, [fetchMembers]);
+
+  if (loadingMember) {
+    return <p className="text-[var(--wp-color-text-muted)]">Loading member profile...</p>;
   }
 
-  const manager = member.managerId ? teamMembers.find(m => m.id === member.managerId) : null;
-  const subordinates = teamMembers.filter(m => m.managerId === member.id);
+  if (!member) {
+    return <p className="text-[var(--wp-color-text-muted)]">Member not found.</p>;
+  }
 
   useEffect(() => {
     const loadActivity = async () => {
@@ -155,7 +172,8 @@ const TeamMemberProfile = () => {
             <h2 className="text-2xl font-bold text-[var(--wp-color-text)]">{member.name}</h2>
             <p className="text-[var(--wp-color-text-muted)]">{member.role}</p>
             <p className="text-[var(--wp-color-text-muted)]">{member.email}</p>
-            <p className="text-[var(--wp-color-text-muted)]">{member.phone}</p>
+            {member.employeeId ? <p className="text-[var(--wp-color-text-muted)]">Employee ID: {member.employeeId}</p> : null}
+            {member.department ? <p className="text-[var(--wp-color-text-muted)]">Department: {member.department}</p> : null}
           </div>
         </div>
 
@@ -163,7 +181,7 @@ const TeamMemberProfile = () => {
           <div>
             <h3 className="font-semibold">Manager</h3>
             {manager ? (
-              <Link to={`/teams/${manager.id}`} className="text-primary-600 hover:underline">
+              <Link to={`/team-members/${manager.id}`} className="text-primary-600 hover:underline">
                 {manager.name}
               </Link>
             ) : (
@@ -176,7 +194,7 @@ const TeamMemberProfile = () => {
               <ul className="list-disc list-inside">
                 {subordinates.map((sub) => (
                   <li key={sub.id}>
-                    <Link to={`/teams/${sub.id}`} className="text-primary-600 hover:underline">
+                    <Link to={`/team-members/${sub.id}`} className="text-primary-600 hover:underline">
                       {sub.name}
                     </Link>
                   </li>

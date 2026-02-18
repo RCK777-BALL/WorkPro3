@@ -9,6 +9,7 @@ import Button from '@common/Button';
 import AutoCompleteInput from '@common/AutoCompleteInput';
 import { useDepartmentStore } from '@/store/departmentStore';
 import { useTeamMembers } from '@/store/useTeamMembers';
+import { fetchOnboardingState } from '@/api/onboarding';
 import type { TeamMember } from '@/types';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -127,7 +128,21 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
       if (member) await updateMember(member.id, body);
       else await addMember(body);
       await fetchMembers();
-      addToast('Team member saved', 'success');
+      if (member) {
+        addToast('Team member saved', 'success');
+      } else {
+        try {
+          const onboarding = await fetchOnboardingState();
+          const usersStep = onboarding.steps.find((step) => step.key === 'users');
+          if (usersStep?.completed) {
+            addToast('Team member profile created. Onboarding step complete.', 'success');
+          } else {
+            addToast('Team member profile created', 'success');
+          }
+        } catch {
+          addToast('Team member profile created', 'success');
+        }
+      }
       onClose();
     } catch (e) {
       const msg =

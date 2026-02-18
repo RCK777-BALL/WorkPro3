@@ -4,6 +4,7 @@
 
  
 import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import Button from '@/components/common/Button';
 import TeamTable from '@/components/teams/TeamTable';
@@ -19,6 +20,8 @@ import { useDepartmentStore } from '@/store/departmentStore';
 import type { TeamMember } from '@/types';
 
 const Teams = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { members, fetchMembers } = useTeamMembers();
   const departments = useDepartmentStore((state) => state.departments);
   const fetchDepartments = useDepartmentStore((state) => state.fetchDepartments);
@@ -35,6 +38,20 @@ const Teams = () => {
     void fetchDepartments();
   }, [fetchMembers, fetchDepartments]);
 
+  useEffect(() => {
+    const shouldOpenCreate = searchParams.get('create') === '1' && canManageMembers;
+    if (!shouldOpenCreate) return;
+
+    setSelected(null);
+    setDefaultRole('team_member');
+    setOpen(true);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('create');
+      return next;
+    }, { replace: true });
+  }, [canManageMembers, searchParams, setSearchParams]);
+
   const handleRowClick = (member: TeamMember) => {
     if (!canManageMembers) return;
     setSelected(member);
@@ -45,7 +62,15 @@ const Teams = () => {
   return (
     <div className="space-y-6">
       {canManageMembers && (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              navigate('/dashboard');
+            }}
+          >
+            Onboarding
+          </Button>
           <Button
             onClick={() => {
               setSelected(null);

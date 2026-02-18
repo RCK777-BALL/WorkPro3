@@ -17,7 +17,7 @@ beforeAll(async () => {
   try {
     mongo = await MongoMemoryServer.create({ binary: { version: process.env.MONGOMS_VERSION } });
     await mongoose.connect(mongo.getUri());
-  } catch (err) {
+  } catch {
     unavailable = true;
   }
 });

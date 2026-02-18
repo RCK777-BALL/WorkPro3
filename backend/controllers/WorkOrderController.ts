@@ -33,7 +33,6 @@ import {
   completeWorkOrderSchema,
   cancelWorkOrderSchema,
   type WorkOrderComplete,
-  type WorkOrderUpdate,
 } from '../src/schemas/workOrder';
 
 const checklistItemSchema = z.object({
@@ -104,67 +103,6 @@ const computeChecklistCompliance = (
   return { complianceStatus: 'pending' };
 };
 
-
-
-const workOrderCreateFields = [
-  'title',
-  'asset',
-  'description',
-  'priority',
-  'status',
-  'type',
-  'approvalStatus',
-  'approvalState',
-  'approvalStates',
-  'approvalRequestedBy',
-  'approvedBy',
-  'approvedAt',
-  'requestedBy',
-  'requestedAt',
-  'slaDueAt',
-  'slaTargets',
-  'assignedTo',
-  'assignees',
-  'checklists',
-  'checklist',
-  'partsUsed',
-  'signatures',
-  'timeSpentMin',
-  'photos',
-  'failureCode',
-  'causeCode',
-  'actionCode',
-  'failureCause',
-  'failureAction',
-  'failureResult',
-  'pmTask',
-  'department',
-
-  'line',
-  'station',
-  'teamMemberName',
-  'importance',
-  'complianceProcedureId',
-  'calibrationIntervalDays',
-  'downtimeMinutes',
-  'laborHours',
-  'laborCost',
-  'partsCost',
-  'miscCost',
-  'miscellaneousCost',
-  'totalCost',
-  'attachments',
-  'timeline',
-  'dueDate',
-  'slaHours',
-  'completedAt',
-  'permits',
-  'requiredPermitTypes',
-  'permitRequirements',
-  'customFields',
-];
-
-const workOrderUpdateFields = [...workOrderCreateFields];
 
 
 type UpdateWorkOrderBody = Partial<

@@ -4,8 +4,6 @@
 
 import mongoose, { Schema, type Document, type Model, type Types } from 'mongoose';
 
-import type { ChecklistSection } from './InspectionTemplate';
-
 export type InspectionStatus = 'draft' | 'in-progress' | 'completed' | 'archived';
 
 export interface ChecklistResponse {

@@ -29,7 +29,6 @@ beforeAll(async () => {
     await mongoose.connect(mongo.getUri());
   } catch (error) {
     mongoUnavailable = true;
-    // eslint-disable-next-line no-console -- surfaced only in tests
     console.warn('Skipping tenant scope tests due to MongoDB binary download failure', error);
   }
 });

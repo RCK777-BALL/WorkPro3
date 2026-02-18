@@ -12,8 +12,6 @@ import User from '../models/User';
 import WorkOrderRoutes from '../routes/workOrdersRoutes';
 import Asset from '../models/Asset';
 import Department from '../models/Department';
-import Line from '../models/Line';
-import Station from '../models/Station';
 import PMTask from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
 import Permit from '../models/Permit';
@@ -96,7 +94,7 @@ beforeEach(async () => {
 
 describe('Work Order Routes', () => {
   it('creates and fetches work orders', async () => {
-    const asset = await Asset.create({
+    await Asset.create({
       name: 'Asset1',
       type: 'Mechanical',
       location: 'Area 1',
@@ -174,7 +172,7 @@ describe('Work Order Routes', () => {
   });
 
   it('fails to create a work order when required fields are missing', async () => {
-    const asset = await Asset.create({
+    await Asset.create({
       name: 'AssetNoDue',
       type: 'Mechanical',
       location: 'Area 1',
@@ -196,7 +194,7 @@ describe('Work Order Routes', () => {
   });
 
   it('updates and deletes a work order', async () => {
-    const asset = await Asset.create({
+    await Asset.create({
       name: 'Asset2',
       type: 'Mechanical',
       location: 'Area 1',

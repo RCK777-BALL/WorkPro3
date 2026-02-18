@@ -15,7 +15,7 @@ function resolveDisplayName(code: string, locale: string): string {
     if (localized) {
       return localized;
     }
-  } catch (error) {
+  } catch {
     // Intl may not support the locale; fall back to code below.
   }
   return code;

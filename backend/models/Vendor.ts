@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 export interface VendorDocument extends mongoose.Document {
   _id: Types.ObjectId;

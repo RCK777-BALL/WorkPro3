@@ -16,7 +16,7 @@ import {
 } from './hooks';
 
 const TemplateAssignmentsView = () => {
-  const { data: templates, isLoading, isError, error } = usePmTemplates();
+  const { data: templates, isLoading, isError } = usePmTemplates();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const [editingAssignment, setEditingAssignment] = useState<PMTemplateAssignment | null>(null);
   const { assets } = useAssetOptions();
@@ -40,8 +40,8 @@ const TemplateAssignmentsView = () => {
     if (!resolvedTemplate) return;
     try {
       await deleteMutation.mutateAsync({ templateId: resolvedTemplate.id, assignmentId });
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
     }
   };
 

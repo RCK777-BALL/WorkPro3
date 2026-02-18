@@ -12,7 +12,7 @@ export interface Document<T = any> extends Record<string, any> {
   set(path: string, value: any): this;
 }
 
-export interface SchemaDefinition<T = any> {
+export interface SchemaDefinition<_T = any> {
   [key: string]: any;
 }
 
@@ -38,7 +38,7 @@ export interface Model<T = any> {
   aggregate<R = any>(pipeline: any[]): Promise<R[]>;
 }
 
-export type SchemaDefinitionProperty<T = any> = any;
+export type SchemaDefinitionProperty<_T = any> = any;
 
 export namespace Error {
   class CastError extends global.Error {

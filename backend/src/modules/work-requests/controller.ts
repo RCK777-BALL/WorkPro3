@@ -8,7 +8,6 @@ import { z } from 'zod';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
-import type { WorkRequestStatus } from '../../../models/WorkRequest';
 import {
   type WorkRequestContext,
   submitPublicRequest,

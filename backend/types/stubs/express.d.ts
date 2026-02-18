@@ -2,7 +2,7 @@ import type { ParsedQs } from './qs';
 
 export interface Request<
   P extends Record<string, string> = Record<string, string>,
-  ResBody = any,
+  _ResBody = any,
   ReqBody = any,
   ReqQuery extends ParsedQs = ParsedQs
 > {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
+import type { AuthedRequestHandler } from '../../../types/http';
 import { dismissOnboardingReminder, getOnboardingState, restartOnboardingState } from './service';
 
 export const getOnboardingStateHandler: AuthedRequestHandler = async (req, res, next) => {

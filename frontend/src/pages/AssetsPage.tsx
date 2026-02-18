@@ -28,7 +28,6 @@ import { duplicateAsset } from '@/utils/duplicate';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { usePermissions } from '@/auth/usePermissions';
-import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';

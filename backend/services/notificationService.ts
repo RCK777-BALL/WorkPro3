@@ -3,7 +3,6 @@
  */
 
 import nodemailer from 'nodemailer';
-import twilio from 'twilio';
 import type { HydratedDocument, Types } from 'mongoose';
 import Notification, {
   type NotificationCategory,
@@ -261,19 +260,6 @@ const resolveTemplate = async (
   const renderedBody = renderTemplate(template.body, context) ?? fallback.message;
   const renderedSubject = renderTemplate(template.subject, context) ?? fallback.title;
   return { title: renderedSubject, message: renderedBody };
-};
-
-const sendSms = async (to: string, body: string) => {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_FROM_NUMBER;
-  if (!sid || !token || !from) return;
-  try {
-    const client = twilio(sid, token);
-    await client.messages.create({ to, from, body });
-  } catch (err) {
-    logger.error('Failed to send notification SMS', err);
-  }
 };
 
 const postWebhook = async (url: string, payload: unknown) => {

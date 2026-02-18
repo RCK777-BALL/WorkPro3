@@ -83,7 +83,7 @@ export default function ExecutiveInsightsPage() {
       anchor.remove();
       window.URL.revokeObjectURL(url);
       addToast('Executive PDF downloaded.', 'success');
-    } catch (err) {
+    } catch {
       addToast('Unable to generate the PDF right now.', 'error');
     }
   };

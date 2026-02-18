@@ -32,39 +32,6 @@ const createClientId = () => {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
-const normalizeChecklistFromApi = (items: unknown): WorkOrderChecklistItem[] => {
-  if (!Array.isArray(items)) return [];
-
-  return (items as Array<Record<string, unknown>>).map((item, index) => {
-    const fallbackText = item.description ?? item.text;
-    const id =
-      (item.id as string | undefined)
-      ?? (item._id as string | undefined)
-      ?? (typeof fallbackText === 'string' ? `${fallbackText}-${index}` : undefined)
-      ?? createClientId();
-
-    const completedValue =
-      (item.completedValue as string | number | boolean | undefined)
-      ?? (item.done as boolean | undefined);
-
-    return {
-      id,
-      text: (item.text as string | undefined) ?? (item.description as string | undefined) ?? 'Checklist item',
-      type: (item.type as WorkOrderChecklistItem['type']) ?? 'checkbox',
-      required: Boolean(item.required),
-      evidenceRequired: Boolean(item.evidenceRequired),
-      evidence: (item.evidence as string[] | undefined) ?? (item.photos as string[] | undefined),
-      photos: item.photos as string[] | undefined,
-      completedValue,
-      completedAt: (item.completedAt as string | undefined) ?? (item.completed_at as string | undefined),
-      completedBy: item.completedBy as string | undefined,
-      status: (item.status as WorkOrderChecklistItem['status'])
-        ?? (completedValue !== undefined ? 'done' : 'not_started'),
-      done: Boolean(item.done ?? (completedValue !== undefined)),
-    } satisfies WorkOrderChecklistItem;
-  });
-};
-
 const normalizeWorkOrder = (data: WorkOrderResponse): WorkOrder | null => {
   const id = data._id ?? data.id;
   if (!id) return null;

@@ -31,7 +31,6 @@ import Notification from './models/Notification';
 import Tenant from './models/Tenant';
 import AuditLog from './models/AuditLog';
 import Site from './models/Site';
-import Plant from './models/Plant';
 import SensorReading from './models/SensorReading';
 import ProductionRecord from './models/ProductionRecord';
 import WorkRequest from './models/WorkRequest';
@@ -522,7 +521,7 @@ mongoose.connect(mongoUri).then(async () => {
     siteId: mainSite._id,
   });
 
-  const completedChecklistWorkOrder = await WorkOrder.create({
+  await WorkOrder.create({
     ...workOrderWithChecklistFixture,
     tenantId,
     siteId: mainSite._id,

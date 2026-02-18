@@ -6,8 +6,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import AuditEvent from '../models/AuditEvent';
-import AuditLog from '../models/AuditLog';
-import { writeAuditLog } from '../utils/audit';
 
 let mongo: MongoMemoryServer | null;
 let mongoUnavailable = false;
@@ -19,7 +17,6 @@ beforeAll(async () => {
     await mongoose.connect(mongo.getUri());
   } catch (error) {
     mongoUnavailable = true;
-    // eslint-disable-next-line no-console -- surfaced only in tests
     console.warn('Skipping audit event tests due to MongoDB binary download failure', error);
   }
 });

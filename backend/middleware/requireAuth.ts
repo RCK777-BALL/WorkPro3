@@ -120,7 +120,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     }
 
     next();
-  } catch (err) {
+  } catch {
     sendUnauthorized(res, 'Unauthorized: Invalid token');
   }
 };

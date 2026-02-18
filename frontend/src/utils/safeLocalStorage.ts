@@ -39,7 +39,7 @@ const probeWindowStorage = (): Storage | null => {
     localStorage.setItem(probeKey, probeKey);
     localStorage.removeItem(probeKey);
     return localStorage;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -59,7 +59,7 @@ const withStorage = <T>(operation: (storage: StorageAdapter) => T): T => {
   if (storage) {
     try {
       return operation(storage);
-    } catch (error) {
+    } catch {
       cachedStorage = null;
       return operation(memoryStorage);
     }

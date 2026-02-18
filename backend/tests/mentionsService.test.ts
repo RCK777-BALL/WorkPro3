@@ -18,7 +18,7 @@ beforeAll(async () => {
   try {
     mongo = await MongoMemoryServer.create({ binary: { version: '7.0.0' } });
     await mongoose.connect(mongo.getUri());
-  } catch (err) {
+  } catch {
     mongoAvailable = false;
     // Skip Mongo-dependent tests when binaries cannot be downloaded in CI environments.
     vi.stubGlobal('MONGO_DOWNLOAD_UNAVAILABLE', true);

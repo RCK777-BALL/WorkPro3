@@ -37,7 +37,7 @@ const normalizeTenantId = (value?: string | null): string | undefined => {
   if (Types.ObjectId.isValid(value)) return value;
   try {
     return String(new Types.ObjectId(value));
-  } catch (err) {
+  } catch {
     return undefined;
   }
 };
@@ -161,7 +161,7 @@ export const authorizeSocketTenant = async (socket: Socket): Promise<SocketAuthR
   };
 };
 
-export const scopeQueryToTenant = <T extends { tenantId?: unknown; siteId?: unknown }>(
+export const scopeQueryToTenant = (
   match: Record<string, unknown>,
   tenantId: string,
   siteId?: string | null,

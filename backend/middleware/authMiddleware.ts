@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { RequestHandler, Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import type { HydratedDocument } from 'mongoose';
 import jwt from 'jsonwebtoken';
 
@@ -145,7 +145,6 @@ export const requireAuth: AuthedRequestHandler = async (req, res, next) => {
 
     next();
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('Auth Error:', err instanceof Error ? err.message : err);
     res.status(401).json({ message: 'Unauthorized' });
   }

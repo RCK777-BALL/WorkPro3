@@ -20,7 +20,7 @@ const toObjectId = (value?: string | Types.ObjectId | null) => {
   if (!value) return undefined;
   try {
     return value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
-  } catch (err) {
+  } catch {
     return undefined;
   }
 };

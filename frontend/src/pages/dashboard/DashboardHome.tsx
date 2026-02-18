@@ -80,7 +80,7 @@ export default function DashboardHome() {
           setSummary(sumRes.data);
           setRecent(woRes.data);
         }
-      } catch (e) {
+      } catch {
         if (!cancelled) {
           setError("Failed to load dashboard data");
           addToast("Failed to load dashboard data", "error");
@@ -122,7 +122,7 @@ export default function DashboardHome() {
         : [];
 
       setActivityLogs(items);
-    } catch (e) {
+    } catch {
       setActivityError("Failed to load activity");
       addToast("Failed to load activity", "error");
     } finally {

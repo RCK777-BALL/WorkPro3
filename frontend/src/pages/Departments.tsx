@@ -20,7 +20,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { saveAs } from 'file-saver';
 import Button from '@/components/common/Button';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DepartmentTable from '@/components/departments/DepartmentTable';
 import DepartmentModal, { type DepartmentFormValues } from '@/components/departments/DepartmentModal';
 import LineModal from '@/components/departments/LineModal';

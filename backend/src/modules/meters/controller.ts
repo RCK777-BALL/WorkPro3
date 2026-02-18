@@ -2,11 +2,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Response } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 
 import { fail } from '../../lib/http';
-import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
+import type { AuthedRequestHandler } from '../../../types/http';
 import { createMeterReading, MeterReadingError } from './service';
 
 export const createMeterReadingHandler: AuthedRequestHandler<

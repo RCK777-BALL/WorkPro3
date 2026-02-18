@@ -3,7 +3,6 @@
  */
 
 import type { RequestHandler } from 'express';
-import type { Types } from 'mongoose';
 
 import type { AuthedRequest, AuthedRequestWithUser } from '../../types/http';
 import {

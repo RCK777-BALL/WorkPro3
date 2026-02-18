@@ -3,7 +3,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from 'react-query';
-import type { CustomReportResponse, ReportQueryRequest, ReportTemplate, ReportTemplateInput } from '@/types';
+import type { ReportQueryRequest, ReportTemplate, ReportTemplateInput } from '@/types';
 import {
   exportCustomReport,
   fetchReportTemplate,

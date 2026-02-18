@@ -4,7 +4,7 @@ export interface ZodIssue {
   code?: string;
 }
 
-export class ZodError<T = any> extends Error {
+export class ZodError<_T = any> extends Error {
   issues: ZodIssue[];
 }
 

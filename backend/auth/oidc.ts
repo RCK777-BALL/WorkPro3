@@ -10,14 +10,6 @@ import { resolveTenantContext } from './tenantContext';
 import { getOidcProviderConfigs } from '../config/ssoProviders';
 import { isOidcEnabled } from '../config/featureFlags';
 
-interface OIDCStrategyOptions {
-  name?: string;
-  issuer: string;
-  clientID: string;
-  clientSecret: string;
-  callbackURL: string;
-}
-
 type OidcIssuer = Parameters<VerifyFunction>[0];
 type OidcSubject = Parameters<VerifyFunction>[1];
 type OidcIdToken = Parameters<VerifyFunction>[3];

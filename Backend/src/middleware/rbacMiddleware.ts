@@ -13,7 +13,7 @@ export const rbacAnyOf = (permissions: Permission[]): RequestHandler => {
       try {
         await requirePermission(permission)(req, res, () => undefined);
         return next();
-      } catch (error) {
+      } catch {
         // ignore and try next permission
       }
     }

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'vitest';
+import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import mongoose from 'mongoose';

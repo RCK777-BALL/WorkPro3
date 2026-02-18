@@ -12,7 +12,7 @@ import InventoryItem from '../../../models/InventoryItem';
 import WorkHistory, { type WorkHistoryDocument } from '../../../models/WorkHistory';
 import DocumentModel from '../../../models/Document';
 import PMTask, { type PMTaskDocument } from '../../../models/PMTask';
-import WorkOrderModel, { type WorkOrder } from '../../../models/WorkOrder';
+import WorkOrderModel from '../../../models/WorkOrder';
 
 export class HierarchyError extends Error {
   status: number;
@@ -770,7 +770,6 @@ const generateCopyName = async (tenantId: string, baseName: string) => {
   let suffix = 2;
   while (suffix < 50) {
     const candidate = `${baseName} (Copy ${suffix})`;
-    // eslint-disable-next-line no-await-in-loop
     const duplicate = await Asset.exists({ tenantId, name: candidate });
     if (!duplicate) return candidate;
     suffix += 1;

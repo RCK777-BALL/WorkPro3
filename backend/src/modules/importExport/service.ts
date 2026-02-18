@@ -342,21 +342,6 @@ const parseCsvRows = (file: Express.Multer.File): Record<string, unknown>[] => {
   return parsed.data;
 };
 
-const normalizeWorkbookValue = (value: ExcelJS.CellValue | undefined | null): string | number | undefined => {
-  if (value === null || value === undefined) return '';
-  if (value instanceof Date) return value.toISOString();
-
-  if (typeof value === 'object') {
-    if ('text' in value && typeof value.text === 'string') return value.text;
-    if ('richText' in value) return value.richText.map((entry) => entry.text).join('');
-    if ('formula' in value) return value.result as string | number | undefined;
-    if ('result' in value) return value.result as string | number | undefined;
-    if ('hyperlink' in value) return (value as any).text ?? (value as any).hyperlink;
-  }
-
-  return value as string | number;
-};
-
 // ExcelJS typings can lag behind newer @types/node Buffer generics.
 // We normalize to a Node Buffer and cast ONLY at the ExcelJS boundary.
 const toExcelJsLoadInput = (data: unknown): ArrayBuffer | Uint8Array | Buffer => {

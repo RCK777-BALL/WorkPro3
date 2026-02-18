@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { useInRouterContext, useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
-import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser, RoleAssignment } from '@/types';
+import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser } from '@/types';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { emitToast } from './ToastContext';
 import { api, getErrorMessage } from '@/lib/api';

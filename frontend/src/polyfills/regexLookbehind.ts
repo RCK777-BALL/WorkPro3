@@ -14,7 +14,7 @@
     // Quick capability test – modern browsers pass silently.
     void new RegExp('(?<=x)y');
     return;
-  } catch (error) {
+  } catch {
     // Unsupported environment: install a defensive wrapper.
   }
 
@@ -24,7 +24,7 @@
     if (typeof pattern === 'string') {
       try {
         return new NativeRegExp(pattern, flags);
-      } catch (error) {
+      } catch {
         const sanitizedPattern = pattern.replace(/\(\?<=[^)]*\)/g, '');
         return new NativeRegExp(sanitizedPattern, flags);
       }

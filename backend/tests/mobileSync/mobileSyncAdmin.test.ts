@@ -9,7 +9,6 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import mobileSyncAdminRoutes from '../../routes/mobileSyncAdmin';
-import MobileSyncConflict from '../../models/MobileSyncConflict';
 import MobileDeviceTelemetry from '../../models/MobileDeviceTelemetry';
 import MobileOfflineAction from '../../models/MobileOfflineAction';
 import AuditLog from '../../models/AuditLog';

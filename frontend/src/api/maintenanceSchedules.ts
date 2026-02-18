@@ -38,7 +38,8 @@ const sanitizeRepeatConfig = (config: RepeatConfig) => {
 };
 
 export const sanitizeSchedulePayload = (schedule: MaintenanceScheduleInput) => {
-  const { id: _id, repeatConfig, lastCompleted, lastCompletedBy, assignedTo, parts, ...rest } = schedule;
+  const { id, repeatConfig, lastCompleted, lastCompletedBy, assignedTo, parts, ...rest } = schedule;
+  void id;
 
   const estimatedDuration = Number.isFinite(schedule.estimatedDuration)
     ? Math.max(0, schedule.estimatedDuration)

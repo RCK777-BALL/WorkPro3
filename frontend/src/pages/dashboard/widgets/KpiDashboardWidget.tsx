@@ -96,7 +96,7 @@ export function KpiDashboardWidget() {
       setBacklogAging(backlogRes.data);
       setSlaPerformance(slaRes.data);
       setTechnicianUtilization(techRes.data);
-    } catch (err) {
+    } catch {
       setError('Unable to load KPI analytics.');
     } finally {
       setLoading(false);

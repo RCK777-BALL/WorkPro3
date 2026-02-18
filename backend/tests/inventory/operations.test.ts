@@ -24,7 +24,6 @@ let techHeaders: Record<string, string>;
 let tenantId: mongoose.Types.ObjectId;
 let siteId: mongoose.Types.ObjectId;
 let adminUserId: string;
-let techUserId: string;
 let mongo: Awaited<ReturnType<typeof setupInMemoryMongo>>;
 
 beforeAll(async () => {
@@ -48,7 +47,6 @@ beforeEach(async () => {
   siteId = admin.siteId;
   const tech = await createTestUser('tech', tenantId, siteId);
   adminUserId = admin.user._id.toString();
-  techUserId = tech.user._id.toString();
   adminHeaders = authHeaders(admin.token, tenantId, siteId);
   techHeaders = authHeaders(tech.token, tenantId, siteId);
 });

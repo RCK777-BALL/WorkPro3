@@ -269,10 +269,6 @@ function safeDivide(numerator: number, denominator: number): number {
   return numerator / denominator;
 }
 
-function clampValue(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 function calculateMTTR(workOrders: { createdAt?: Date; completedAt?: Date | null }[]): number {
   const completed = workOrders.filter((w) => w.completedAt);
   if (!completed.length) return 0;

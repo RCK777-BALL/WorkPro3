@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types, type Document } from 'mongoose';
+import { Types } from 'mongoose';
 import Site, { type SiteDocument } from '../../../models/Site';
 
 export interface SiteContext {
@@ -14,7 +14,6 @@ export interface SiteInput {
   description?: string;
 }
 
-type LeanDocument<T> = T extends Document ? Omit<T, keyof Document> : T;
 type SiteListResult = Awaited<ReturnType<typeof Site.find>>;
 
 const toObjectId = (value?: string): Types.ObjectId | undefined => {

@@ -77,7 +77,7 @@ const TeamMemberProfile = () => {
         });
         setPermitActivity(res.data);
         setActivityError(null);
-      } catch (err) {
+      } catch {
         setActivityError('Unable to load permit activity');
       } finally {
         setLoadingActivity(false);

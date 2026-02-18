@@ -183,7 +183,7 @@ const loadSavedFilters = (): FilterState => {
     const status = VALID_STATUS_VALUES.has(rawStatus) ? rawStatus : "all";
 
     return { department, line, status };
-  } catch (error) {
+  } catch {
     return DEFAULT_FILTERS;
   }
 };

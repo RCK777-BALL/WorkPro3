@@ -115,7 +115,8 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     const payload = filterFields(req.body, userCreateFields);
     const newItem = new User({ ...payload, tenantId });
     const saved = await newItem.save();
-    const { passwordHash: _pw, ...safeUser } = saved.toObject();
+    const safeUser = saved.toObject();
+    delete safeUser.passwordHash;
     await auditAction(req, 'create', 'User', toEntityId(saved._id) ?? saved._id, undefined, safeUser);
     sendResponse(res, safeUser, null, 201);
     return;

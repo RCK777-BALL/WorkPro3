@@ -165,7 +165,7 @@ export const listWorkOrderParts = async (req: AuthedRequest, res: Response, next
   }
 };
 
-export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, _next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
     const { quantity, stockId, unitCost } = parsePartRequestBody(req.body);
@@ -238,7 +238,7 @@ export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, ne
   }
 };
 
-export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, _next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
     const { quantity, stockId } = parsePartRequestBody(req.body);
@@ -313,7 +313,7 @@ export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, 
   }
 };
 
-export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, _next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
     const { quantity, stockId, unitCost } = parsePartRequestBody(req.body);
@@ -387,7 +387,7 @@ export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, next
   }
 };
 
-export const returnIssuedWorkOrderPart = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+export const returnIssuedWorkOrderPart = async (req: AuthedRequest, res: Response, _next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
     const { quantity, stockId } = parsePartRequestBody(req.body);
@@ -458,7 +458,7 @@ export const returnIssuedWorkOrderPart = async (req: AuthedRequest, res: Respons
   }
 };
 
-export const deleteWorkOrderPartLineItem = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+export const deleteWorkOrderPartLineItem = async (req: AuthedRequest, res: Response, _next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;

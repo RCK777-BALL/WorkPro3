@@ -12,8 +12,6 @@ import {
 } from '@backend-shared/permissions';
 import type { PermissionGrant } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { SITE_KEY, TENANT_KEY } from '@/lib/http';
-import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 const normalizePermissions = (permissions?: Array<string | PermissionGrant>): Permission[] => {
   if (!Array.isArray(permissions)) return [];
@@ -59,22 +57,6 @@ export const usePermissions = (): UsePermissionsResult => {
     const set = new Set<Permission>(normalized);
     return set;
   }, [user]);
-
-  const explicitPermissions = useMemo(() => {
-    const normalized = normalizePermissions(user?.permissions as Array<string | PermissionGrant>);
-    if (!normalized.length) return null;
-    return new Set(normalized);
-  }, [user]);
-
-  const tenantId = useMemo(
-    () => user?.tenantId ?? safeLocalStorage.getItem(TENANT_KEY) ?? undefined,
-    [user?.tenantId],
-  );
-
-  const siteId = useMemo(
-    () => user?.siteId ?? safeLocalStorage.getItem(SITE_KEY) ?? undefined,
-    [user?.siteId],
-  );
 
   const can = useCallback(
     (permissionOrScope: Permission | PermissionCategory, action?: PermissionAction) => {

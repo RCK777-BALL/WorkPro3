@@ -14,7 +14,6 @@ import {
   fetchIotSignals,
   fetchSensorDevices,
   IoTSignalQuery,
-  type ConditionRule,
   type IoTSignalSeries,
   type SensorDevice,
 } from '@/api/iot';

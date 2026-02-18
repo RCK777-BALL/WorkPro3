@@ -32,15 +32,15 @@ describe('mobile sync service', () => {
   });
 
   it('pulls deltas for work orders, pms, and assets using last sync cursors', async () => {
-    const wo = await WorkOrder.create({ tenantId, title: 'WO', status: 'requested' });
-    const pm = await PMTask.create({
+    await WorkOrder.create({ tenantId, title: 'WO', status: 'requested' });
+    await PMTask.create({
       tenantId,
       name: 'PM',
       title: 'PM Task',
       description: 'desc',
       rule: { type: 'calendar', cron: '0 0 * * *' },
     });
-    const asset = await Asset.create({
+    await Asset.create({
       tenantId,
       name: 'Pump',
       type: 'Mechanical',

@@ -159,8 +159,6 @@ describe('permission inheritance and logging', () => {
       permissions: ['reports.read', 'reports.build'],
     });
 
-    const token = createToken();
-
     await request(adminApp)
       .put(`/roles/${role._id.toString()}`)
       .set('x-tenant-id', tenantId.toString())

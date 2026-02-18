@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types, type Document } from 'mongoose';
+import { Types } from 'mongoose';
 import WorkflowDefinition, { type WorkflowDefinitionDocument } from '../../../models/WorkflowDefinition';
 import WorkflowInstance, { type WorkflowInstanceDocument } from '../../../models/WorkflowInstance';
 import SlaPolicy, { type SlaPolicyDocument } from '../../../models/SlaPolicy';
@@ -28,8 +28,6 @@ export interface SlaPolicyInput {
   resolveMinutes: number;
   responseMinutes?: number;
 }
-
-type LeanDocument<T> = T extends Document ? Omit<T, keyof Document> : T;
 
 const toObjectId = (value?: string): Types.ObjectId | undefined => {
   if (!value) return undefined;

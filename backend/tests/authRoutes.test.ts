@@ -227,7 +227,6 @@ describe('Auth Routes', () => {
       .send({ email: 'me@example.com', password: 'pass123' })
       .expect(200);
 
-    const cookies = login.headers['set-cookie'];
     const loginSession = login.body.data as { user: any; token: string };
 
     const meRes = await request(app)

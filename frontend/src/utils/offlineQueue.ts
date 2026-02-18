@@ -1,5 +1,4 @@
 import { emitToast } from '../context/ToastContext';
-import { logError } from './logger';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import type { TechnicianPartUsagePayload, TechnicianStatePayload } from '@/api/technician';
  
@@ -391,7 +390,8 @@ export const flushQueue = async (
 
         const retries = (req.retries ?? 0) + 1;
         const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
-        const { nextAttempt: _discardedNextAttempt, ...rest } = req;
+        const rest = { ...req };
+        delete rest.nextAttempt;
         const retryRequest: QueuedRequest = {
           ...rest,
           id: requestId,

@@ -2,7 +2,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types } from 'mongoose';
 import PreventiveMaintenance from '../models/PreventiveMaintenance';
 import WorkOrder from '../models/WorkOrder';
 import { runJob } from './jobRunner';

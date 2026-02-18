@@ -17,8 +17,6 @@ import {
   listAlertsHandler,
   transitionAlertHandler,
   createPurchaseOrderHandler,
-  listPurchaseOrdersHandler,
-  exportPurchaseOrdersHandler,
   listLocationsHandler,
   saveLocationHandler,
   listStockItemsHandler,

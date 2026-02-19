@@ -119,9 +119,9 @@ type UpdateWorkOrderBody = Partial<
     | 'department'
     | 'line'
     | 'station'
-  | 'permits'
-  | 'requiredPermitTypes'
-  | 'assignees'
+    | 'permits'
+    | 'requiredPermitTypes'
+    | 'assignees'
   >
 > & {
   assignees?: (string | Types.ObjectId)[];
@@ -1162,9 +1162,9 @@ export async function updateWorkOrderSchedule(
     }
 
     const scope = resolveLocationScope(req);
-    const workOrder = await WorkOrder.findOne(
+    const workOrder = (await WorkOrder.findOne(
       withLocationScope({ _id: req.params.id, tenantId }, scope),
-    );
+    )) as WorkOrderDocument | null;
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -1181,9 +1181,11 @@ export async function updateWorkOrderSchedule(
         sendResponse(res, null, 'Assignee not found', 404);
         return;
       }
-      const requiredSkills = Array.isArray(workOrder.requiredSkills) ? workOrder.requiredSkills : [];
+      const requiredSkills: string[] = Array.isArray((workOrder as any).requiredSkills)
+        ? ((workOrder as any).requiredSkills as unknown as string[])
+        : [];
       const technicianSkills = Array.isArray((technician as any).skills) ? (technician as any).skills : [];
-      const missingSkills = requiredSkills.filter((skill) => !technicianSkills.includes(skill));
+      const missingSkills = requiredSkills.filter((skill: string) => !technicianSkills.includes(skill));
       qualification = { isQualified: missingSkills.length === 0, missingSkills };
     }
 
@@ -1339,9 +1341,9 @@ export async function bulkDispatchUpdate(
     }
 
     const scope = resolveLocationScope(req);
-    const workOrders = await WorkOrder.find(
+    const workOrders = (await WorkOrder.find(
       withLocationScope({ _id: { $in: normalizedIds }, tenantId }, scope),
-    );
+    ).exec()) as WorkOrderDocument[];
     if (!workOrders.length) {
       sendResponse(res, { updatedCount: 0, updatedIds: [] });
       return;
@@ -1673,7 +1675,7 @@ export async function updateWorkOrderChecklist(
  *       404:
  *         description: Work order not found
  */
- 
+
 export async function approveWorkOrder(
   req: AuthedRequest,
   res: Response,

@@ -23,6 +23,14 @@ export interface UserDocument extends Document {
   siteId?: Types.ObjectId;
   plant?: Types.ObjectId;
   employeeId: string;
+  employeeNumber?: string;
+  trade?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Facilities' | 'Automation' | 'Other';
+  startDate?: Date;
+  mustChangePassword?: boolean;
+  status?: 'active' | 'invited' | 'disabled';
+  invitedAt?: Date;
+  inviteTokenHash?: string;
+  inviteExpiresAt?: Date;
   managerId?: Types.ObjectId;
   theme?: 'light' | 'dark' | 'system';
   colorScheme?: string;
@@ -69,6 +77,23 @@ const userSchema = new Schema<UserDocument>(
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
     plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
     employeeId: { type: String, required: true, unique: true },
+    employeeNumber: { type: String, unique: true, sparse: true, trim: true },
+    trade: {
+      type: String,
+      enum: ['Electrical', 'Mechanical', 'Tooling', 'Facilities', 'Automation', 'Other'],
+      default: 'Other',
+    },
+    startDate: { type: Date },
+    mustChangePassword: { type: Boolean, default: false },
+    status: {
+      type: String,
+      enum: ['active', 'invited', 'disabled'],
+      default: 'active',
+      index: true,
+    },
+    invitedAt: { type: Date },
+    inviteTokenHash: { type: String, select: false },
+    inviteExpiresAt: { type: Date },
     managerId: { type: Schema.Types.ObjectId, ref: 'User' },
 
     passwordResetToken: { type: String },
@@ -104,6 +129,15 @@ const userSchema = new Schema<UserDocument>(
   },
   { timestamps: true }
 );
+
+userSchema.pre<UserDocument>('validate', function syncEmployeeIdentifiers() {
+  if (!this.employeeNumber && this.employeeId) {
+    this.employeeNumber = this.employeeId;
+  }
+  if (!this.employeeId && this.employeeNumber) {
+    this.employeeId = this.employeeNumber;
+  }
+});
 
 // ✅ Password hashing
 userSchema.pre<UserDocument>('save', async function () {

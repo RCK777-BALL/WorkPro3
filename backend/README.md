@@ -175,6 +175,21 @@ Create a new account.
 { "message": "User registered successfully" }
 ```
 
+### Admin onboarding (team member profile)
+
+Admins can onboard new users through:
+
+- `POST /api/admin/users` to create a profile with `fullName`, `email`, `trade`, `employeeNumber`, `startDate`, and `role`.
+- `GET /api/admin/users` to list onboarded users for team management screens.
+- `PATCH /api/admin/users/:id` for status/password lifecycle updates.
+
+Two onboarding modes are supported:
+
+- `mode: "temp_password"` with `tempPassword` (min 10 chars), which sets `mustChangePassword` on first login.
+- `mode: "invite"` (when `ENABLE_USER_INVITES=true`), which stores a hashed invite token and logs a dev invite link.
+
+Invite completion uses `POST /api/auth/set-password` with `{ token, password }`.
+
 ### Security policies and MFA
 
 Password strength, MFA posture, audit retention, and session lifetimes are

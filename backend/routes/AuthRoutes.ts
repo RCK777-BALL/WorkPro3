@@ -8,6 +8,7 @@ import {
   type Response,
   type NextFunction,
 } from 'express';
+import { createHash } from 'crypto';
 import rateLimit from 'express-rate-limit';
 import passport from 'passport';
 import bcrypt from 'bcryptjs';
@@ -270,6 +271,11 @@ const bootstrapRotationSchema = z.object({
   rotationToken: z.string().min(1, 'Rotation token is required'),
   newPassword: z.string().min(12, 'New password is required'),
   mfaToken: z.string().min(1, 'MFA token is required'),
+});
+
+const setPasswordSchema = z.object({
+  token: z.string().min(1, 'Invite token is required'),
+  password: z.string().min(10, 'Password must be at least 10 characters'),
 });
 
 const FAKE_PASSWORD_HASH = bcrypt.hashSync('invalid-password', 10);
@@ -685,6 +691,60 @@ router.post('/bootstrap/rotate', async (req: Request, res: Response, next: NextF
     sendResponse(res, { rotated: true }, null, 200, 'Password rotated');
   } catch (err) {
     logger.error('Bootstrap rotation error', err);
+    next(err);
+  }
+});
+
+router.post('/set-password', async (req: Request, res: Response, next: NextFunction) => {
+  const parsed = setPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    sendResponse(res, null, 'Invalid request', 400);
+    return;
+  }
+
+  const passwordCheck = validatePasswordStrength(parsed.data.password);
+  if (!passwordCheck.valid) {
+    sendResponse(res, null, passwordCheck.errors, 400);
+    return;
+  }
+
+  const inviteHash = createHash('sha256').update(parsed.data.token).digest('hex');
+
+  try {
+    const user = await User.findOne({
+      inviteTokenHash: inviteHash,
+      inviteExpiresAt: { $gt: new Date() },
+    }).select('+inviteTokenHash +inviteExpiresAt +tenantId +tokenVersion');
+
+    if (!user) {
+      sendResponse(res, null, 'Invite token is invalid or expired', 400);
+      return;
+    }
+
+    user.passwordHash = parsed.data.password;
+    user.inviteTokenHash = undefined;
+    user.inviteExpiresAt = undefined;
+    user.invitedAt = undefined;
+    user.mustChangePassword = false;
+    user.passwordExpired = false;
+    user.bootstrapAccount = false;
+    user.status = 'active';
+    user.active = true;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    await user.save();
+
+    await writeAuditLog({
+      tenantId: user.tenantId,
+      userId: user._id,
+      action: 'invite_password_set',
+      entityType: 'user',
+      entityId: user._id.toString(),
+      after: { status: user.status, mustChangePassword: user.mustChangePassword },
+    });
+
+    sendResponse(res, { passwordSet: true }, null, 200, 'Password set successfully');
+  } catch (err) {
+    logger.error('Set password from invite error', err);
     next(err);
   }
 });

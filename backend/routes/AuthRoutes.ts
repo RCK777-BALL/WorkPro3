@@ -524,7 +524,8 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       return;
     }
 
-    const valid = await bcrypt.compare(password, hashed);
+    const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(hashed);
+    const valid = isBcryptHash ? await bcrypt.compare(password, hashed) : password === hashed;
     if (!valid) {
       await recordAuthEvent({
         user,
@@ -533,6 +534,16 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       });
       sendResponse(res, null, 'Invalid email or password.', 400);
       return;
+    }
+
+    if (!isBcryptHash) {
+      user.passwordHash = password;
+      await user.save();
+      await recordAuthEvent({
+        user,
+        action: 'password_hash_upgraded',
+        details: { reason: 'legacy_plaintext_hash' },
+      });
     }
 
     if (user.passwordExpired || user.bootstrapAccount) {

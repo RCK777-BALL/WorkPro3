@@ -16,6 +16,7 @@ export const TRADE_OPTIONS = [
 export type TradeOption = (typeof TRADE_OPTIONS)[number];
 export type AdminUserStatus = 'active' | 'invited' | 'disabled';
 export type AdminCreateMode = 'temp_password' | 'invite';
+export type ShiftOption = 'day' | 'swing' | 'night';
 
 export interface AdminUser {
   id: string;
@@ -26,6 +27,11 @@ export interface AdminUser {
   startDate: string | null;
   role: string;
   roles: string[];
+  shift: ShiftOption;
+  weeklyCapacityHours: number;
+  skills: string[];
+  notifyByEmail: boolean;
+  notifyBySms: boolean;
   mustChangePassword: boolean;
   status: AdminUserStatus;
   invitedAt: string | null;
@@ -41,6 +47,11 @@ export interface CreateAdminUserPayloadBase {
   employeeNumber: string;
   startDate: string;
   role?: string;
+  shift?: ShiftOption;
+  weeklyCapacityHours?: number;
+  skills?: string[];
+  notifyByEmail?: boolean;
+  notifyBySms?: boolean;
 }
 
 export type CreateAdminUserPayload =
@@ -61,6 +72,11 @@ export interface PatchAdminUserPayload {
   employeeNumber?: string;
   startDate?: string;
   role?: string;
+  shift?: ShiftOption;
+  weeklyCapacityHours?: number;
+  skills?: string[];
+  notifyByEmail?: boolean;
+  notifyBySms?: boolean;
   status?: AdminUserStatus;
   mustChangePassword?: boolean;
   tempPassword?: string;

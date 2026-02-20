@@ -14,6 +14,7 @@ import { sendResponse, writeAuditLog } from '../utils';
 
 const TRADE_OPTIONS = ['Electrical', 'Mechanical', 'Tooling', 'Facilities', 'Automation', 'Other'] as const;
 const USER_STATUSES = ['active', 'invited', 'disabled'] as const;
+const SHIFT_OPTIONS = ['day', 'swing', 'night'] as const;
 
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 const normalizeEmployeeNumber = (value: string): string => value.trim();
@@ -46,6 +47,11 @@ const createAdminUserSchema = z
     employeeNumber: z.string().trim().min(1, 'Employee number is required'),
     startDate: z.string().trim().min(1, 'Start date is required'),
     role: z.string().trim().default('team_member'),
+    shift: z.enum(SHIFT_OPTIONS).default('day'),
+    weeklyCapacityHours: z.number().min(1).max(168).default(40),
+    skills: z.array(z.string().trim().min(1)).default([]),
+    notifyByEmail: z.boolean().default(true),
+    notifyBySms: z.boolean().default(false),
   })
   .and(createModeSchema);
 
@@ -60,6 +66,11 @@ const updateAdminUserSchema = z
     status: z.enum(USER_STATUSES).optional(),
     mustChangePassword: z.boolean().optional(),
     tempPassword: z.string().min(10).optional(),
+    shift: z.enum(SHIFT_OPTIONS).optional(),
+    weeklyCapacityHours: z.number().min(1).max(168).optional(),
+    skills: z.array(z.string().trim().min(1)).optional(),
+    notifyByEmail: z.boolean().optional(),
+    notifyBySms: z.boolean().optional(),
   })
   .refine(
     (value) =>
@@ -71,7 +82,12 @@ const updateAdminUserSchema = z
       value.role ||
       value.status ||
       value.mustChangePassword !== undefined ||
-      value.tempPassword,
+      value.tempPassword ||
+      value.shift ||
+      value.weeklyCapacityHours !== undefined ||
+      value.skills ||
+      value.notifyByEmail !== undefined ||
+      value.notifyBySms !== undefined,
     {
     message: 'At least one updatable field is required',
     },
@@ -87,6 +103,12 @@ const serializeUser = (user: any) => ({
   startDate: user.startDate ? new Date(user.startDate).toISOString() : null,
   role: Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : 'team_member',
   roles: Array.isArray(user.roles) ? user.roles : [],
+  shift: user.shift ?? 'day',
+  weeklyCapacityHours:
+    typeof user.weeklyCapacityHours === 'number' ? user.weeklyCapacityHours : 40,
+  skills: Array.isArray(user.skills) ? user.skills : [],
+  notifyByEmail: user.notifyByEmail !== false,
+  notifyBySms: user.notifyBySms === true,
   mustChangePassword: Boolean(user.mustChangePassword),
   status: user.status ?? (user.active === false ? 'disabled' : 'active'),
   invitedAt: user.invitedAt ? new Date(user.invitedAt).toISOString() : null,
@@ -136,6 +158,11 @@ export async function listAdminUsers(req: AuthedRequest, res: Response, next: Ne
         'employeeId',
         'startDate',
         'roles',
+        'shift',
+        'weeklyCapacityHours',
+        'skills',
+        'notifyByEmail',
+        'notifyBySms',
         'mustChangePassword',
         'status',
         'invitedAt',
@@ -194,6 +221,13 @@ export async function createAdminUser(req: AuthedRequest, res: Response, next: N
     }
 
     const role = parsed.data.role || 'team_member';
+    const skills = Array.from(
+      new Set(
+        (parsed.data.skills ?? [])
+          .map((entry) => entry.trim())
+          .filter(Boolean),
+      ),
+    );
     const baseUser: Record<string, unknown> = {
       name: parsed.data.fullName,
       email: normalizedEmail,
@@ -202,6 +236,11 @@ export async function createAdminUser(req: AuthedRequest, res: Response, next: N
       employeeId: normalizedEmployeeNumber,
       startDate: parsedStartDate,
       roles: [role],
+      shift: parsed.data.shift ?? 'day',
+      weeklyCapacityHours: parsed.data.weeklyCapacityHours ?? 40,
+      skills,
+      notifyByEmail: parsed.data.notifyByEmail ?? true,
+      notifyBySms: parsed.data.notifyBySms ?? false,
       tenantId: req.tenantId,
     };
 
@@ -357,6 +396,25 @@ export async function patchAdminUser(req: AuthedRequest, res: Response, next: Ne
         return;
       }
       user.roles = [parsed.data.role] as any;
+    }
+    if (parsed.data.shift) {
+      user.shift = parsed.data.shift;
+    }
+    if (typeof parsed.data.weeklyCapacityHours === 'number') {
+      user.weeklyCapacityHours = parsed.data.weeklyCapacityHours;
+    }
+    if (parsed.data.skills) {
+      user.skills = Array.from(
+        new Set(
+          parsed.data.skills.map((entry) => entry.trim()).filter(Boolean),
+        ),
+      );
+    }
+    if (typeof parsed.data.notifyByEmail === 'boolean') {
+      user.notifyByEmail = parsed.data.notifyByEmail;
+    }
+    if (typeof parsed.data.notifyBySms === 'boolean') {
+      user.notifyBySms = parsed.data.notifyBySms;
     }
 
     if (parsed.data.status) {

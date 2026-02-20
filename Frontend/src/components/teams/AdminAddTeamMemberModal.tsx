@@ -9,6 +9,7 @@ import {
   TRADE_OPTIONS,
   type AdminUser,
   type TradeOption,
+  type ShiftOption,
   type CreateAdminUserPayload,
   type AdminCreateMode,
   type PatchAdminUserPayload,
@@ -21,6 +22,11 @@ type FormState = {
   employeeNumber: string;
   startDate: string;
   role: string;
+  shift: ShiftOption;
+  weeklyCapacityHours: string;
+  skills: string;
+  notifyByEmail: boolean;
+  notifyBySms: boolean;
   mode: AdminCreateMode;
   tempPassword: string;
 };
@@ -32,6 +38,11 @@ const DEFAULT_FORM: FormState = {
   employeeNumber: '',
   startDate: '',
   role: 'team_member',
+  shift: 'day',
+  weeklyCapacityHours: '40',
+  skills: '',
+  notifyByEmail: true,
+  notifyBySms: false,
   mode: 'temp_password',
   tempPassword: '',
 };
@@ -83,6 +94,11 @@ export default function AdminAddTeamMemberModal({
       employeeNumber: user.employeeNumber ?? '',
       startDate: user.startDate ? user.startDate.slice(0, 10) : '',
       role: user.role ?? 'team_member',
+      shift: user.shift ?? 'day',
+      weeklyCapacityHours: String(user.weeklyCapacityHours ?? 40),
+      skills: Array.isArray(user.skills) ? user.skills.join(', ') : '',
+      notifyByEmail: user.notifyByEmail !== false,
+      notifyBySms: user.notifyBySms === true,
       mode: 'temp_password',
       tempPassword: '',
     });
@@ -90,6 +106,10 @@ export default function AdminAddTeamMemberModal({
 
   const canSubmit = useMemo(() => {
     if (!form.fullName.trim() || !form.email.trim() || !form.employeeNumber.trim() || !form.startDate) {
+      return false;
+    }
+    const weeklyCapacityHours = Number(form.weeklyCapacityHours);
+    if (!Number.isFinite(weeklyCapacityHours) || weeklyCapacityHours < 1 || weeklyCapacityHours > 168) {
       return false;
     }
     if (!isEditMode && form.mode === 'temp_password' && form.tempPassword.length < 10) {
@@ -112,6 +132,14 @@ export default function AdminAddTeamMemberModal({
     setSubmitting(true);
     setError(null);
     try {
+      const normalizedSkills = Array.from(
+        new Set(
+          form.skills
+            .split(',')
+            .map((entry) => entry.trim())
+            .filter(Boolean),
+        ),
+      );
       const payloadBase = {
         fullName: form.fullName.trim(),
         email: form.email.trim(),
@@ -119,6 +147,11 @@ export default function AdminAddTeamMemberModal({
         employeeNumber: form.employeeNumber.trim(),
         startDate: form.startDate,
         role: canChooseRole ? form.role : 'team_member',
+        shift: form.shift,
+        weeklyCapacityHours: Number(form.weeklyCapacityHours),
+        skills: normalizedSkills,
+        notifyByEmail: form.notifyByEmail,
+        notifyBySms: form.notifyBySms,
       };
       const payload: CreateAdminUserPayload =
         form.mode === 'temp_password'
@@ -211,6 +244,62 @@ export default function AdminAddTeamMemberModal({
               value={form.startDate}
               onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
             />
+          </div>
+          <div>
+            <label htmlFor="admin-member-shift" className="mb-1 block text-sm font-medium text-neutral-800 dark:text-neutral-100">Shift</label>
+            <select
+              id="admin-member-shift"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+              value={form.shift}
+              onChange={(e) => setForm((prev) => ({ ...prev, shift: e.target.value as ShiftOption }))}
+            >
+              <option value="day">day</option>
+              <option value="swing">swing</option>
+              <option value="night">night</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="admin-member-weekly-capacity" className="mb-1 block text-sm font-medium text-neutral-800 dark:text-neutral-100">Weekly capacity hours</label>
+            <input
+              id="admin-member-weekly-capacity"
+              type="number"
+              min={1}
+              max={168}
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+              value={form.weeklyCapacityHours}
+              onChange={(e) => setForm((prev) => ({ ...prev, weeklyCapacityHours: e.target.value }))}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label htmlFor="admin-member-skills" className="mb-1 block text-sm font-medium text-neutral-800 dark:text-neutral-100">Skills (comma-separated)</label>
+            <input
+              id="admin-member-skills"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+              value={form.skills}
+              onChange={(e) => setForm((prev) => ({ ...prev, skills: e.target.value }))}
+              placeholder="PLC, Hydraulics, PM planning"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <p className="mb-1 block text-sm font-medium text-neutral-800 dark:text-neutral-100">Notifications</p>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.notifyByEmail}
+                  onChange={(e) => setForm((prev) => ({ ...prev, notifyByEmail: e.target.checked }))}
+                />
+                Email
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.notifyBySms}
+                  onChange={(e) => setForm((prev) => ({ ...prev, notifyBySms: e.target.checked }))}
+                />
+                SMS
+              </label>
+            </div>
           </div>
           {canChooseRole ? (
             <div>

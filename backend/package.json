@@ -28,7 +28,7 @@
     "arima": "0.2.5",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
-    "cron-parser": "^4.9.0",
+    "cron-parser": "^5.5.0",
     "csv-parse": "^6.1.0",
     "exceljs": "^4.4.0",
     "express-rate-limit": "^8.2.1",

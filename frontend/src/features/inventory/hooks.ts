@@ -3,7 +3,7 @@
  */
 
 import { useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createPurchaseOrder,
@@ -34,7 +34,7 @@ export const usePartsQuery = (params: PartQueryParams = {}) =>
     queryKey: [...INVENTORY_PARTS_QUERY_KEY, params],
     queryFn: () => fetchParts(params),
     staleTime: 30_000,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
 export const usePartQuery = (partId?: string) =>
@@ -77,8 +77,8 @@ export const useCreatePurchaseOrder = () => {
   return useMutation({
     mutationFn: (payload: PurchaseOrderPayload) => createPurchaseOrder(payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries(INVENTORY_ALERTS_QUERY_KEY);
-      void queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: INVENTORY_ALERTS_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: INVENTORY_PARTS_QUERY_KEY });
     },
   });
 };
@@ -88,9 +88,10 @@ export const useTransferInventory = () => {
   return useMutation({
     mutationFn: (payload: InventoryTransferPayload) => transferInventory(payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries(INVENTORY_STOCK_QUERY_KEY);
-      void queryClient.invalidateQueries(INVENTORY_HISTORY_QUERY_KEY);
-      void queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: INVENTORY_STOCK_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: INVENTORY_HISTORY_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: INVENTORY_PARTS_QUERY_KEY });
     },
   });
 };
+

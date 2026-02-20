@@ -77,14 +77,14 @@ export default function PMTemplateList() {
   const cloneMutation = useMutation({
     mutationFn: cloneTemplateIntoTenant,
     onSuccess: () => {
-      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PM_TEMPLATES_QUERY_KEY });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (templateId: string) => deletePmTemplate(templateId),
     onSuccess: () => {
-      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PM_TEMPLATES_QUERY_KEY });
     },
   });
 
@@ -162,4 +162,5 @@ export default function PMTemplateList() {
     </div>
   );
 }
+
 

@@ -62,6 +62,8 @@ export interface PatchAdminUserPayload {
   startDate?: string;
   role?: string;
   status?: AdminUserStatus;
+  mustChangePassword?: boolean;
+  tempPassword?: string;
 }
 
 export const listAdminUsers = async (query: ListAdminUsersQuery = {}): Promise<AdminUser[]> => {
@@ -81,5 +83,18 @@ export const patchAdminUser = async (
   payload: PatchAdminUserPayload,
 ): Promise<{ user: AdminUser }> => {
   const response = await http.patch<{ user: AdminUser }>(`/admin/users/${id}`, payload);
+  return response.data;
+};
+
+export const resetAdminUserPassword = async (
+  id: string,
+  payload: { tempPassword: string },
+): Promise<{ user: AdminUser }> => {
+  const response = await http.post<{ user: AdminUser }>(`/admin/users/${id}/reset-password`, payload);
+  return response.data;
+};
+
+export const deleteAdminUser = async (id: string): Promise<{ id: string }> => {
+  const response = await http.delete<{ id: string }>(`/admin/users/${id}`);
   return response.data;
 };

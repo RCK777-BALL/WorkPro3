@@ -36,18 +36,21 @@ const versionSchema = z.object({
 const ProcedureTemplateBuilder = () => {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const { data: templates = [] } = useQuery(['pm', 'procedures'], fetchProcedureTemplates);
+  const { data: templates = [] } = useQuery({
+    queryKey: ['pm', 'procedures'],
+    queryFn: fetchProcedureTemplates,
+  });
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === selectedTemplateId) ?? templates[0],
     [templates, selectedTemplateId],
   );
 
-  const { data: versions = [] } = useQuery(
-    ['pm', 'procedure-versions', selectedTemplate?.id],
-    () => fetchProcedureVersions(selectedTemplate?.id ?? ''),
-    { enabled: Boolean(selectedTemplate?.id) },
-  );
+  const { data: versions = [] } = useQuery({
+    queryKey: ['pm', 'procedure-versions', selectedTemplate?.id],
+    queryFn: () => fetchProcedureVersions(selectedTemplate?.id ?? ''),
+    enabled: Boolean(selectedTemplate?.id),
+  });
 
   const [templateForm, setTemplateForm] = useState({ name: '', description: '', category: '' });
   const [versionForm, setVersionForm] = useState({
@@ -59,30 +62,30 @@ const ProcedureTemplateBuilder = () => {
   const [templateError, setTemplateError] = useState<string | null>(null);
   const [versionError, setVersionError] = useState<string | null>(null);
 
-  const createTemplateMutation = useMutation(createProcedureTemplate, {
+  const createTemplateMutation = useMutation({
+    mutationFn: createProcedureTemplate,
     onSuccess: async () => {
-      await queryClient.invalidateQueries(['pm', 'procedures']);
+      await queryClient.invalidateQueries({ queryKey: ['pm', 'procedures'] });
       setTemplateForm({ name: '', description: '', category: '' });
       addToast('Procedure template created', 'success');
     },
   });
 
-  const createVersionMutation = useMutation(
-    (payload: Parameters<typeof createProcedureVersion>[1]) =>
+  const createVersionMutation = useMutation({
+    mutationFn: (payload: Parameters<typeof createProcedureVersion>[1]) =>
       createProcedureVersion(selectedTemplate?.id ?? '', payload),
-    {
-      onSuccess: async () => {
-        await queryClient.invalidateQueries(['pm', 'procedure-versions', selectedTemplate?.id]);
-        setVersionForm({ durationMinutes: 30, safetySteps: '', steps: '', notes: '' });
-        addToast('Draft version created', 'success');
-      },
-    },
-  );
-
-  const publishMutation = useMutation((versionId: string) => publishProcedureVersion(versionId), {
     onSuccess: async () => {
-      await queryClient.invalidateQueries(['pm', 'procedure-versions', selectedTemplate?.id]);
-      await queryClient.invalidateQueries(['pm', 'procedures']);
+      await queryClient.invalidateQueries({ queryKey: ['pm', 'procedure-versions', selectedTemplate?.id] });
+      setVersionForm({ durationMinutes: 30, safetySteps: '', steps: '', notes: '' });
+      addToast('Draft version created', 'success');
+    },
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: (versionId: string) => publishProcedureVersion(versionId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['pm', 'procedure-versions', selectedTemplate?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['pm', 'procedures'] });
       addToast('Version published', 'success');
     },
   });
@@ -173,7 +176,7 @@ const ProcedureTemplateBuilder = () => {
               value={templateForm.description}
               onChange={(event) => setTemplateForm((prev) => ({ ...prev, description: event.target.value }))}
             />
-            <Button onClick={handleCreateTemplate} loading={createTemplateMutation.isLoading}>
+            <Button onClick={handleCreateTemplate} loading={createTemplateMutation.isPending}>
               Create template
             </Button>
           </div>
@@ -209,7 +212,7 @@ const ProcedureTemplateBuilder = () => {
             />
             <Button
               onClick={handleCreateVersion}
-              loading={createVersionMutation.isLoading}
+              loading={createVersionMutation.isPending}
               disabled={!selectedTemplate?.id}
             >
               Create draft version
@@ -234,7 +237,7 @@ const ProcedureTemplateBuilder = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => publishMutation.mutate(version.id)}
-                      loading={publishMutation.isLoading && publishMutation.variables === version.id}
+                      loading={publishMutation.isPending && publishMutation.variables === version.id}
                     >
                       Publish
                     </Button>
@@ -258,3 +261,4 @@ const ProcedureTemplateBuilder = () => {
 };
 
 export default ProcedureTemplateBuilder;
+

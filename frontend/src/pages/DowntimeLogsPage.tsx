@@ -99,18 +99,20 @@ const DowntimeLogsPage = () => {
     setOverlapError(null);
   };
 
-  const createMutation = useMutation(createDowntimeLog, {
+  const createMutation = useMutation({
+    mutationFn: createDowntimeLog,
     onSuccess: () => {
       addToast('Downtime entry saved', 'success');
-      queryClient.invalidateQueries(downtimeKeys.all);
+      void queryClient.invalidateQueries({ queryKey: downtimeKeys.all });
     },
     onError: () => addToast('Failed to save downtime entry', 'error'),
   });
 
-  const updateMutation = useMutation(({ id, payload }: { id: string; payload: DowntimePayload }) => updateDowntimeLog(id, payload), {
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: DowntimePayload }) => updateDowntimeLog(id, payload),
     onSuccess: () => {
       addToast('Downtime entry updated', 'success');
-      queryClient.invalidateQueries(downtimeKeys.all);
+      void queryClient.invalidateQueries({ queryKey: downtimeKeys.all });
     },
     onError: () => addToast('Failed to update downtime entry', 'error'),
   });
@@ -182,7 +184,7 @@ const DowntimeLogsPage = () => {
         onSubmit={onSubmit}
         defaultValues={editing}
         onCancelEdit={resetEditing}
-        isSaving={createMutation.isLoading || updateMutation.isLoading}
+        isSaving={createMutation.isPending || updateMutation.isPending}
         overlapError={overlapError}
       />
 
@@ -254,4 +256,5 @@ const DowntimeLogsPage = () => {
 };
 
 export default DowntimeLogsPage;
+
 

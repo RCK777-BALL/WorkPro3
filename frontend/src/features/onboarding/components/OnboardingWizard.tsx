@@ -159,7 +159,7 @@ export const OnboardingWizard = () => {
             <button
               type="button"
               onClick={() => restartOnboarding.mutate()}
-              disabled={restartOnboarding.isLoading}
+              disabled={restartOnboarding.isPending}
               className="rounded-full border border-white/30 px-4 py-2 text-sm text-white disabled:opacity-60"
             >
               Restart onboarding
@@ -203,7 +203,7 @@ export const OnboardingWizard = () => {
               <button
                 type="button"
                 onClick={() => restartOnboarding.mutate()}
-                disabled={restartOnboarding.isLoading}
+                disabled={restartOnboarding.isPending}
                 className="rounded-full border border-white/30 px-3 py-1.5 text-xs text-white/90 transition hover:bg-white/10 disabled:opacity-60"
               >
                 Restart onboarding
@@ -212,7 +212,7 @@ export const OnboardingWizard = () => {
                 <button
                   type="button"
                   onClick={handleDismissReminder}
-                  disabled={dismissReminder.isLoading}
+                  disabled={dismissReminder.isPending}
                   className="text-xs text-amber-200 underline-offset-4 hover:underline disabled:opacity-60"
                 >
                   Remind me later
@@ -252,4 +252,5 @@ export const OnboardingWizard = () => {
 
 const stepIcon = (completed: boolean) =>
   completed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertCircle className="h-4 w-4 text-amber-300" />;
+
 

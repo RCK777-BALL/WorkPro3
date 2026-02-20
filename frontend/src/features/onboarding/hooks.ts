@@ -28,8 +28,8 @@ export const useClonePmTemplate = () => {
   return useMutation({
     mutationFn: (templateId: string) => cloneTemplateIntoTenant(templateId),
     onSuccess: () => {
-      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
-      void queryClient.invalidateQueries(ONBOARDING_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PM_TEMPLATES_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: ONBOARDING_QUERY_KEY });
     },
   });
 };
@@ -39,7 +39,7 @@ export const useDismissOnboardingReminder = () => {
   return useMutation({
     mutationFn: dismissOnboardingReminder,
     onSuccess: () => {
-      void queryClient.invalidateQueries(ONBOARDING_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: ONBOARDING_QUERY_KEY });
       toast.success('Reminder snoozed for 12 hours.');
     },
   });
@@ -50,7 +50,7 @@ export const useRestartOnboarding = () => {
   return useMutation({
     mutationFn: restartOnboarding,
     onSuccess: () => {
-      void queryClient.invalidateQueries(ONBOARDING_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: ONBOARDING_QUERY_KEY });
       toast.success('Onboarding restarted.');
     },
   });
@@ -74,3 +74,4 @@ export const getTemplatePreview = (template: PMTemplateLibraryItem) => {
   const hasMore = template.checklist.length > 3;
   return hasMore ? `${preview}, …` : preview;
 };
+

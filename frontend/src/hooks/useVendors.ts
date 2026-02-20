@@ -20,7 +20,7 @@ export const useSaveVendor = () => {
   return useMutation({
     mutationFn: (payload: Partial<Vendor> & { name: string; id?: string }) => saveVendor(payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries(VENDORS_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: VENDORS_QUERY_KEY });
     },
   });
 };
@@ -30,7 +30,8 @@ export const useDeleteVendor = () => {
   return useMutation({
     mutationFn: (vendorId: string) => deleteVendor(vendorId),
     onSuccess: () => {
-      void queryClient.invalidateQueries(VENDORS_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: VENDORS_QUERY_KEY });
     },
   });
 };
+

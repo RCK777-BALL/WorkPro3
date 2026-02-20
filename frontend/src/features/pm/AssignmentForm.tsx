@@ -40,7 +40,7 @@ const newId = () => Math.random().toString(36).slice(2);
 const DEFAULT_INTERVALS = ['weekly', 'monthly', 'quarterly', 'annually'];
 
 const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess, fixedAssetId }: AssignmentFormProps) => {
-  const { mutateAsync, isLoading } = useUpsertAssignment();
+  const { mutateAsync, isPending } = useUpsertAssignment();
   const { addToast } = useToast();
   const [error, setError] = useState<string | null>(null);
 
@@ -65,7 +65,10 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
       quantity: part.quantity ?? 1,
     })) ?? [],
   );
-  const procedureTemplatesQuery = useQuery(['pm', 'procedures'], fetchProcedureTemplates);
+  const procedureTemplatesQuery = useQuery({
+    queryKey: ['pm', 'procedures'],
+    queryFn: fetchProcedureTemplates,
+  });
   const aiPrediction = useFailurePrediction({ assetId });
   const showAiInsight = Boolean(assetId || aiPrediction.isLoading || aiPrediction.error);
 
@@ -388,7 +391,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
         </div>
       </div>
       <div className="flex justify-end">
-        <Button type="submit" variant="primary" loading={isLoading} disabled={assets.length === 0}>
+        <Button type="submit" variant="primary" loading={isPending} disabled={assets.length === 0}>
           {assignment ? 'Update assignment' : 'Create assignment'}
         </Button>
       </div>

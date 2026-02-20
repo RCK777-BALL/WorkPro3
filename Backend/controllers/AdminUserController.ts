@@ -397,3 +397,109 @@ export async function patchAdminUser(req: AuthedRequest, res: Response, next: Ne
     next(error);
   }
 }
+
+const ensureTargetUser = async (req: AuthedRequest, res: Response) => {
+  if (!req.tenantId) {
+    sendResponse(res, null, 'Tenant ID required', 400);
+    return null;
+  }
+  if (!Types.ObjectId.isValid(req.params.id)) {
+    sendResponse(res, null, 'Invalid user id', 400);
+    return null;
+  }
+  const user = await User.findOne({ _id: req.params.id, tenantId: req.tenantId }).select('+inviteTokenHash');
+  if (!user) {
+    sendResponse(res, null, 'User not found', 404);
+    return null;
+  }
+  return user;
+};
+
+export async function resetAdminUserPassword(req: AuthedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await ensureTargetUser(req, res);
+    if (!user) return;
+
+    const parsed = z
+      .object({
+        tempPassword: z.string().min(10, 'Temporary password must be at least 10 characters'),
+      })
+      .safeParse(req.body);
+    if (!parsed.success) {
+      sendResponse(res, null, parsed.error.issues.map((issue) => issue.message), 400);
+      return;
+    }
+
+    user.passwordHash = parsed.data.tempPassword;
+    user.mustChangePassword = true;
+    user.passwordExpired = true;
+    user.status = user.status === 'disabled' ? 'disabled' : 'active';
+    user.active = user.status !== 'disabled';
+    user.inviteTokenHash = undefined;
+    user.inviteExpiresAt = undefined;
+
+    await user.save();
+
+    await writeAuditLog({
+      tenantId: req.tenantId!,
+      userId: req.user?._id ?? req.user?.id,
+      action: 'admin_user_reset_password',
+      entityType: 'User',
+      entityId: user._id.toString(),
+      after: {
+        mustChangePassword: true,
+        status: user.status,
+      },
+    });
+
+    sendResponse(res, { user: serializeUser(user) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteAdminUser(req: AuthedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await ensureTargetUser(req, res);
+    if (!user) return;
+
+    const requesterId = req.user?._id?.toString?.() ?? req.user?.id?.toString?.();
+    if (requesterId && requesterId === user._id.toString()) {
+      sendResponse(res, null, 'You cannot delete your own account', 400);
+      return;
+    }
+
+    const targetRoles = Array.isArray(user.roles) ? user.roles : [];
+    const targetIsAdmin = targetRoles.includes('admin') || targetRoles.includes('general_manager');
+    if (targetIsAdmin) {
+      const adminCount = await User.countDocuments({
+        tenantId: req.tenantId,
+        _id: { $ne: user._id },
+        roles: { $in: ['admin', 'general_manager'] },
+      });
+      if (adminCount < 1) {
+        sendResponse(res, null, 'Cannot delete the last administrator', 400);
+        return;
+      }
+    }
+
+    await User.deleteOne({ _id: user._id, tenantId: req.tenantId });
+
+    await writeAuditLog({
+      tenantId: req.tenantId!,
+      userId: req.user?._id ?? req.user?.id,
+      action: 'admin_user_delete',
+      entityType: 'User',
+      entityId: user._id.toString(),
+      before: {
+        email: user.email,
+        roles: user.roles,
+        status: user.status,
+      },
+    });
+
+    sendResponse(res, { id: user._id.toString() });
+  } catch (error) {
+    next(error);
+  }
+}

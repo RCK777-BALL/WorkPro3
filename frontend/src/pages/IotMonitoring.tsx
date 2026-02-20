@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Activity, AlertTriangle, RefreshCcw, Radio, ScrollText } from 'lucide-react';
 
 import Card from '@/components/common/Card';
@@ -102,9 +102,9 @@ const IotMonitoring = () => {
     [assetOptions],
   );
 
-  const signalsQuery = useQuery(
-    ['iot-signals', assetFilter, metricFilter],
-    () => {
+  const signalsQuery = useQuery({
+    queryKey: ['iot-signals', assetFilter, metricFilter],
+    queryFn: () => {
       const params: IoTSignalQuery = { limit: 150 };
       if (assetFilter !== 'all') {
         params.assetId = assetFilter;
@@ -114,25 +114,32 @@ const IotMonitoring = () => {
       }
       return fetchIotSignals(params);
     },
-    { keepPreviousData: true, staleTime: 30_000 },
-  );
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
 
-  const alertsQuery = useQuery(['iot-alerts'], () => fetchIotAlerts(50), {
+  const alertsQuery = useQuery({
+    queryKey: ['iot-alerts'],
+    queryFn: () => fetchIotAlerts(50),
     staleTime: 30_000,
     refetchInterval: 30_000,
   });
 
-  const metersQuery = useQuery(['meters', assetFilter], () => fetchMeters(assetFilter === 'all' ? undefined : assetFilter), {
+  const metersQuery = useQuery({
+    queryKey: ['meters', assetFilter],
+    queryFn: () => fetchMeters(assetFilter === 'all' ? undefined : assetFilter),
     staleTime: 60_000,
   });
 
-  const devicesQuery = useQuery(
-    ['iot-devices', assetFilter],
-    () => fetchSensorDevices(assetFilter === 'all' ? undefined : assetFilter),
-    { staleTime: 30_000 },
-  );
+  const devicesQuery = useQuery({
+    queryKey: ['iot-devices', assetFilter],
+    queryFn: () => fetchSensorDevices(assetFilter === 'all' ? undefined : assetFilter),
+    staleTime: 30_000,
+  });
 
-  const rulesQuery = useQuery(['condition-rules'], () => fetchConditionRules(), {
+  const rulesQuery = useQuery({
+    queryKey: ['condition-rules'],
+    queryFn: () => fetchConditionRules(),
     staleTime: 60_000,
   });
 

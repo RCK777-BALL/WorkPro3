@@ -65,10 +65,12 @@ export const ImportExportPanel = () => {
   const [lastDownloadedAt, setLastDownloadedAt] = useState<Date | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  const uploadMutation = useMutation<ImportSummary, Error, { entity: ImportEntity; file: File }>((payload) =>
-    uploadImport(payload.entity, payload.file),
-  );
-  const downloadMutation = useMutation<Blob, Error, ExportFormat>(downloadAssetExport);
+  const uploadMutation = useMutation<ImportSummary, Error, { entity: ImportEntity; file: File }>({
+    mutationFn: (payload) => uploadImport(payload.entity, payload.file),
+  });
+  const downloadMutation = useMutation<Blob, Error, ExportFormat>({
+    mutationFn: downloadAssetExport,
+  });
 
   const handleFile = async (file?: File) => {
     if (!file) return;
@@ -165,12 +167,12 @@ export const ImportExportPanel = () => {
           </div>
           <label className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-70">
             <UploadCloud className="h-4 w-4" />
-            <span>{uploadMutation.isLoading ? 'Uploading…' : 'Select file'}</span>
+            <span>{uploadMutation.isPending ? 'Uploading…' : 'Select file'}</span>
             <input
               type="file"
               accept=".csv,.xlsx,.xls"
               onChange={onFileChange}
-              disabled={uploadMutation.isLoading}
+              disabled={uploadMutation.isPending}
               className="sr-only"
             />
           </label>
@@ -299,7 +301,7 @@ export const ImportExportPanel = () => {
               key={item.format}
               type="button"
               onClick={() => handleDownload(item.format)}
-              disabled={downloadMutation.isLoading}
+              disabled={downloadMutation.isPending}
               className="flex items-start justify-between rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left text-sm font-medium text-neutral-900 shadow-sm transition hover:border-primary-400 hover:bg-white disabled:cursor-not-allowed disabled:opacity-70 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-50"
             >
               <span>

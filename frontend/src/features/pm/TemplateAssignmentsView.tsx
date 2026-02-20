@@ -121,7 +121,7 @@ const TemplateAssignmentsView = () => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDelete(assignment.id)}
-                        loading={deleteMutation.isLoading && deleteMutation.variables?.assignmentId === assignment.id}
+                        loading={deleteMutation.isPending && deleteMutation.variables?.assignmentId === assignment.id}
                       >
                         Remove
                       </Button>
@@ -159,3 +159,4 @@ const TemplateAssignmentsView = () => {
 };
 
 export default TemplateAssignmentsView;
+

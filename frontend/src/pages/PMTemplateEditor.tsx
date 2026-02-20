@@ -182,7 +182,7 @@ export default function PMTemplateEditor() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button type="submit" loading={createMutation.isLoading || updateMutation.isLoading}>
+            <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
               {isEditing ? "Save changes" : "Create template"}
             </Button>
             <Button type="button" variant="ghost" onClick={() => navigate("/pm/templates")}>Cancel</Button>
@@ -192,4 +192,5 @@ export default function PMTemplateEditor() {
     </div>
   );
 }
+
 

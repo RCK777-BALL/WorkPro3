@@ -149,7 +149,7 @@ const PurchaseOrderBuilder = () => {
         </div>
         {statusMessage && <p className="text-sm text-neutral-600">{statusMessage}</p>}
         <div className="flex justify-end">
-          <Button type="submit" loading={mutation.isLoading} disabled={reorderCandidates.length === 0}>
+          <Button type="submit" loading={mutation.isPending} disabled={reorderCandidates.length === 0}>
             Generate purchase order
           </Button>
         </div>
@@ -159,3 +159,4 @@ const PurchaseOrderBuilder = () => {
 };
 
 export default PurchaseOrderBuilder;
+

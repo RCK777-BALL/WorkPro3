@@ -580,7 +580,7 @@ export default function InventoryLocations() {
         stockItems={stock}
         locations={locations}
         onSubmit={handleTransfer}
-        submitting={transferMutation.isLoading}
+        submitting={transferMutation.isPending}
         error={
           transferMutation.isError
             ? transferMutation.error instanceof Error
@@ -592,5 +592,6 @@ export default function InventoryLocations() {
     </div>
   );
 }
+
 
 

@@ -341,14 +341,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(
     async (email: string, password: string, remember = false) => {
-      const response = await api.post<unknown>('/auth/login', {
-        email,
-        password,
-        remember,
-        username: email,
-      });
+      let payload: unknown;
+      try {
+        const response = await api.post<unknown>('/auth/login', {
+          email,
+          password,
+          remember,
+          username: email,
+        });
+        payload = response.data;
+      } catch (err) {
+        const errorPayload = (err as { response?: { data?: unknown } }).response?.data;
+        if (errorPayload && typeof errorPayload === 'object') {
+          const candidate =
+            'data' in errorPayload && typeof (errorPayload as { data?: unknown }).data === 'object'
+              ? (errorPayload as { data?: unknown }).data
+              : errorPayload;
+          if ((candidate as { rotationRequired?: unknown }).rotationRequired === true) {
+            return candidate as AuthLoginResponse;
+          }
+          if ((candidate as { mfaRequired?: unknown }).mfaRequired === true) {
+            return candidate as AuthLoginResponse;
+          }
+        }
+        throw err;
+      }
 
-      const payload = response.data;
 
       const rotationSource = (() => {
         if (!payload || typeof payload !== 'object') return null;

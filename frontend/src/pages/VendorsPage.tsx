@@ -28,7 +28,7 @@ const VendorsPage = () => {
   }, [vendors, search]);
 
   const handleDelete = async (vendor: Vendor) => {
-    if (deleteVendor.isLoading) return;
+    if (deleteVendor.isPending) return;
     const confirmed = window.confirm(`Delete vendor ${vendor.name}? This cannot be undone.`);
     if (!confirmed) return;
     setDeletingId(vendor.id);
@@ -84,7 +84,7 @@ const VendorsPage = () => {
                     size="sm"
                     variant="ghost"
                     onClick={() => handleDelete(vendor)}
-                    disabled={deleteVendor.isLoading && deletingId === vendor.id}
+                    disabled={deleteVendor.isPending && deletingId === vendor.id}
                   >
                     Delete
                   </Button>
@@ -99,4 +99,5 @@ const VendorsPage = () => {
 };
 
 export default VendorsPage;
+
 

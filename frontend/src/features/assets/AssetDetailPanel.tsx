@@ -103,7 +103,7 @@ const MeterEntryCard = ({ assetId }: { assetId?: string }) => {
   const [meterType, setMeterType] = useState<MeterType>('runtimeHours');
   const [value, setValue] = useState('');
   const [localError, setLocalError] = useState<string>();
-  const { mutate, isLoading, isSuccess, data, error, reset } = useCreateMeterReading();
+  const { mutate, isPending, isSuccess, data, error, reset } = useCreateMeterReading();
 
   useEffect(() => {
     setLocalError(undefined);
@@ -176,7 +176,7 @@ const MeterEntryCard = ({ assetId }: { assetId?: string }) => {
               onChange={(event) => setValue(event.target.value)}
               className="w-full rounded-lg border border-neutral-800 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 focus:border-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               placeholder={`Enter ${helper.unit}`}
-              disabled={!assetId || isLoading}
+              disabled={!assetId || isPending}
             />
             <span className="rounded-md bg-neutral-800/60 px-3 py-2 text-xs uppercase tracking-wide text-neutral-400">
               {helper.unit}
@@ -188,10 +188,10 @@ const MeterEntryCard = ({ assetId }: { assetId?: string }) => {
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          disabled={!assetId || isLoading}
+          disabled={!assetId || isPending}
           className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLoading ? 'Saving…' : 'Record reading'}
+          {isPending ? 'Saving…' : 'Record reading'}
         </button>
         <p className="text-xs text-neutral-500">
           These readings feed runtime and cycle-based maintenance triggers.
@@ -524,3 +524,4 @@ const AssetDetailPanel = ({ assetSummary, assetDetails, hierarchy, isLoading, on
 };
 
 export default AssetDetailPanel;
+

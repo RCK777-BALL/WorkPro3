@@ -7,7 +7,15 @@ import { useSearchParams } from 'react-router-dom';
 
 import Button from '@/components/common/Button';
 import AdminAddTeamMemberModal from '@/components/teams/AdminAddTeamMemberModal';
-import { createAdminUser, listAdminUsers, patchAdminUser, type AdminUser, TRADE_OPTIONS } from '@/api/adminUsers';
+import {
+  createAdminUser,
+  deleteAdminUser,
+  listAdminUsers,
+  patchAdminUser,
+  resetAdminUserPassword,
+  type AdminUser,
+  TRADE_OPTIONS,
+} from '@/api/adminUsers';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore, isAdmin as selectIsAdmin } from '@/store/authStore';
 
@@ -21,7 +29,9 @@ const Teams = () => {
   const [search, setSearch] = useState('');
   const [tradeFilter, setTradeFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const isAdmin = useAuthStore(selectIsAdmin);
+  const currentUser = useAuthStore((state) => state.user);
   const inviteEnabled = String(import.meta.env.VITE_ENABLE_USER_INVITES ?? 'false').toLowerCase() === 'true';
 
   useEffect(() => {
@@ -75,6 +85,45 @@ const Teams = () => {
     const result = await patchAdminUser(id, payload);
     setUsers((prev) => prev.map((entry) => (entry.id === id ? result.user : entry)));
     addToast('Team member updated', 'success');
+  };
+
+  const handleResetPassword = async (user: AdminUser) => {
+    const tempPassword = window.prompt(`Enter a temporary password for ${user.fullName} (min 10 chars):`, '');
+    if (!tempPassword) return;
+    if (tempPassword.length < 10) {
+      addToast('Temporary password must be at least 10 characters', 'error');
+      return;
+    }
+    setActionTargetId(user.id);
+    try {
+      const result = await resetAdminUserPassword(user.id, { tempPassword });
+      setUsers((prev) => prev.map((entry) => (entry.id === user.id ? result.user : entry)));
+      addToast('Password reset. User must change password on next sign-in.', 'success');
+    } catch {
+      addToast('Failed to reset password', 'error');
+    } finally {
+      setActionTargetId(null);
+    }
+  };
+
+  const handleDeleteMember = async (user: AdminUser) => {
+    const confirmed = window.confirm(`Delete team member "${user.fullName}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    setActionTargetId(user.id);
+    try {
+      await deleteAdminUser(user.id);
+      setUsers((prev) => prev.filter((entry) => entry.id !== user.id));
+      addToast('Team member deleted', 'success');
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ??
+        (Array.isArray(error?.response?.data?.error) ? error.response.data.error.join(', ') : null) ??
+        'Failed to delete team member';
+      addToast(message, 'error');
+    } finally {
+      setActionTargetId(null);
+    }
   };
 
   if (!isAdmin) {
@@ -174,16 +223,43 @@ const Teams = () => {
                   <td className="px-4 py-3">{user.startDate ? user.startDate.slice(0, 10) : '-'}</td>
                   <td className="px-4 py-3">{user.status}</td>
                   <td className="px-4 py-3 text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingUser(user);
-                        setOpen(true);
-                      }}
-                    >
-                      Edit
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingUser(user);
+                          setOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        loading={actionTargetId === user.id}
+                        disabled={actionTargetId !== null}
+                        onClick={() => {
+                          void handleResetPassword(user);
+                        }}
+                      >
+                        Reset Password
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        loading={actionTargetId === user.id}
+                        disabled={
+                          actionTargetId !== null ||
+                          Boolean(currentUser?.email && currentUser.email.toLowerCase() === user.email.toLowerCase())
+                        }
+                        onClick={() => {
+                          void handleDeleteMember(user);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))

@@ -59,7 +59,7 @@ const TemplateLibrary = () => {
     <div className="mt-4 space-y-3">
       {data.map((template) => {
         const preview = getTemplatePreview(template);
-        const cloning = cloneMutation.isLoading && cloneMutation.variables === template.id;
+        const cloning = cloneMutation.isPending && cloneMutation.variables === template.id;
         return (
           <div
             key={template.id}
@@ -139,3 +139,4 @@ const TemplateLibrary = () => {
 };
 
 export default TemplateLibrary;
+

@@ -55,8 +55,8 @@ const AssetTemplateAssignments = ({ asset }: AssetTemplateAssignmentsProps) => {
     try {
       await deleteMutation.mutateAsync({ templateId, assignmentId });
       await Promise.all([
-        queryClient.invalidateQueries(['hierarchy', 'asset', asset.id]),
-        queryClient.invalidateQueries(['pm', 'templates']),
+        queryClient.invalidateQueries({ queryKey: ['hierarchy', 'asset', asset.id] }),
+        queryClient.invalidateQueries({ queryKey: ['pm', 'templates'] }),
       ]);
     } catch (err) {
       console.error(err);
@@ -117,7 +117,7 @@ const AssetTemplateAssignments = ({ asset }: AssetTemplateAssignmentsProps) => {
                 <Button
                   size="xs"
                   variant="ghost"
-                  loading={deleteMutation.isLoading && deleteMutation.variables?.assignmentId === assignment.id}
+                  loading={deleteMutation.isPending && deleteMutation.variables?.assignmentId === assignment.id}
                   onClick={() => handleDelete(template.id, assignment.id)}
                 >
                   Remove
@@ -140,7 +140,7 @@ const AssetTemplateAssignments = ({ asset }: AssetTemplateAssignmentsProps) => {
             partOptions={partOptions}
             onSuccess={() => {
               setEditingAssignmentId(null);
-              void queryClient.invalidateQueries(['hierarchy', 'asset', asset.id]);
+              void queryClient.invalidateQueries({ queryKey: ['hierarchy', 'asset', asset.id] });
             }}
             fixedAssetId={asset.id}
           />
@@ -151,3 +151,5 @@ const AssetTemplateAssignments = ({ asset }: AssetTemplateAssignmentsProps) => {
 };
 
 export default AssetTemplateAssignments;
+
+

@@ -66,9 +66,9 @@ const ReceiveStockModal = ({
       await adjustStockLevel({ stockItemId, delta: quantity, reason: "Receive" });
       addToast(`Received ${quantity} into ${part.name}`, "success");
       await Promise.all([
-        queryClient.invalidateQueries(INVENTORY_STOCK_QUERY_KEY),
-        queryClient.invalidateQueries(INVENTORY_HISTORY_QUERY_KEY),
-        queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY),
+        queryClient.invalidateQueries({ queryKey: INVENTORY_STOCK_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: INVENTORY_HISTORY_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: INVENTORY_PARTS_QUERY_KEY }),
       ]);
       reset();
       onClose();
@@ -148,7 +148,7 @@ export default function InventoryParts() {
   const handleSave = async (payload: Partial<Part> & { name: string }) => {
     const saved = await upsertPart(payload);
     addToast("Part saved", "success");
-    await queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY);
+    await queryClient.invalidateQueries({ queryKey: INVENTORY_PARTS_QUERY_KEY });
     return saved;
   };
 
@@ -318,5 +318,6 @@ export default function InventoryParts() {
     </div>
   );
 }
+
 
 

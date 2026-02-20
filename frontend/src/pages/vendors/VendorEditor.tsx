@@ -178,7 +178,7 @@ const VendorEditor = () => {
               <Button type="button" variant="outline" onClick={() => navigate('/vendors')}>
                 Cancel
               </Button>
-              <Button type="submit" loading={saveVendor.isLoading}>
+              <Button type="submit" loading={saveVendor.isPending}>
                 {isEdit ? 'Save changes' : 'Create vendor'}
               </Button>
             </div>
@@ -306,4 +306,5 @@ const VendorEditor = () => {
 };
 
 export default VendorEditor;
+
 

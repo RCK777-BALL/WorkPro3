@@ -33,7 +33,7 @@ export const useCreatePurchaseOrder = () => {
   return useMutation({
     mutationFn: (payload: PurchaseOrderInput) => createPurchaseOrder(payload),
     onSuccess: (po) => {
-      void queryClient.invalidateQueries(PURCHASE_ORDERS_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_QUERY_KEY });
       queryClient.setQueryData<PurchaseOrder[]>(PURCHASE_ORDERS_QUERY_KEY, (current = []) => [po, ...current]);
     },
   });
@@ -44,9 +44,9 @@ export const useUpdatePurchaseOrder = (id?: string) => {
   return useMutation({
     mutationFn: (payload: PurchaseOrderInput) => updatePurchaseOrder(id ?? '', payload),
     onSuccess: (po) => {
-      void queryClient.invalidateQueries(PURCHASE_ORDERS_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_QUERY_KEY });
       if (id) {
-        void queryClient.invalidateQueries([...PURCHASE_ORDERS_QUERY_KEY, id]);
+        void queryClient.invalidateQueries({ queryKey: [...PURCHASE_ORDERS_QUERY_KEY, id] });
       }
       queryClient.setQueryData<PurchaseOrder[]>(PURCHASE_ORDERS_QUERY_KEY, (current = []) =>
         current.map((item) => (item.id === po.id ? po : item)),
@@ -61,9 +61,9 @@ export const useAdvancePurchaseOrder = (id?: string) => {
     mutationFn: (payload: { status?: PurchaseOrderStatus; receipts?: Array<{ part: string; quantity: number }> }) =>
       updatePurchaseOrderStatus(id ?? '', payload),
     onSuccess: (po) => {
-      void queryClient.invalidateQueries(PURCHASE_ORDERS_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PURCHASE_ORDERS_QUERY_KEY });
       if (id) {
-        void queryClient.invalidateQueries([...PURCHASE_ORDERS_QUERY_KEY, id]);
+        void queryClient.invalidateQueries({ queryKey: [...PURCHASE_ORDERS_QUERY_KEY, id] });
       }
       queryClient.setQueryData<PurchaseOrder[]>(PURCHASE_ORDERS_QUERY_KEY, (current = []) =>
         current.map((item) => (item.id === po.id ? po : item)),
@@ -71,3 +71,4 @@ export const useAdvancePurchaseOrder = (id?: string) => {
     },
   });
 };
+

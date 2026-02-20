@@ -375,14 +375,14 @@ export default function CustomReportBuilder() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button icon={<PlayCircle className="h-4 w-4" />} onClick={handleRunReport} loading={customReport.isLoading}>
+          <Button icon={<PlayCircle className="h-4 w-4" />} onClick={handleRunReport} loading={customReport.isPending}>
             Run report
           </Button>
           <Button
             variant="secondary"
             icon={<Download className="h-4 w-4" />}
             onClick={() => handleExport('csv')}
-            loading={exportReport.isLoading}
+            loading={exportReport.isPending}
           >
             Export CSV
           </Button>
@@ -390,7 +390,7 @@ export default function CustomReportBuilder() {
             variant="secondary"
             icon={<Download className="h-4 w-4" />}
             onClick={() => handleExport('pdf')}
-            loading={exportReport.isLoading}
+            loading={exportReport.isPending}
           >
             Export PDF
           </Button>
@@ -398,7 +398,7 @@ export default function CustomReportBuilder() {
             variant="outline"
             icon={<Save className="h-4 w-4" />}
             onClick={persistTemplate}
-            loading={saveTemplate.isLoading || updateTemplate.isLoading}
+            loading={saveTemplate.isPending || updateTemplate.isPending}
           >
             {activeTemplate ? 'Update template' : 'Save template'}
           </Button>
@@ -419,7 +419,7 @@ export default function CustomReportBuilder() {
               keyField="__id"
               data={rowsWithIds}
               columns={columns}
-              isLoading={customReport.isLoading}
+              isLoading={customReport.isPending}
               emptyMessage="Run a query to see results"
             />
           </div>
@@ -428,3 +428,4 @@ export default function CustomReportBuilder() {
     </Card>
   );
 }
+

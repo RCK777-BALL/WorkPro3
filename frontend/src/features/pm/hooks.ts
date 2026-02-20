@@ -37,7 +37,7 @@ export const useCreatePmTemplate = () => {
   return useMutation({
     mutationFn: createPmTemplate,
     onSuccess: () => {
-      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PM_TEMPLATES_QUERY_KEY });
     },
   });
 };
@@ -48,8 +48,8 @@ export const useUpdatePmTemplate = () => {
     mutationFn: ({ templateId, payload }: { templateId: string; payload: Parameters<typeof updatePmTemplate>[1] }) =>
       updatePmTemplate(templateId, payload),
     onSuccess: (data) => {
-      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
-      void queryClient.invalidateQueries([...PM_TEMPLATES_QUERY_KEY, data.id]);
+      void queryClient.invalidateQueries({ queryKey: PM_TEMPLATES_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: [...PM_TEMPLATES_QUERY_KEY, data.id] });
     },
   });
 };
@@ -59,7 +59,7 @@ export const useDeletePmTemplate = () => {
   return useMutation({
     mutationFn: deletePmTemplate,
     onSuccess: () => {
-      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PM_TEMPLATES_QUERY_KEY });
     },
   });
 };
@@ -70,7 +70,7 @@ export const useUpsertAssignment = () => {
     mutationFn: ({ templateId, payload }: { templateId: string; payload: AssignmentPayload & { assignmentId?: string } }) =>
       upsertPmAssignment(templateId, payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PM_TEMPLATES_QUERY_KEY });
     },
   });
 };
@@ -81,7 +81,7 @@ export const useDeleteAssignment = () => {
     mutationFn: ({ templateId, assignmentId }: { templateId: string; assignmentId: string }) =>
       deletePmAssignment(templateId, assignmentId),
     onSuccess: () => {
-      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+      void queryClient.invalidateQueries({ queryKey: PM_TEMPLATES_QUERY_KEY });
     },
   });
 };
@@ -127,3 +127,4 @@ export const useInventorySelectOptions = () => {
 
 export const useTemplateById = (templates?: PMTemplate[], templateId?: string) =>
   useMemo(() => templates?.find((template) => template.id === templateId), [templates, templateId]);
+

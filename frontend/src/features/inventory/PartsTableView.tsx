@@ -64,7 +64,7 @@ const PartsTableView = () => {
   const noteMutation = useMutation({
     mutationFn: ({ partId, notes }: { partId: string; notes: string }) => upsertPart({ id: partId, notes }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY);
+      await queryClient.invalidateQueries({ queryKey: INVENTORY_PARTS_QUERY_KEY });
       setNoteTargetId(null);
     },
   });
@@ -255,7 +255,7 @@ const PartsTableView = () => {
                 const attachmentCount = part.attachmentsCount ?? part.attachments?.length ?? (part.image ? 1 : 0);
                 const isNoteOpen = noteTargetId === part.id;
                 const noteDraft = noteDrafts[part.id] ?? '';
-                const noteSaving = noteMutation.isLoading && noteMutation.variables?.partId === part.id;
+                const noteSaving = noteMutation.isPending && noteMutation.variables?.partId === part.id;
 
                 return (
                   <tr key={part.id} className={part.alertState?.needsReorder ? 'bg-warning-50/40' : undefined}>
@@ -427,4 +427,6 @@ const PartsTableView = () => {
 };
 
 export default PartsTableView;
+
+
 

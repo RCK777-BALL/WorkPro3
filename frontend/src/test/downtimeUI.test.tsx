@@ -61,7 +61,7 @@ const mockedUseDowntime = vi.mocked(hookMock);
 
 const renderPage = () => {
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, cacheTime: 0 } },
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
     <QueryClientProvider client={client}>

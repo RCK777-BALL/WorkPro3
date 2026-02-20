@@ -287,7 +287,7 @@ const PurchaseOrderDetailPage = () => {
               <Button variant="outline" as={Link} to="/purchasing/purchase-orders">
                 Cancel
               </Button>
-              <Button type="submit" disabled={!isDraft} loading={create.isLoading || update.isLoading}>
+              <Button type="submit" disabled={!isDraft} loading={create.isPending || update.isPending}>
                 {isNew ? 'Create PO' : 'Save changes'}
               </Button>
             </div>

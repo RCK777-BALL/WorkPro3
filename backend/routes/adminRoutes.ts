@@ -12,7 +12,13 @@ import WorkflowRule from '../models/WorkflowRule';
 import SlaPolicy from '../models/SlaPolicy';
 import IdentityProviderConfig from '../models/IdentityProviderConfig';
 import { writeAuditLog } from '../utils';
-import { createAdminUser, listAdminUsers, patchAdminUser } from '../controllers/AdminUserController';
+import {
+  createAdminUser,
+  deleteAdminUser,
+  listAdminUsers,
+  patchAdminUser,
+  resetAdminUserPassword,
+} from '../controllers/AdminUserController';
 
 const router = Router();
 
@@ -27,6 +33,8 @@ router.get('/health', (_req, res) => {
 router.get('/users', listAdminUsers);
 router.post('/users', createAdminUser);
 router.patch('/users/:id', patchAdminUser);
+router.post('/users/:id/reset-password', resetAdminUserPassword);
+router.delete('/users/:id', deleteAdminUser);
 
 router.get('/auth-config', async (req, res, next) => {
   try {

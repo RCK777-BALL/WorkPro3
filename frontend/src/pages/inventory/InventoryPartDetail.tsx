@@ -74,9 +74,9 @@ const ReceiveModal = ({
     try {
       await adjustStockLevel({ stockItemId, delta: quantity, reason: "Receive" });
       await Promise.all([
-        queryClient.invalidateQueries(INVENTORY_STOCK_QUERY_KEY),
-        queryClient.invalidateQueries(INVENTORY_HISTORY_QUERY_KEY),
-        queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY),
+        queryClient.invalidateQueries({ queryKey: INVENTORY_STOCK_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: INVENTORY_HISTORY_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: INVENTORY_PARTS_QUERY_KEY }),
       ]);
       addToast("Stock received", "success");
       onClose();
@@ -181,9 +181,9 @@ const InventoryPartDetail = () => {
   const handleQuickAdjust = async (item: StockItem, delta: number) => {
     await adjustStockLevel({ stockItemId: item.id, delta, reason: delta > 0 ? "Receive" : "Issue" });
     await Promise.all([
-      queryClient.invalidateQueries(INVENTORY_STOCK_QUERY_KEY),
-      queryClient.invalidateQueries(INVENTORY_HISTORY_QUERY_KEY),
-      queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY),
+      queryClient.invalidateQueries({ queryKey: INVENTORY_STOCK_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: INVENTORY_HISTORY_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: INVENTORY_PARTS_QUERY_KEY }),
     ]);
     addToast("Stock updated", "success");
   };
@@ -357,4 +357,5 @@ const InventoryPartDetail = () => {
 };
 
 export default InventoryPartDetail;
+
 

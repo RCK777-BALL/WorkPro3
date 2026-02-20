@@ -76,7 +76,7 @@ const ReceiveModal = ({ purchaseOrder, isOpen, onClose }: ReceiveModalProps) => 
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} loading={receiveMutation.isLoading} disabled={!openLines.length}>
+          <Button onClick={handleSubmit} loading={receiveMutation.isPending} disabled={!openLines.length}>
             Receive
           </Button>
         </div>
@@ -86,4 +86,5 @@ const ReceiveModal = ({ purchaseOrder, isOpen, onClose }: ReceiveModalProps) => 
 };
 
 export default ReceiveModal;
+
 

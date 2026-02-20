@@ -152,7 +152,7 @@ export default function ExecutiveInsightsPage() {
           <Button
             variant="primary"
             icon={<DownloadCloud className="h-4 w-4" />}
-            loading={downloadReport.isLoading}
+            loading={downloadReport.isPending}
             onClick={() => {
               void handleDownload();
             }}
@@ -311,7 +311,7 @@ export default function ExecutiveInsightsPage() {
                 <p className="text-error-600">{scheduleQuery.data.lastRunError}</p>
               ) : null}
             </div>
-            <Button type="submit" loading={saveSchedule.isLoading} fullWidth>
+            <Button type="submit" loading={saveSchedule.isPending} fullWidth>
               Save schedule
             </Button>
           </form>
@@ -320,4 +320,5 @@ export default function ExecutiveInsightsPage() {
     </div>
   );
 }
+
 

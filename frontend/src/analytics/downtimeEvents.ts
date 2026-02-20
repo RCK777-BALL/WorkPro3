@@ -3,7 +3,7 @@
  */
 
 import { type AxiosRequestConfig } from 'axios';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import http from '@/lib/http';
 

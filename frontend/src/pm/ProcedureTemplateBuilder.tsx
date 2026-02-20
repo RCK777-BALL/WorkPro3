@@ -3,7 +3,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import Button from '@/components/common/Button';

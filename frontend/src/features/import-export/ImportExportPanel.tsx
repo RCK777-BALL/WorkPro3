@@ -3,7 +3,7 @@
  */
 
 import { useMemo, useState, type ChangeEvent } from 'react';
-import { useMutation } from 'react-query';
+import { useMutation } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CheckCircle2,

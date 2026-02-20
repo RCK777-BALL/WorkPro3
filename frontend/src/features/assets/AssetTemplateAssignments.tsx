@@ -3,7 +3,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { useQueryClient } from 'react-query';
+import { useQueryClient } from '@tanstack/react-query';
 
 import Button from '@/components/common/Button';
 import { useToast } from '@/context/ToastContext';

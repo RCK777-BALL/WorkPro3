@@ -107,7 +107,12 @@
     "qs": "6.15.0",
     "fast-xml-parser": "5.3.6",
     "rollup": "4.46.2",
-    "@rollup/*": "4.46.2"
+    "@rollup/*": "4.46.2",
+    "archiver": "7.0.1",
+    "archiver-utils": "5.0.2",
+    "zip-stream": "7.0.2",
+    "minimatch": "10.2.2",
+    "readdir-glob": "2.0.2"
   },
   "engines": {
     "node": ">=18"

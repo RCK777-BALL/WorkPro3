@@ -3,7 +3,7 @@
  */
 
 import { useMemo } from 'react';
-import { useMutation, useQuery } from 'react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { fetchAssetDetails, fetchHierarchy, type HierarchyAsset, type HierarchyResponse } from '@/api/hierarchy';
 import { createMeterReading, fetchMeters, type CreateMeterReadingInput, type MeterReading } from '@/api/meters';

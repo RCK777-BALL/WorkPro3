@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import http from '@/lib/http';
 

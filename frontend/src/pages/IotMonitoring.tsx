@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Activity, AlertTriangle, RefreshCcw, Radio, ScrollText } from 'lucide-react';
 
 import Card from '@/components/common/Card';

@@ -5,7 +5,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Sparkles, Trash2 } from "lucide-react";
-import { useMutation, useQueryClient, useQuery } from "react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 import { fetchTemplateLibrary, cloneTemplateIntoTenant } from "@/api/templates";
 import { deletePmTemplate, fetchPmTemplates } from "@/api/pm";

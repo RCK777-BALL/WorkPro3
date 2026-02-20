@@ -6,7 +6,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle, Package, Search, Warehouse } from "lucide-react";
-import { useQueryClient } from "react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { adjustStockLevel, upsertPart } from "@/api/inventory";
 import { usePermissions } from "@/auth/usePermissions";

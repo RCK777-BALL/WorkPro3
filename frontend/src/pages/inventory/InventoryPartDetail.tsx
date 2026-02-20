@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Download, History, Package, PlusCircle } from "lucide-react";
-import { useQueryClient } from "react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { adjustStockLevel } from "@/api/inventory";
 import Badge from "@/components/common/Badge";

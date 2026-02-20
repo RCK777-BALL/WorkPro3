@@ -10,7 +10,7 @@ import FailureInsightCard from '@/components/ai/FailureInsightCard';
 import { useFailurePrediction } from '@/hooks/useAiInsights';
 import { useToast } from '@/context/ToastContext';
 import type { PMTemplateAssignment, ProcedureTemplateSummary } from '@/types';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { fetchProcedureTemplates } from '@/api/pmProcedures';
 import { useUpsertAssignment } from './hooks';
 

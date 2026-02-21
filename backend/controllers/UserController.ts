@@ -4,357 +4,167 @@
 
 import User from '../models/User';
 import { Request, Response, NextFunction } from 'express';
-import { Types } from 'mongoose';
-import { filterFields, auditAction, toEntityId, sendResponse } from '../utils';
+import { z } from 'zod';
+import { auditAction, sendResponse } from '../utils';
 
-const userCreateFields = [
-  'name',
-  'email',
-  'passwordHash',
-  'role',
-  'employeeId',
-  'managerId',
-  'theme',
-  'colorScheme',
-  'mfaEnabled',
-  'mfaSecret',
-  'skills',
-  'shift',
-  'weeklyCapacityHours',
-];
+const createUserSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(8),
+  role: z.string().default('user'),
+  employeeNumber: z.string().min(1),
+  trade: z.string().optional(),
+  startDate: z.string().datetime().optional(),
+});
 
-const userUpdateFields = [...userCreateFields];
-const DEFAULT_NEW_USER_PASSWORD = 'cmms123';
+const updateUserSchema = createUserSchema.partial().omit({ password: true }).extend({
+  isActive: z.boolean().optional(),
+});
 
-/**
- * @openapi
- * /api/users:
- *   get:
- *     tags:
- *       - Users
- *     summary: Retrieve all users
- *     responses:
- *       200:
- *         description: List of users
- */
+const serializeUser = (user: any) => ({
+  id: user._id.toString(),
+  name: user.name,
+  email: user.email,
+  trade: user.trade,
+  employeeNumber: user.employeeNumber ?? user.employeeId,
+  startDate: user.startDate ?? null,
+  role: Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : 'user',
+  isActive: user.active !== false,
+  lastLoginAt: user.lastLoginAt ?? null,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
+
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
-      return;
-    }
-    const items = await User.find({ tenantId }).select('-passwordHash');
-    sendResponse(res, items);
-    return;
+    if (!req.tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
+    const items = await User.find({ tenantId: req.tenantId }).sort({ createdAt: -1 });
+    sendResponse(res, items.map(serializeUser));
   } catch (err) {
     next(err);
-    return;
   }
 };
 
-/**
- * @openapi
- * /api/users/{id}:
- *   get:
- *     tags:
- *       - Users
- *     summary: Get user by ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: User found
- *       404:
- *         description: User not found
- */
 export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
-      return;
-    }
-    const item = await User.findOne({ _id: req.params.id, tenantId }).select('-passwordHash');
-    if (!item) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-    sendResponse(res, item);
-    return;
+    if (!req.tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
+    const item = await User.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    if (!item) return sendResponse(res, null, 'Not found', 404);
+    sendResponse(res, serializeUser(item));
   } catch (err) {
     next(err);
-    return;
   }
 };
 
-/**
- * @openapi
- * /api/users:
- *   post:
- *     tags:
- *       - Users
- *     summary: Create a user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       201:
- *         description: User created
- */
 export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
-      return;
-    }
-    const payload = filterFields(req.body, userCreateFields);
-    const passwordHash =
-      typeof payload.passwordHash === 'string' && payload.passwordHash.trim().length > 0
-        ? payload.passwordHash
-        : DEFAULT_NEW_USER_PASSWORD;
-    const newItem = new User({ ...payload, passwordHash, tenantId });
-    const saved = await newItem.save();
-    const safeUser = saved.toObject({
-      transform: (_doc, ret: Record<string, unknown>) => {
-        delete ret.passwordHash;
-        return ret;
-      },
+    if (!req.tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
+    const parsed = createUserSchema.safeParse(req.body);
+    if (!parsed.success) return sendResponse(res, null, parsed.error.flatten(), 400);
+
+    const payload = parsed.data;
+    const newUser = await User.create({
+      tenantId: req.tenantId,
+      name: payload.name,
+      email: payload.email.trim().toLowerCase(),
+      passwordHash: payload.password,
+      roles: [payload.role],
+      employeeId: payload.employeeNumber,
+      employeeNumber: payload.employeeNumber,
+      trade: payload.trade,
+      startDate: payload.startDate ? new Date(payload.startDate) : undefined,
+      active: true,
+      isActive: true,
+      status: 'active',
     });
-    await auditAction(req, 'create', 'User', toEntityId(saved._id) ?? saved._id, undefined, safeUser);
+    const safeUser = serializeUser(newUser);
+    await auditAction(req, 'create', 'User', safeUser.id, undefined, safeUser);
     sendResponse(res, safeUser, null, 201);
-    return;
   } catch (err) {
     next(err);
-    return;
   }
 };
 
-/**
- * @openapi
- * /api/users/{id}:
- *   put:
- *     tags:
- *       - Users
- *     summary: Update a user
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: User updated
- *       404:
- *         description: User not found
- */
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
-      return;
+    if (!req.tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
+    const parsed = updateUserSchema.safeParse(req.body);
+    if (!parsed.success) return sendResponse(res, null, parsed.error.flatten(), 400);
+
+    const user = await User.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    if (!user) return sendResponse(res, null, 'Not found', 404);
+
+    const payload = parsed.data;
+    if (payload.name !== undefined) user.name = payload.name;
+    if (payload.email !== undefined) user.email = payload.email.trim().toLowerCase();
+    if (payload.role !== undefined) user.roles = [payload.role as any];
+    if (payload.employeeNumber !== undefined) {
+      user.employeeNumber = payload.employeeNumber;
+      user.employeeId = payload.employeeNumber;
     }
-    const update = filterFields(req.body, userUpdateFields);
-    const existing = await User.findOne({ _id: req.params.id, tenantId }).select('-passwordHash');
-    if (!existing) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
+    if (payload.trade !== undefined) user.trade = payload.trade as any;
+    if (payload.startDate !== undefined) user.startDate = payload.startDate ? new Date(payload.startDate) : undefined;
+    if (payload.isActive !== undefined) {
+      user.active = payload.isActive;
+      user.isActive = payload.isActive;
+      user.status = payload.isActive ? 'active' : 'disabled';
     }
-    const updated = await User.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
-      update,
-      {
-        returnDocument: 'after',
-        runValidators: true,
-      }
-    ).select('-passwordHash');
-    await auditAction(
-      req,
-      'update',
-      'User',
-      toEntityId(new Types.ObjectId(req.params.id)) ?? req.params.id,
-      existing.toObject(),
-      updated?.toObject(),
-    );
-    sendResponse(res, updated);
-    return;
+
+    await user.save();
+    sendResponse(res, serializeUser(user));
   } catch (err) {
     next(err);
-    return;
   }
 };
 
-/**
- * @openapi
- * /api/users/{id}:
- *   delete:
- *     tags:
- *       - Users
- *     summary: Delete a user
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Deletion successful
- *       404:
- *         description: User not found
- */
-export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deactivateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
-      return;
-    }
-    const deleted = await User.findOneAndDelete({ _id: req.params.id, tenantId });
-    if (!deleted) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-    await auditAction(
-      req,
-      'delete',
-      'User',
-      toEntityId(new Types.ObjectId(req.params.id)) ?? req.params.id,
-      deleted.toObject(),
-      undefined,
-    );
-    sendResponse(res, { message: 'Deleted successfully' });
-    return;
+    if (!req.tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
+    const user = await User.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    if (!user) return sendResponse(res, null, 'Not found', 404);
+
+    user.active = false;
+    user.isActive = false;
+    user.status = 'disabled';
+    await user.save();
+
+    sendResponse(res, serializeUser(user));
   } catch (err) {
     next(err);
-    return;
   }
 };
 
-/**
- * @openapi
- * /api/users/{id}/theme:
- *   get:
- *     tags:
- *       - Users
- *     summary: Get a user's theme preference
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Theme preference
- *       403:
- *         description: Forbidden
- *       404:
- *         description: User not found
- */
 export const getUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      sendResponse(res, null, 'Not authenticated', 401);
-      return;
-    }
+    if (!userId) return sendResponse(res, null, 'Not authenticated', 401);
     if (req.params.id !== userId && !req.user?.roles?.includes('admin')) {
-      sendResponse(res, null, 'Forbidden', 403);
-      return;
+      return sendResponse(res, null, 'Forbidden', 403);
     }
 
     const user = await User.findById(req.params.id).select('theme');
-    if (!user) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
+    if (!user) return sendResponse(res, null, 'Not found', 404);
     sendResponse(res, { theme: user.theme ?? 'system' });
-    return;
   } catch (err) {
     next(err);
-    return;
   }
 };
 
-/**
- * @openapi
- * /api/users/{id}/theme:
- *   put:
- *     tags:
- *       - Users
- *     summary: Update a user's theme preference
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               theme:
- *                 type: string
- *                 enum: [light, dark, system]
- *     responses:
- *       200:
- *         description: Theme updated
- *       403:
- *         description: Forbidden
- *       404:
- *         description: User not found
- */
 export const updateUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      sendResponse(res, null, 'Not authenticated', 401);
-      return;
-    }
+    if (!userId) return sendResponse(res, null, 'Not authenticated', 401);
     if (req.params.id !== userId && !req.user?.roles?.includes('admin')) {
-      sendResponse(res, null, 'Forbidden', 403);
-      return;
+      return sendResponse(res, null, 'Forbidden', 403);
     }
-
-    const { theme } = req.body;
+    const theme = req.body?.theme;
     if (!['light', 'dark', 'system'].includes(theme)) {
-      sendResponse(res, null, 'Invalid theme', 400);
-      return;
+      return sendResponse(res, null, 'Invalid theme', 400);
     }
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { theme },
-      { returnDocument: 'after' }
-    ).select('theme');
-    if (!user) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-    sendResponse(res, { theme: user.theme });
-    return;
+    const updated = await User.findByIdAndUpdate(req.params.id, { theme }, { returnDocument: 'after' });
+    if (!updated) return sendResponse(res, null, 'Not found', 404);
+    sendResponse(res, { theme: updated.theme });
   } catch (err) {
     next(err);
-    return;
   }
 };

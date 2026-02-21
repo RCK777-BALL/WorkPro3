@@ -876,7 +876,9 @@ router.get('/oidc/:provider/metadata', async (req: Request, res: Response) => {
 });
 
 router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
-  const provider = req.params.provider;
+  const raw = req.params.provider;
+  const provider = Array.isArray(raw) ? raw[0] : raw;
+
   const allowed = await isAllowedOidcProvider(provider);
   if (!allowed) {
     sendResponse(res, null, 'Unsupported provider', 400);
@@ -914,7 +916,9 @@ router.get('/saml/:tenantId/metadata', async (req: Request, res: Response) => {
   }
 
   try {
-    const metadata = await getSamlMetadata(req.params.tenantId);
+    const raw = req.params.tenantId;
+    const tenantId = Array.isArray(raw) ? raw[0] : raw;
+    const metadata = await getSamlMetadata(tenantId);
     res.type('application/xml').send(metadata);
   } catch (err) {
     logger.error('Failed to build SAML metadata', err);
@@ -928,7 +932,9 @@ router.post('/saml/:tenantId/acs', async (req: Request, res: Response, next: Nex
     return;
   }
 
-  const { tenantId } = req.params;
+  const raw = req.params.tenantId;
+  const tenantId = Array.isArray(raw) ? raw[0] : raw;
+
   try {
     const assertion = samlResponseHandler(req);
     const { user } = await provisionUserFromIdentity(
@@ -1121,7 +1127,8 @@ router.get(
 router.get(
   '/oidc/:provider/callback',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const provider = req.params.provider;
+    const raw = req.params.provider;
+    const provider = Array.isArray(raw) ? raw[0] : raw;
     const allowed = await isAllowedOidcProvider(provider);
     if (!allowed) {
       sendResponse(res, null, 'Unsupported provider', 400);

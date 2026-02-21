@@ -1,5 +1,5 @@
 import React from 'react';
-import { ErrorBoundary } from 'node_modules/react-error-boundary/dist';
+import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './ErrorFallback';
 import { emitToast } from '../../context/ToastContext';
 

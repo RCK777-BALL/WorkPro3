@@ -3,7 +3,7 @@
  */
 
 import { useEffect } from 'react';
-import { useForm } from 'node_modules/react-hook-form/dist';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 

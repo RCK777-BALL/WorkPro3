@@ -3,8 +3,8 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useForm } from "node_modules/react-hook-form/dist";
-import { useDropzone } from "react-dropzone/.";
+import { useForm } from "react-hook-form";
+import { useDropzone } from "react-dropzone";
 import { X, Upload, Download } from "lucide-react";
 import Button from "@/components/common/Button";
 import http from "@/lib/http";

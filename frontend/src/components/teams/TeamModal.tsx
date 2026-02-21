@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'node_modules/react-hook-form/dist';
+import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
 import Button from '@/components/common/Button';
 import AutoCompleteInput from '@/components/common/AutoCompleteInput';

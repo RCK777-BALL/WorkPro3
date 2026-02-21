@@ -9,6 +9,26 @@ import { z } from 'zod';
 
 import type { DowntimeAssetOption, DowntimeLog, DowntimeWorkOrderOption } from '@/api/downtime';
 
+const parseDateTimeLocal = (value: string): Date => new Date(value);
+
+const normalizeEndDate = (startValue: string, endValue: string): string => {
+  const start = parseDateTimeLocal(startValue);
+  const end = parseDateTimeLocal(endValue);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return endValue;
+  }
+
+  if (end > start) {
+    return endValue;
+  }
+
+  // When users pick an end clock time after midnight on the same calendar date
+  // (e.g. start 11:30 PM, end 12:00 AM), treat end as next day.
+  const nextDay = new Date(end);
+  nextDay.setDate(nextDay.getDate() + 1);
+  return nextDay.toISOString().slice(0, 16);
+};
+
 const schema = z
   .object({
     assetId: z.string().min(1, 'Asset is required'),
@@ -89,7 +109,15 @@ const DowntimeForm = ({
     <form
       className="rounded-lg bg-neutral-900 p-4 shadow-sm ring-1 ring-neutral-800"
       onSubmit={handleSubmit(async (values) => {
-        await onSubmit(values);
+        const normalizedValues: DowntimeFormValues = {
+          ...values,
+          end: normalizeEndDate(values.start, values.end),
+        };
+        try {
+          await onSubmit(normalizedValues);
+        } catch {
+          // Parent mutation handlers surface toast errors; swallow here to avoid uncaught promise noise.
+        }
       })}
     >
       <div className="mb-4 flex items-center justify-between">

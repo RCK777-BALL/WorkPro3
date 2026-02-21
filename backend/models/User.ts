@@ -43,6 +43,8 @@ export interface UserDocument extends Document {
   mfaEnabled: boolean;
   mfaSecret?: string;
   active: boolean;
+  isActive?: boolean;
+  lastLoginAt?: Date;
   tokenVersion: number;
   skills?: string[];
   shift?: 'day' | 'swing' | 'night';
@@ -118,6 +120,8 @@ const userSchema = new Schema<UserDocument>(
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },
     active: { type: Boolean, default: true, index: true },
+    isActive: { type: Boolean, default: true, index: true },
+    lastLoginAt: { type: Date },
     tokenVersion: { type: Number, default: 0 },
     skills: { type: [String], default: [] },
     shift: {
@@ -136,6 +140,18 @@ userSchema.pre<UserDocument>('validate', function syncEmployeeIdentifiers() {
   }
   if (!this.employeeId && this.employeeNumber) {
     this.employeeId = this.employeeNumber;
+  }
+  if (typeof this.isActive !== 'boolean') {
+    this.isActive = this.active;
+  }
+  if (typeof this.active !== 'boolean') {
+    this.active = this.isActive ?? true;
+  }
+  if (this.isModified('active')) {
+    this.isActive = this.active;
+  }
+  if (this.isModified('isActive')) {
+    this.active = this.isActive ?? this.active;
   }
 });
 

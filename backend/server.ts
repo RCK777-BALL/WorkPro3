@@ -34,6 +34,7 @@ import {
   attachmentRoutes,
   auditRoutes,
   authRoutes,
+  userRoutes,
   calendarRoutes,
   chatRoutes,
   partsRoutes,
@@ -141,6 +142,7 @@ import type {
   NotificationPayload,
 } from "./types/Payloads";
 import scimRoutes from "./routes/scimRoutes";
+import { ensureSeedAdminUser } from './services/adminSeedService';
 
 dotenv.config();
 
@@ -381,6 +383,7 @@ app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/ai", analyticsAIRoutes);
 app.use("/api/ai", copilotRoutes);
 app.use("/api/team", teamRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/alerts", alertRoutes);
@@ -425,6 +428,7 @@ if (env.NODE_ENV !== "test") {
       httpServer.listen(PORT, () =>
         logger.info(`Server listening on http://localhost:${PORT}`),
       );
+      await ensureSeedAdminUser().catch((seedErr) => logger.error('Admin seed error', seedErr));
       void User.syncIndexes()
         .then(() => logger.info("User indexes synchronized"))
         .catch((indexErr) => logger.error("User index sync error", indexErr));

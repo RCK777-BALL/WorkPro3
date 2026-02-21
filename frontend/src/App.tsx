@@ -432,6 +432,7 @@ export default function App() {
           <Route path="/lines" element={<Lines />} />
           <Route path="/stations" element={<Stations />} />
           <Route path="/teams" element={<Teams />} />
+          <Route path="/admin/users" element={<Teams />} />
           <Route path="/plants" element={<Plants />} />
           <Route path="/technician" element={<TechnicianConsole />} />
           <Route path="/pwa/technician" element={<PwaTechnicianShell />} />

@@ -130,3 +130,50 @@ This project is licensed under the [MIT License](LICENSE).
 - CSV/PDF export produces correct files.
 - Layout customization persists after reload.
 - Drill-through links apply correct filters.
+
+## Auth & Users
+
+### Backend auth endpoints
+
+- `POST /api/auth/login` – email/password login, returns JWT + user profile.
+- `GET /api/auth/me` – returns current authenticated user.
+- `POST /api/auth/logout` – clears auth cookies/session state.
+- `GET /api/users` – admin-only user list.
+- `POST /api/users` – admin-only user creation (`name`, `email`, `trade`, `employeeNumber`, `startDate`, `role`, `password`).
+- `PATCH /api/users/:id` – admin-only user update.
+- `PATCH /api/users/:id/deactivate` – admin-only soft deactivate (`isActive=false`).
+- `GET /api/admin/users` / `POST /api/admin/users` / `PATCH /api/admin/users/:id` – admin team-user management endpoints used by the frontend admin UI.
+
+### Required auth env vars
+
+Backend:
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `REFRESH_TOKEN_SECRET` (optional)
+- `REFRESH_EXPIRES_IN` (optional)
+- `ADMIN_SEED_EMAIL`
+- `ADMIN_SEED_PASSWORD`
+- `ADMIN_SEED_NAME`
+- `CORS_ORIGIN`
+- `FRONTEND_URL`
+
+Frontend:
+- `VITE_API_URL`
+- `VITE_AUTH_TOKEN_STORAGE`
+
+### Create first admin user
+
+Option A (automatic on startup):
+1. Set `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD`, and `ADMIN_SEED_NAME` in `backend/.env`.
+2. Start backend once; it seeds an admin if no admin user exists.
+
+Option B (manual script):
+```bash
+cd backend
+npm run seed:default-admin
+```
+
+### Frontend auth routes
+
+- `/login` – email/password login page.
+- `/admin/users` – admin user management table + create/edit/deactivate.

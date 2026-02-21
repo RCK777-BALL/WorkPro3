@@ -252,7 +252,7 @@ const navItems: Record<NavItemId, NavItem> = {
   teams: {
     id: "teams",
     label: "Teams",
-    to: "/teams",
+    to: "/admin/users",
     icon: Users,
     section: "plant",
     permission: "hierarchy.read",

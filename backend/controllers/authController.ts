@@ -4,7 +4,6 @@
 
 import { randomUUID } from 'crypto';
 import type { Request, Response, RequestHandler as ExpressRequestHandler } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Tenant from '../models/Tenant';
 import User from '../models/User';
@@ -18,6 +17,7 @@ import {
 } from '../utils';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import { resolveUserPermissions } from '../services/permissionService';
+import { verifyPassword } from '../utils/password';
 
 const DEFAULT_TENANT_NAME = 'Default Tenant';
 
@@ -218,7 +218,12 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
     return;
   }
 
-  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (user.active === false || (user as any).isActive === false) {
+    res.status(403).json({ error: { code: 403, message: 'User account is deactivated' } });
+    return;
+  }
+
+  const isMatch = await verifyPassword(password, user.passwordHash);
   if (!isMatch) {
     res.status(401).json({ error: { code: 401, message: 'Invalid email or password' } });
     return;
@@ -283,6 +288,9 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
   );
 
   const token = jwt.sign(tokenPayload, secret, { expiresIn: '7d' });
+
+  user.lastLoginAt = new Date();
+  await user.save();
 
   res.json({
     success: true,

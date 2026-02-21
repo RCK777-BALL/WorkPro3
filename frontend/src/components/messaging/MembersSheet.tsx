@@ -5,9 +5,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, Trash2, UserPlus } from 'lucide-react';
 
-import SlideOver from '@common/SlideOver';
-import Button from '@common/Button';
-import Avatar from '@common/Avatar';
+import SlideOver from '@/components/common/SlideOver';
+import Button from '@/components/common/Button';
+import Avatar from '@/components/common/Avatar';
 
 import { getChannelMembers, addMembers, removeMember } from '@/api/channels';
 import type { Member } from '@/types';

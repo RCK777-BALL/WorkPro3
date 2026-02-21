@@ -16,10 +16,10 @@ This audit reviews the current repo configuration, documentation, and deployment
 
 ### 1) Replace placeholder production values
 - **Production overlay values are placeholders** (ingress hostnames and image digests). Update `k8s/overlays/prod/patch-ingress.yaml` and `k8s/overlays/prod/kustomization.yaml` before release. 【F:k8s/overlays/prod/patch-ingress.yaml†L1-L11】【F:k8s/overlays/prod/kustomization.yaml†L1-L13】
-- **Frontend runtime config placeholders** need real URLs in `k8s/overlays/prod/patch-configmap.yaml`. 【F:k8s/overlays/prod/patch-configmap.yaml†L1-L8】
+- **frontend runtime config placeholders** need real URLs in `k8s/overlays/prod/patch-configmap.yaml`. 【F:k8s/overlays/prod/patch-configmap.yaml†L1-L8】
 
 ### 2) Secrets management must be finalized
-- The repo explicitly requires production secrets for JWT, Mongo, and CORS/Frontend URL; these must be provided in your secret store prior to deployment. 【F:.env.sample†L1-L24】
+- The repo explicitly requires production secrets for JWT, Mongo, and CORS/frontend URL; these must be provided in your secret store prior to deployment. 【F:.env.sample†L1-L24】
 - Kubernetes guidance confirms secrets must be created outside Git and warns against applying example manifests as-is. 【F:k8s/README-production.md†L1-L57】
 
 ### 3) Validate operational readiness

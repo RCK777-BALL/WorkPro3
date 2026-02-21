@@ -6,7 +6,7 @@ This guide documents the maintenance analytics metrics surfaced by the WorkPro3 
 
 **Definition:** Average time to complete corrective work, measured in hours.
 
-**Backend source:** `backend/services/analytics.ts` calculates MTTR using completed work orders or work history time spent.
+**backend source:** `backend/services/analytics.ts` calculates MTTR using completed work orders or work history time spent.
 
 **Formula:**
 
@@ -20,7 +20,7 @@ When Work History entries exist, their `timeSpentHours` values are averaged firs
 
 **Definition:** Average time between completed failure events, measured in hours.
 
-**Backend source:** `backend/services/analytics.ts` computes MTBF by sorting completed work orders by completion timestamp and averaging the deltas.
+**backend source:** `backend/services/analytics.ts` computes MTBF by sorting completed work orders by completion timestamp and averaging the deltas.
 
 **Formula:**
 
@@ -34,13 +34,13 @@ If fewer than two completed events exist, MTBF is reported as `0`.
 
 **Definition:** Count of open work orders that are not in `completed` or `cancelled` status.
 
-**Backend source:** `backend/services/analytics.ts` filters work orders by status and returns the count as backlog.
+**backend source:** `backend/services/analytics.ts` filters work orders by status and returns the count as backlog.
 
 ## PM Compliance
 
 **Definition:** Percentage of preventive maintenance work orders completed within the selected window.
 
-**Backend source:** `backend/services/analytics.ts` uses dashboard KPI data to compute preventive totals and completions.
+**backend source:** `backend/services/analytics.ts` uses dashboard KPI data to compute preventive totals and completions.
 
 **Formula:**
 

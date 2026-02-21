@@ -14,7 +14,7 @@
 - [ ] All new/changed files include SPDX license headers when required.
 - [ ] Env changes documented in `.env.sample` files.
 - [ ] New endpoints are documented in `docs/API.md`.
-- [ ] Frontend and backend use shared types from `/shared`.
+- [ ] frontend and backend use shared types from `/shared`.
 - [ ] Tests and linters run cleanly.
 
 ## Coding Conventions

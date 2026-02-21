@@ -9,8 +9,8 @@
 - Build number increments every CI release run.
 
 ## Release gates
-- Frontend typecheck and build must pass.
-- Backend typecheck and build must pass.
+- frontend typecheck and build must pass.
+- backend typecheck and build must pass.
 - Mobile smoke flow must pass:
   - login
   - open work order list

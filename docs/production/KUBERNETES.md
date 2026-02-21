@@ -5,9 +5,9 @@
 - Prod overlay: `k8s/overlays/prod`
 
 ## Probes
-- Backend liveness: `/health`
-- Backend readiness: `/ready`
-- Backend startup probe enabled
+- backend liveness: `/health`
+- backend readiness: `/ready`
+- backend startup probe enabled
 
 ## Capacity
 - Added resource requests/limits in deployment manifests.

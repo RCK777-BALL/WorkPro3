@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import Badge from '@common/Badge';
+import Badge from '@/components/common/Badge';
 import { Package } from 'lucide-react';
 import type { Part } from '@/types';
 

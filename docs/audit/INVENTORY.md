@@ -5,7 +5,7 @@
 - `frontend/` (canonical React/Vite frontend)
 - `shared/` (shared types/validators, no full app scripts)
 - Root package (`/`) for integration tests + helper scripts
-- `Backend/` and `Frontend/` (archived/alternate tree; not canonical per README)
+- `backend/` and `frontend/` (archived/alternate tree; not canonical per README)
 
 ## Scripts by package
 
@@ -38,8 +38,8 @@
 ## Environment variables (from sample env files)
 
 ### Required (core)
-- Backend: `JWT_SECRET`, `MONGO_URI`, `CORS_ORIGIN`
-- Frontend: `VITE_API_URL`, `VITE_WS_URL`, `VITE_SOCKET_PATH`
+- backend: `JWT_SECRET`, `MONGO_URI`, `CORS_ORIGIN`
+- frontend: `VITE_API_URL`, `VITE_WS_URL`, `VITE_SOCKET_PATH`
 
 ### Additional backend envs found
 - `PORT`, `NODE_ENV`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`
@@ -47,8 +47,8 @@
 - Optional scheduler/integration envs in `.env.sample` (Kafka/SMTP/Redis/OAuth/etc.)
 
 ## Ports / URLs / socket paths
-- Backend API default: `http://localhost:5010`
-- Frontend dev default: `http://localhost:5173`
+- backend API default: `http://localhost:5010`
+- frontend dev default: `http://localhost:5173`
 - API base URL: `VITE_API_URL` (default `http://localhost:5010`)
 - WS URL: `VITE_WS_URL` (default `ws://localhost:5010`)
 - Socket path: `VITE_SOCKET_PATH` (default `/socket.io`)

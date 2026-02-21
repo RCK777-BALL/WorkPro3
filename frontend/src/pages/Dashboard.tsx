@@ -23,7 +23,7 @@ import clsx from "clsx";
 import http from "@/lib/http";
 import Sparkline from "@/components/charts/Sparkline";
 import StatusBadge from "@/components/common/StatusBadge";
-import Button from "@common/Button";
+import Button from "@/components/common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import { DashboardAnalyticsPanel } from "@/features/dashboards";
 import { HelpCenterViewer } from "@/features/help-center";

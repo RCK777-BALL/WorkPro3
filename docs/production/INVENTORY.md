@@ -7,19 +7,19 @@
 - `docker/`: Mongo bootstrap/init helpers.
 
 ## Required environment variables
-### Backend
+### backend
 - `NODE_ENV`, `PORT`, `MONGO_URI`, `JWT_SECRET`, `CORS_ORIGIN`
 - Rate limit: `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`, `MOBILE_RATE_LIMIT_WINDOW_MS`, `MOBILE_RATE_LIMIT_MAX`
 - Scheduling/ops: `PM_SCHEDULER_CRON`, `PM_SCHEDULER_TASK`, `EXECUTIVE_REPORT_CRON`, `REORDER_SUGGESTION_CRON`, `REORDER_ALERT_CRON`
 
-### Frontend
+### frontend
 - `VITE_API_URL` (required for production builds)
 - `VITE_WS_URL` (optional)
 - `VITE_SOCKET_PATH` (optional, defaults to `/socket.io`)
 
 ## Ports and URLs
-- Backend HTTP: `5010` by default.
-- Frontend HTTP: `80` in container (`8080` when mapped in compose).
+- backend HTTP: `5010` by default.
+- frontend HTTP: `80` in container (`8080` when mapped in compose).
 - Health endpoints: `/health`, `/ready`
 - Metrics endpoint: `/metrics`
 - Socket path: `/socket.io`
@@ -33,8 +33,8 @@
 ### Root
 - `lint`, `typecheck`, `test:unit`, `build`, `build:backend`, `build:frontend`
 
-### Backend
+### backend
 - `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `indexes:ensure`
 
-### Frontend
+### frontend
 - `dev`, `build`, `lint`, `typecheck`, `test`, `test:e2e`

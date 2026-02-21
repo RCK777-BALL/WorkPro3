@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - "Frontend/**"
+      - "frontend/**"
       - ".github/workflows/mobile-release.yml"
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: Frontend
+        working-directory: frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            Frontend/package-lock.json
+            frontend/package-lock.json
 
       - name: Install frontend deps
         run: npm ci
@@ -42,5 +42,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: workpro-mobile-web-bundle
-          path: Frontend/dist
+          path: frontend/dist
 

@@ -1,7 +1,7 @@
 # Test Suite Remediation Task
 
 ## Summary
-Backend and frontend test commands fail before running any suites because the Jest and Vitest CLIs are missing from the current environment. We need to restore the Node tooling, rerun the suites, and fix any test breakages that surface (including snapshot updates, undefined references, or missing fixtures).
+backend and frontend test commands fail before running any suites because the Jest and Vitest CLIs are missing from the current environment. We need to restore the Node tooling, rerun the suites, and fix any test breakages that surface (including snapshot updates, undefined references, or missing fixtures).
 
 ## Observed Failures
 - `npm test -- --runInBand` exits with `sh: 1: jest: not found`, so the backend suite cannot start.

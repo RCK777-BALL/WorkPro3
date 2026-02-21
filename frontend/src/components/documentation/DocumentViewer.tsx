@@ -4,8 +4,8 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { Download, Trash2, Tag, Share } from 'lucide-react';
-import Button from '@common/Button';
-import Badge from '@common/Badge';
+import Button from '@/components/common/Button';
+import Badge from '@/components/common/Badge';
 import type { DocumentMetadata } from '@/utils/documentation';
 import { useToast } from '@/context/ToastContext';
 

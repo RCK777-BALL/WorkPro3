@@ -7,7 +7,7 @@ WorkPro3 is a multi-tenant CMMS platform with a React/Vite frontend and a Node/E
 ```
 /docs                   Documentation and runbooks
 /shared                 Shared DTOs, enums, and validators
-/backend                Backend API (Express, MongoDB)
+/backend                backend API (Express, MongoDB)
   /src
     /modules             Domain modules (assets, work-orders, inventory, etc.)
     /routes              API routes

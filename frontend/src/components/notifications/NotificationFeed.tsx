@@ -3,12 +3,12 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import Card from '@common/Card';
+import Card from '@/components/common/Card';
 import { getNotificationsSocket } from '@/utils/notificationsSocket';
 import RealtimeStatusBanner from '@/modules/realtime/status/RealtimeStatusBanner';
 import { useRealtimeStatusStore } from '@/modules/realtime/status/store';
 
-import Badge from '@common/Badge';
+import Badge from '@/components/common/Badge';
 import { useSocketStore, type SocketState } from '@/store/socketStore';
 import type {
   NotificationType,

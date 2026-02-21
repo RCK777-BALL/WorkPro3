@@ -14,9 +14,9 @@ import {
   useComputedColorScheme,
   useMantineTheme,
 } from '@mantine/core';
-import Badge from '@common/Badge';
-import Avatar from '@common/Avatar';
-import Button from '@common/Button';
+import Badge from '@/components/common/Badge';
+import Avatar from '@/components/common/Avatar';
+import Button from '@/components/common/Button';
 import WorkHistoryCard from './WorkHistoryCard';
 import { Users } from 'lucide-react';
 import type { Department, TeamMember, WorkHistory, WorkHistoryEntry } from '@/types';

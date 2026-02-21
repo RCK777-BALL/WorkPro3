@@ -45,7 +45,7 @@ Use this guide to move each backlog gap tracker (BGT) entry from "Scheduled" to 
    - Account for travel/idle exclusions with configuration flags stored alongside tenants (`backend/models/Tenant.ts`).
 4. **Multi-site/period comparisons**
    - Provide normalized comparison APIs (site, region, time window) in `backend/routes/analytics.ts` with CSV export helpers in `backend/utils/csv`.
-   - Frontend charts/tables should live in `frontend/src/modules/analytics/comparisons` with empty-state handling for missing data.
+   - frontend charts/tables should live in `frontend/src/modules/analytics/comparisons` with empty-state handling for missing data.
 
 ## Centralized Multi-Tenant Guardrails (BGT-034 → BGT-037)
 1. **Tenant/site extraction middleware**

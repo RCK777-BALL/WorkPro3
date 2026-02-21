@@ -1,2 +1,2 @@
-export * from 'react-hook-form';
+export * from 'node_modules/react-hook-form/dist';
 

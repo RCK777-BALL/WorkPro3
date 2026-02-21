@@ -6,15 +6,15 @@ This repo now includes production-grade defaults plus the additional guardrails 
 
 - Store secrets outside Git. Use Kubernetes Secrets or an external secrets manager.
 - Required env (production):
-  - Backend: `MONGO_URI`, `JWT_SECRET` (or `JWT_ACCESS_SECRET`), `CORS_ORIGIN`, `FRONTEND_URL`
-  - Frontend: `VITE_API_URL`, `VITE_WS_URL`, `VITE_SOCKET_PATH`
+  - backend: `MONGO_URI`, `JWT_SECRET` (or `JWT_ACCESS_SECRET`), `CORS_ORIGIN`, `FRONTEND_URL`
+  - frontend: `VITE_API_URL`, `VITE_WS_URL`, `VITE_SOCKET_PATH`
 - Optional token hardening:
   - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`
   - `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`
 
 ## 2) Security hardening (must-have)
 
-- Password policy is enforced via `PASSWORD_*` settings in `Backend/config/securityPolicies.ts`.
+- Password policy is enforced via `PASSWORD_*` settings in `backend/config/securityPolicies.ts`.
 - Login lockouts are enforced via `LOGIN_LOCKOUT_*` (see `.env.sample`).
 - Short-lived access tokens + refresh token rotation are enabled in `/api/auth/login` and `/api/auth/refresh`.
 - RBAC is enforced server-side via `requirePermission` middleware (do not rely on UI role hiding).
@@ -28,7 +28,7 @@ This repo now includes production-grade defaults plus the additional guardrails 
   - Self-hosted: `k8s/jobs/mongo-backup-cronjob.example.yaml`.
 - Migrations:
   - Migration runner: `cd backend && npm run migrate` (supports `--dry-run` and `--list`).
-  - Existing scripts live in `Backend/scripts/migrations` and now export `run()` so they are tracked in the `migrations` collection.
+  - Existing scripts live in `backend/scripts/migrations` and now export `run()` so they are tracked in the `migrations` collection.
   - Do not run ad-hoc in production without a recorded run/rollback plan.
 
 ## 4) Observability (must-have)

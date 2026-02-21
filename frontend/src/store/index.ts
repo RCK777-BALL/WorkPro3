@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { User, WorkOrder, Asset, Channel, Message } from 'src/types';
+import type { User, WorkOrder, Asset, Channel, Message } from '@/types';
 
 interface AppState {
   user: User | null;

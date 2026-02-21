@@ -9,7 +9,7 @@ import {
   RegisterOptions,
   ControllerRenderProps,
   ControllerFieldState,
-} from "react-hook-form";
+} from "node_modules/react-hook-form/dist";
 
 interface Option {
   id: string;

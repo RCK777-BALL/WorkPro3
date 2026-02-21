@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import Card from '@common/Card';
+import Card from '@/components/common/Card';
 import { Users, UserCheck, Clock, Award } from 'lucide-react';
 import type { User } from '@/types';
 

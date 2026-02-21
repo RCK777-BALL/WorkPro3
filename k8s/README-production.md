@@ -40,7 +40,7 @@ kubectl apply -f k8s/secrets.example.yaml
 
 > **Note:** The example manifest includes placeholders. Do **not** apply it to production without replacing values.
 
-Frontend runtime configuration (VITE_API_URL, VITE_WS_URL, VITE_SOCKET_PATH) is provided via `ConfigMap` (`workpro-frontend-config`) rather than secrets.
+frontend runtime configuration (VITE_API_URL, VITE_WS_URL, VITE_SOCKET_PATH) is provided via `ConfigMap` (`workpro-frontend-config`) rather than secrets.
 
 ## Domains + TLS
 

@@ -3,7 +3,7 @@
  */
 
 import { useEffect } from 'react';
-import { useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'node_modules/react-hook-form/dist';
 import Button from '@/components/common/Button';
 
 export interface DepartmentPayload {

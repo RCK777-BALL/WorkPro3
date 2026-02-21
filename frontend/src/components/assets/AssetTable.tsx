@@ -4,9 +4,9 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { History, QrCode, Wrench } from 'lucide-react';
-import Badge from '@common/Badge';
-import Button from '@common/Button';
-import DuplicateButton from '@common/DuplicateButton';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import DuplicateButton from '@/components/common/DuplicateButton';
 import type { Asset } from '@/types';
 
 const formatCriticality = (value?: Asset['criticality']) => {

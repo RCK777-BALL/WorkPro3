@@ -92,7 +92,7 @@ async function main() {
     });
   }
 
-  const header = `# Frontend Page Audit\n\n` +
+  const header = `# frontend Page Audit\n\n` +
     `Generated on ${new Date().toISOString()} using scripts/generate-page-audit.mjs.\n\n` +
     `This report lists every component in \`src/pages\` and shows the heuristically matched tests under \`src/test\`.\n` +
     `Counts for API calls, forms, tables, dialogs, and charts are based on simple string searches to highlight complexity hotspots.`;

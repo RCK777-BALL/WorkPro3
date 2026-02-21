@@ -22,7 +22,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import Card from '@common/Card';
+import Card from '@/components/common/Card';
 import {
   ArrowUp,
   ArrowDown,

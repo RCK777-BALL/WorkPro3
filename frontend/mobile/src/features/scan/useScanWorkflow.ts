@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import http from '../../../src/lib/http';
+import http from '../../lib/http';
 
 type ScanStep = 'scan' | 'asset' | 'workorder' | 'complete';
 

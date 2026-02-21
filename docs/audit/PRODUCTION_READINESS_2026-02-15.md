@@ -8,8 +8,8 @@ Re-ran production-readiness checks for QA, build, security, and user-test execut
 
 Primary blockers from this rerun:
 1. Root integration tests fail (dependency gaps + Mongo binary download failure in memory-server tests).
-2. Backend and frontend compile/type gates fail.
-3. Frontend automated test and E2E runners are not executable in current local dependency state.
+2. backend and frontend compile/type gates fail.
+3. frontend automated test and E2E runners are not executable in current local dependency state.
 4. Audit/security signal is incomplete for frontend (0 vulnerabilities reported while frontend toolchain packages are missing).
 
 ## QA execution log (rerun)
@@ -21,17 +21,17 @@ Primary blockers from this rerun:
   - missing runtime deps (`jsonwebtoken`, `express-rate-limit`) during backend route import chain
   - `mongodb-memory-server` binary download failure (`fastdl.mongodb.org` 403 for ubuntu2204-7.0.14)
 
-### 2) Backend typecheck
+### 2) backend typecheck
 - Command: `npm run typecheck --prefix backend`
 - Result: **FAIL**
 - Current failure mode dominated by unresolved modules/types (e.g. `passport`, `dotenv`, `zod`, `express-serve-static-core`, `node-cron`, `winston`) plus additional TS model/query mismatches.
 
-### 3) Frontend test suite
+### 3) frontend test suite
 - Command: `npm test --prefix frontend`
 - Result: **FAIL**
 - Error: `vitest: not found`.
 
-### 4) Frontend production build
+### 4) frontend production build
 - Command: `npm run build --prefix frontend`
 - Result: **FAIL**
 - Errors: missing type libraries (`@testing-library/jest-dom`, `react`, `react-dom`, `vite/client`, `vitest`).

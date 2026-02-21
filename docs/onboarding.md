@@ -8,8 +8,8 @@ system and get productive.
 
 ### Architecture snapshot
 
-- **Frontend**: React + Vite single-page app in `frontend/`.
-- **Backend**: Express API server in `backend/` (canonical backend path), backed
+- **frontend**: React + Vite single-page app in `frontend/`.
+- **backend**: Express API server in `backend/` (canonical backend path), backed
   by MongoDB with Socket.IO for real-time updates.
 - **Development support**: `dev-server/` for lightweight frontend development,
   and `archives/` for historical backends kept for reference.

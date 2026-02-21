@@ -6,7 +6,7 @@ import React, { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Search, Hash, X, Video, MessageCircle } from 'lucide-react';
 
-import Avatar from '@common/Avatar';
+import Avatar from '@/components/common/Avatar';
 
 import type { Channel, DirectMessage, TeamMember } from '@/types';
 

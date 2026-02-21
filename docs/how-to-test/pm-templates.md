@@ -1,6 +1,6 @@
 # How to test PM procedure templates
 
-## Backend API smoke test
+## backend API smoke test
 1. Create a procedure template:
    ```bash
    curl -X POST "$API_URL/pm/procedures" \
@@ -28,7 +28,7 @@
    - `procedureTemplateVersionId`
    - checklist items seeded from the published version.
 
-## Frontend UI
+## frontend UI
 1. Navigate to **PM → Procedures**.
 2. Create a template and draft version; publish it.
 3. Navigate to **PM → Tasks** and attach the procedure to an assignment.

@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Copy, Link, Share2 } from 'lucide-react';
 import Modal from '@/components/modals/Modal';
-import Button from '@common/Button';
+import Button from '@/components/common/Button';
 import type { DocumentMetadata } from '@/utils/documentation';
 import { emitToast } from '@/context/ToastContext';
 

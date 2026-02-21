@@ -1,4 +1,4 @@
-# CI Frontend Coverage Task
+# CI frontend Coverage Task
 
 ## Summary
 CI currently skips frontend test coverage, even though the documentation states that `npm run test:coverage` should run for both backend and frontend on every pull request. This task ensures the CI workflow executes frontend coverage tests so regressions are blocked before merge.

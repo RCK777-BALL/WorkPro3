@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import Badge from '@common/Badge';
+import Badge from '@/components/common/Badge';
 import { Calendar } from 'lucide-react';
 import type { MaintenanceSchedule } from '@/types';
 

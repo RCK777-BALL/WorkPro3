@@ -1,7 +1,7 @@
 # WorkPro3 UI Baseline
 
 Date: 2026-02-15
-Owner: Frontend UI Upgrade pass
+Owner: frontend UI Upgrade pass
 
 ## Current stack
 - Framework: React 18 + TypeScript + Vite

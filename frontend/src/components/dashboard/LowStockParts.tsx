@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Card from '@common/Card';
+import Card from '@/components/common/Card';
 
 interface LowStockPart {
   id: string;

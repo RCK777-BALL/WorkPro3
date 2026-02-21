@@ -4,9 +4,9 @@
 |---|---|
 | Inventory and gap scan | PASS |
 | CI quality gates | PASS |
-| Backend security hardening | PASS |
+| backend security hardening | PASS |
 | Database readiness baseline | PASS |
-| Frontend production config | PASS |
+| frontend production config | PASS |
 | Docker hardening | PASS |
 | Kubernetes prod overlay | PASS |
 | Observability minimum viable | PASS |

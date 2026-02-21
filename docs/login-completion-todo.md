@@ -2,7 +2,7 @@
 
 The login experience spans both the backend auth routes and the frontend session bootstrap. The following checklist captures the concrete work needed to finish and harden the current implementation before it can ship.
 
-## 1. Backend authentication API
+## 1. backend authentication API
 - [ ] Confirm the `/api/auth/login` route receives a JSON body containing both `email` and `password`, matching the `loginSchema` validation contract so it stops returning `400 Bad Request` for missing fields. Include the seeded admin credentials (`admin@cmms.com` / `Password123!`) in the request during sanity checks and verify the request uses the `Content-Type: application/json` header.【F:backend/routes/AuthRoutes.ts†L59-L143】
 - [ ] Double-check local environment configuration so the frontend points to the correct backend host (e.g., `VITE_API_URL=http://localhost:5010` in `.env.local`) before retesting the login flow to eliminate cross-origin or misrouted calls.【F:frontend/src/pages/Login.tsx†L32-L74】
 - [ ] Restore the missing imports and constants in `backend/routes/AuthRoutes.ts` (Express request types, `passport`, `bcrypt`, `jwt`, the auth rate limiters, `User`, `FAKE_PASSWORD_HASH`, `getJwtSecret`, `logger`, etc.) so the inline `/login` handler compiles again.【F:backend/routes/AuthRoutes.ts†L1-L123】
@@ -17,7 +17,7 @@ The login experience spans both the backend auth routes and the frontend session
 - [ ] Audit logging to record failed logins without leaking passwords while still surfacing operational alerts for brute force attempts.【F:backend/routes/AuthRoutes.ts†L144-L213】
 - [ ] Verify that `isCookieSecure` and related config honor development vs production environments, updating `.env.example` or deployment charts as needed.【F:backend/controllers/authController.ts†L1-L120】
 
-## 3. Frontend experience
+## 3. frontend experience
 - [ ] Surface backend validation and authentication errors directly in the login form instead of the current generic message so users know why the attempt failed.【F:frontend/src/pages/Login.tsx†L45-L74】
 - [ ] Ensure a successful login hydrates local storage (`TOKEN_KEY`, `TENANT_KEY`, `SITE_KEY`) exactly once and clears stale values on logout/reset to avoid partial sessions.【F:frontend/src/context/AuthContext.tsx†L250-L320】
 - [ ] Add instrumentation or analytics hooks around login attempts to monitor success/failure funnels if required by product/ops.【F:frontend/src/context/AuthContext.tsx†L206-L273】

@@ -1,7 +1,7 @@
 # DB Audit
 
 ## MongoDB connectivity
-- Backend startup is hard-gated on `mongoose.connect(MONGO_URI)` in non-test mode.
+- backend startup is hard-gated on `mongoose.connect(MONGO_URI)` in non-test mode.
 - In this environment, MongoDB-backed tests failed due unavailable `mongod` system binary and mongodb-memory-server download failures (HTTP 403 from fastdl.mongodb.org).
 
 ## Indexes and tenant scoping

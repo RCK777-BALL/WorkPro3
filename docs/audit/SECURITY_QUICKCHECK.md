@@ -6,7 +6,7 @@
 - Tenant/site scoping middleware present for multi-tenant route protection.
 
 ## Config hard requirements
-- Backend validates env at startup (`validateEnv`) and expects JWT + Mongo + CORS settings.
+- backend validates env at startup (`validateEnv`) and expects JWT + Mongo + CORS settings.
 - Missing/invalid env causes startup stop (good fail-fast behavior).
 
 ## HTTP protections

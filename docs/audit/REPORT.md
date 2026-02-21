@@ -10,7 +10,7 @@
 - Build/typecheck is failing across backend/frontend due TS issues.
 - Root/backend/frontend test suites have major failures.
 - DB-dependent verification is blocked by MongoDB binary/download failures in this environment.
-- Frontend e2e execution path is broken by test-runtime/config conflicts.
+- frontend e2e execution path is broken by test-runtime/config conflicts.
 
 ## Issues
 
@@ -26,7 +26,7 @@
 - **Root cause:** tests use system binary path that is absent in container.
 - **Fix implemented:** switched to `MongoMemoryServer.create()` defaults and guarded `mongo.stop()` when setup fails.
 
-### [MAJOR] Frontend E2E script missing despite existing Playwright specs
+### [MAJOR] frontend E2E script missing despite existing Playwright specs
 - **Repro:** `cd frontend && npm run test:e2e` (before fix script absent)
 - **Fix implemented:** added `test:e2e` script.
 - **Current state:** script runs but suite still fails due runtime/config conflicts.

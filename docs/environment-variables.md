@@ -2,7 +2,7 @@
 
 The application uses the following environment variables. All names use `UPPER_SNAKE_CASE`.
 
-## Backend
+## backend
 
 | Variable | Description | Default |
 | --- | --- | --- |
@@ -24,11 +24,11 @@ The application uses the following environment variables. All names use `UPPER_S
 | `ENABLE_NOTIFICATION_EMAIL` | Enable notification email delivery | `true` |
 | `SCIM_BEARER_TOKEN` | Token expected in `Authorization: Bearer` for SCIM | optional |
 
-## Frontend
+## frontend
 
 | Variable | Description |
 | --- | --- |
-| `VITE_API_URL` | Backend API base URL |
+| `VITE_API_URL` | backend API base URL |
 | `VITE_WS_URL` | WebSocket URL |
 | `VITE_WS_PATH` | WebSocket path |
 | `VITE_HTTP_ORIGIN` | (optional) HTTP origin override |

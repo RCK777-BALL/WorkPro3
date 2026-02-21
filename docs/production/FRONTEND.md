@@ -1,4 +1,4 @@
-# Frontend Production Readiness
+# frontend Production Readiness
 
 ## Required env
 - `VITE_API_URL` (required)

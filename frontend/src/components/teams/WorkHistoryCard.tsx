@@ -17,9 +17,9 @@ import {
   ClipboardList,
   Activity,
 } from 'lucide-react';
-import Button from '@common/Button';
-import Card from '@common/Card';
-import Badge from '@common/Badge';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import Badge from '@/components/common/Badge';
 import type { WorkHistory, WorkHistoryEntry, WorkHistoryMetrics, WorkType } from '@/types';
 
 interface WorkHistoryCardProps {

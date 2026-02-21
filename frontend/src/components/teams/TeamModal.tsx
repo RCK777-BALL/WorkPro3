@@ -3,10 +3,10 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm } from 'node_modules/react-hook-form/dist';
 import { X } from 'lucide-react';
-import Button from '@common/Button';
-import AutoCompleteInput from '@common/AutoCompleteInput';
+import Button from '@/components/common/Button';
+import AutoCompleteInput from '@/components/common/AutoCompleteInput';
 import { useDepartmentStore } from '@/store/departmentStore';
 import { useTeamMembers } from '@/store/useTeamMembers';
 import { fetchOnboardingState } from '@/api/onboarding';

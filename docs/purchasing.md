@@ -58,6 +58,6 @@ Unit and integration coverage lives in `backend/tests`:
 
 1. Install dependencies: `npm ci --prefix backend`.
 2. Run the backend suite (uses `mongodb-memory-server`): `npm test --prefix backend -- --runInBand`.
-3. Frontend purchasing UI tests (Vitest + Testing Library): `npm test --prefix frontend -- --runInBand`.
+3. frontend purchasing UI tests (Vitest + Testing Library): `npm test --prefix frontend -- --runInBand`.
 
-Integration tests create purchase orders, transition them through pending/approved, receive items, and assert stock and tenant guards. Frontend tests exercise draft creation, receive validation, and status timeline updates for the purchasing pages.
+Integration tests create purchase orders, transition them through pending/approved, receive items, and assert stock and tenant guards. frontend tests exercise draft creation, receive validation, and status timeline updates for the purchasing pages.

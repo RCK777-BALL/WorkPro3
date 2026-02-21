@@ -22,4 +22,4 @@
 ## Key errors captured
 - `No Binary at path "/usr/bin/mongod" was found` in root integration tests.
 - `DownloadError ... fastdl.mongodb.org ... Status Code 403` in backend tests.
-- Frontend tests: provider/router setup failures + matcher/export conflicts.
+- frontend tests: provider/router setup failures + matcher/export conflicts.

@@ -2,7 +2,7 @@
 
 Use this checklist to validate downtime events and maintenance analytics.
 
-## Backend API checks
+## backend API checks
 
 1. Seed data (if needed):
    ```bash
@@ -34,7 +34,7 @@ Use this checklist to validate downtime events and maintenance analytics.
      "http://localhost:3000/api/downtime-events/export.xlsx"
    ```
 
-## Frontend checks
+## frontend checks
 
 1. Start the app:
    ```bash

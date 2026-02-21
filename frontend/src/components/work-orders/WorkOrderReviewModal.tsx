@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import Button from '@common/Button';
+import Button from '@/components/common/Button';
 import type { WorkOrder } from '@/types';
 import { useAuthStore, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
 import FailureInsightCard from '@/components/ai/FailureInsightCard';

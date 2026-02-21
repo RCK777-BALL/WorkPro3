@@ -40,7 +40,7 @@ This document breaks the end-to-end implementation board into discrete tasks wit
   - Add `backend/src/middleware/auditTrail.ts`.
   - Track WO, PM, inventory, role changes.
 
-## EPIC 3 — Backend Domain Completion (Top-5 CMMS Core)
+## EPIC 3 — backend Domain Completion (Top-5 CMMS Core)
 ### Assets
 - **WPB-0301 — Asset model + hierarchy**
   - Add `backend/src/models/Asset.ts`.
@@ -78,7 +78,7 @@ This document breaks the end-to-end implementation board into discrete tasks wit
   - Add routes/controllers/services/validators for POs.
   - Prevent over-receipt, update PartStock, log receipts.
 
-## EPIC 4 — Frontend Feature Completion (Top-5 UX)
+## EPIC 4 — frontend Feature Completion (Top-5 UX)
 - **WPB-0401 — API client + auth interceptors**
   - Add `frontend/src/api/client.ts` and `/api/endpoints/*.ts`.
 - **WPB-0402 — Dashboard KPIs + charts**

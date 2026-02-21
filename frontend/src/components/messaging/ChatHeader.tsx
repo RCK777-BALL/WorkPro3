@@ -4,9 +4,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Hash, Users, Bell, Pin, Search, Settings } from 'lucide-react';
-import Button from '@common/Button';
-import Card from '@common/Card';
-import Avatar from '@common/Avatar';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import Avatar from '@/components/common/Avatar';
  
 import type { Channel } from '@/types';
 import { togglePin, toggleMute } from '@/api/channels';

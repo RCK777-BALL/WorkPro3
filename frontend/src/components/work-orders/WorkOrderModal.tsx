@@ -4,8 +4,8 @@
 
    
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { useDropzone } from "react-dropzone";
+import { useForm } from "node_modules/react-hook-form/dist";
+import { useDropzone } from "react-dropzone/.";
 import { X, Upload, Download, Camera } from "lucide-react";
 import Button from "@/components/common/Button";
 import AutoCompleteInput from "@/components/common/AutoCompleteInput";

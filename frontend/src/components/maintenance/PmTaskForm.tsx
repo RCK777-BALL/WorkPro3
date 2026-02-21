@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import http from '@/lib/http';
-import Button from '@common/Button';
+import Button from '@/components/common/Button';
 import { useToast } from '@/context/ToastContext';
 import type { PMTask } from '@/types';
 

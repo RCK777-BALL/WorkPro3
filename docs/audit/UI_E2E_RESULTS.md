@@ -1,4 +1,4 @@
-# Frontend Feature / E2E Audit Results
+# frontend Feature / E2E Audit Results
 
 ## Setup attempted
 - Existing frontend Playwright tests found in `frontend/playwright/*.spec.ts`.

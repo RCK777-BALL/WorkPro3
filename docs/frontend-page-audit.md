@@ -1,4 +1,4 @@
-# Frontend Page Audit
+# frontend Page Audit
 
 Generated on 2026-02-15T11:12:12.149Z using scripts/generate-page-audit.mjs.
 

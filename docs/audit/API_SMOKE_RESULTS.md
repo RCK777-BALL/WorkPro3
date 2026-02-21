@@ -1,4 +1,4 @@
-# Backend API Smoke Results
+# backend API Smoke Results
 
 Smoke execution used `NODE_ENV=test` + `supertest` against `backend/server.ts` app instance (no DB connection bootstrap in test mode).
 

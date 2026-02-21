@@ -21,7 +21,7 @@ The canonical readiness checklist remains in `docs/readiness-tasks.md`. Every un
 
 The login hardening checklist in `docs/login-completion-todo.md` is still open. It contains outstanding backend and frontend tasks, contract alignment, and automated test coverage work.
 
-### Frontend regression coverage gaps
+### frontend regression coverage gaps
 
 The frontend page audit identifies pages without direct test matches in `docs/frontend-page-audit.md`. Consider adding coverage for those pages and ensuring they are included in CI test runs.
 

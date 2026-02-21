@@ -29,7 +29,7 @@
 - Acknowledgement endpoints: assign required-read for a version, mark as read, list outstanding reads per user/role, export audit trail.
 - Webhooks/notifications: publish events on new version, assignment, and acknowledgements for in-app, email, or mobile push.
 
-## Frontend Flows
+## frontend Flows
 - **Author experience**: Rich-text WYSIWYG with templates, image upload, attachment manager, version diff viewer, and publish/review workflow.
 - **Discovery**: Knowledge base home with search bar, filters, featured articles, and recents; inline search in WO/PM/asset sidebars.
 - **Technician view**: Inline viewer within work orders and PM tasks showing linked SOPs; open attachments in lightbox; offline-friendly cache for mobile.

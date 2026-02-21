@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import Button from '@common/Button';
+import Button from '@/components/common/Button';
 import type { Line, Department } from '@/types';
 
 interface Props {

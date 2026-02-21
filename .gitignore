@@ -25,3 +25,5 @@ backend-legacy/**/*.js
 
 # MongoDB playground files
 playground-*.mongodb.js
+
+.DS_Store

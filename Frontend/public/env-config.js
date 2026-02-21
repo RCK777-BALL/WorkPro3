@@ -1,6 +1,0 @@
-window.__ENV__ = {
-  VITE_API_URL: "http://localhost:5010",
-  VITE_WS_URL: "ws://localhost:5010",
-  VITE_SOCKET_PATH: "/socket.io",
-  VITE_HTTP_ORIGIN: "http://localhost:5173"
-};

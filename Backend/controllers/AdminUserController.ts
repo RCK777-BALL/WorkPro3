@@ -39,6 +39,29 @@ const createModeSchema = z.union([
   }),
 ]);
 
+const booleanField = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  }
+  return value;
+}, z.boolean());
+
+const skillsField = z.preprocess((value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+  return [];
+}, z.array(z.string().trim().min(1)));
+
 const createAdminUserSchema = z
   .object({
     fullName: z.string().trim().min(1, 'Full name is required'),
@@ -48,10 +71,10 @@ const createAdminUserSchema = z
     startDate: z.string().trim().min(1, 'Start date is required'),
     role: z.string().trim().default('team_member'),
     shift: z.enum(SHIFT_OPTIONS).default('day'),
-    weeklyCapacityHours: z.number().min(1).max(168).default(40),
-    skills: z.array(z.string().trim().min(1)).default([]),
-    notifyByEmail: z.boolean().default(true),
-    notifyBySms: z.boolean().default(false),
+    weeklyCapacityHours: z.coerce.number().min(1).max(168).default(40),
+    skills: skillsField.default([]),
+    notifyByEmail: booleanField.default(true),
+    notifyBySms: booleanField.default(false),
   })
   .and(createModeSchema);
 
@@ -67,10 +90,10 @@ const updateAdminUserSchema = z
     mustChangePassword: z.boolean().optional(),
     tempPassword: z.string().min(10).optional(),
     shift: z.enum(SHIFT_OPTIONS).optional(),
-    weeklyCapacityHours: z.number().min(1).max(168).optional(),
-    skills: z.array(z.string().trim().min(1)).optional(),
-    notifyByEmail: z.boolean().optional(),
-    notifyBySms: z.boolean().optional(),
+    weeklyCapacityHours: z.coerce.number().min(1).max(168).optional(),
+    skills: skillsField.optional(),
+    notifyByEmail: booleanField.optional(),
+    notifyBySms: booleanField.optional(),
   })
   .refine(
     (value) =>

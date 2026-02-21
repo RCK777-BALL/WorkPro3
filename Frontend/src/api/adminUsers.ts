@@ -1,116 +1,58 @@
-/*
- * SPDX-License-Identifier: MIT
- */
+import { api } from '@/lib/api';
 
-import http from '@/lib/http';
+export const TRADE_OPTIONS = ['Electrical', 'Mechanical', 'Tooling', 'Facilities', 'Automation', 'Other'] as const;
 
-export const TRADE_OPTIONS = [
-  'Electrical',
-  'Mechanical',
-  'Tooling',
-  'Facilities',
-  'Automation',
-  'Other',
-] as const;
+export type AdminUserRole = 'admin' | 'manager' | 'technician' | 'user' | string;
 
-export type TradeOption = (typeof TRADE_OPTIONS)[number];
-export type AdminUserStatus = 'active' | 'invited' | 'disabled';
-export type AdminCreateMode = 'temp_password' | 'invite';
-export type ShiftOption = 'day' | 'swing' | 'night';
-
-export interface AdminUser {
+export type AdminUser = {
   id: string;
   fullName: string;
   email: string;
-  trade: TradeOption;
+  trade: (typeof TRADE_OPTIONS)[number] | string;
   employeeNumber: string;
   startDate: string | null;
-  role: string;
+  role: AdminUserRole;
   roles: string[];
-  shift: ShiftOption;
-  weeklyCapacityHours: number;
-  skills: string[];
-  notifyByEmail: boolean;
-  notifyBySms: boolean;
-  mustChangePassword: boolean;
-  status: AdminUserStatus;
-  invitedAt: string | null;
+  status: 'active' | 'invited' | 'disabled';
   active: boolean;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
+  mustChangePassword?: boolean;
+};
 
-export interface CreateAdminUserPayloadBase {
+export type CreateAdminUserInput = {
   fullName: string;
   email: string;
-  trade: TradeOption;
+  trade: string;
   employeeNumber: string;
-  startDate: string;
-  role?: string;
-  shift?: ShiftOption;
-  weeklyCapacityHours?: number;
-  skills?: string[];
-  notifyByEmail?: boolean;
-  notifyBySms?: boolean;
-}
-
-export type CreateAdminUserPayload =
-  | (CreateAdminUserPayloadBase & { mode: 'temp_password'; tempPassword: string })
-  | (CreateAdminUserPayloadBase & { mode: 'invite' });
-
-export interface ListAdminUsersQuery {
-  search?: string;
-  trade?: string;
-  role?: string;
-  status?: AdminUserStatus | '';
-}
-
-export interface PatchAdminUserPayload {
-  fullName?: string;
-  email?: string;
-  trade?: TradeOption;
-  employeeNumber?: string;
   startDate?: string;
-  role?: string;
-  shift?: ShiftOption;
-  weeklyCapacityHours?: number;
-  skills?: string[];
-  notifyByEmail?: boolean;
-  notifyBySms?: boolean;
-  status?: AdminUserStatus;
-  mustChangePassword?: boolean;
-  tempPassword?: string;
-}
-
-export const listAdminUsers = async (query: ListAdminUsersQuery = {}): Promise<AdminUser[]> => {
-  const response = await http.get<AdminUser[]>('/admin/users', { params: query });
-  return response.data ?? [];
+  role: string;
+  tempPassword: string;
 };
 
-export const createAdminUser = async (
-  payload: CreateAdminUserPayload,
-): Promise<{ user: AdminUser; inviteSent: boolean }> => {
-  const response = await http.post<{ user: AdminUser; inviteSent: boolean }>('/admin/users', payload);
-  return response.data;
+export type PatchAdminUserInput = Partial<CreateAdminUserInput> & {
+  status?: 'active' | 'invited' | 'disabled';
 };
 
-export const patchAdminUser = async (
-  id: string,
-  payload: PatchAdminUserPayload,
-): Promise<{ user: AdminUser }> => {
-  const response = await http.patch<{ user: AdminUser }>(`/admin/users/${id}`, payload);
-  return response.data;
+export const listAdminUsers = async () => {
+  const { data } = await api.get<AdminUser[]>('/admin/users');
+  return data;
 };
 
-export const resetAdminUserPassword = async (
-  id: string,
-  payload: { tempPassword: string },
-): Promise<{ user: AdminUser }> => {
-  const response = await http.post<{ user: AdminUser }>(`/admin/users/${id}/reset-password`, payload);
-  return response.data;
+export const createAdminUser = async (payload: CreateAdminUserInput) => {
+  const { data } = await api.post<{ user: AdminUser; inviteSent?: boolean }>('/admin/users', payload);
+  return data;
 };
 
-export const deleteAdminUser = async (id: string): Promise<{ id: string }> => {
-  const response = await http.delete<{ id: string }>(`/admin/users/${id}`);
-  return response.data;
+export const patchAdminUser = async (id: string, payload: PatchAdminUserInput) => {
+  const { data } = await api.patch<{ user: AdminUser }>(`/admin/users/${id}`, payload);
+  return data;
+};
+
+export const resetAdminUserPassword = async (id: string, payload: { tempPassword: string }) => {
+  const { data } = await api.post<{ user: AdminUser }>(`/admin/users/${id}/reset-password`, payload);
+  return data;
+};
+
+export const deleteAdminUser = async (id: string) => {
+  const { data } = await api.delete<{ ok: boolean }>(`/admin/users/${id}`);
+  return data;
 };

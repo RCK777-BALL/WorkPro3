@@ -205,10 +205,12 @@ export const convertRequestToWorkOrder: AuthedRequestHandler = async (req, res, 
       res.status(400).json({ message: 'Tenant context missing' });
       return;
     }
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
 
     const result = await convertWorkRequestToWorkOrder(
       { tenantId, siteId: req.siteId },
-      req.params.id,
+      id,
       parse.data,
       resolveUserObjectId(req),
     );

@@ -105,7 +105,9 @@ export const submitPublicRequestHandler = async (req: Request, res: Response, ne
 };
 
 export const getPublicStatusHandler = async (req: Request, res: Response, next: NextFunction) => {
-  const token = (req.params.token ?? '').trim();
+  const raw = req.params.token;
+  const token = Array.isArray(raw) ? raw[0].trim() : raw.trim();
+
   if (!token) {
     fail(res, 'A request token is required.', 400);
     return;

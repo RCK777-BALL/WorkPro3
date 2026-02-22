@@ -123,13 +123,18 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         : DEFAULT_NEW_USER_PASSWORD;
     const newItem = new User({ ...payload, passwordHash, tenantId });
     const saved = await newItem.save();
+    
+    const raw = saved._id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     const safeUser = saved.toObject({
       transform: (_doc, ret: Record<string, unknown>) => {
         delete ret.passwordHash;
         return ret;
       },
     });
-    await auditAction(req, 'create', 'User', toEntityId(saved._id) ?? saved._id, undefined, safeUser);
+    // await auditAction(req, 'create', 'User', toEntityId(saved._id) ?? saved._id, undefined, safeUser);
+    await auditAction(req, 'create', 'User', saved._id, undefined, safeUser);
     sendResponse(res, safeUser, null, 201);
     return;
   } catch (err) {
@@ -166,6 +171,9 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+    
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -188,7 +196,8 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       req,
       'update',
       'User',
-      toEntityId(new Types.ObjectId(req.params.id)) ?? req.params.id,
+      // toEntityId(new Types.ObjectId(id)),
+      id,
       existing.toObject(),
       updated?.toObject(),
     );
@@ -222,6 +231,9 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+    
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -235,7 +247,8 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
       req,
       'delete',
       'User',
-      toEntityId(new Types.ObjectId(req.params.id)) ?? req.params.id,
+      // toEntityId(new Types.ObjectId(id)),
+      id,
       deleted.toObject(),
       undefined,
     );

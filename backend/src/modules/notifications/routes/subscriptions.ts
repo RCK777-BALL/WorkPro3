@@ -66,7 +66,9 @@ router.delete('/:id', requirePermission('sites.read'), async (req, res, next) =>
   try {
     const tenantId = req.tenantId;
     const userId = req.user?._id;
-    const { id } = req.params;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId || !userId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;

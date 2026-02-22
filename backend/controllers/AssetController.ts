@@ -524,7 +524,9 @@ async function createAsset(
     payload.plant = plantId;
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
-    const newAsset = await Asset.create(payload);
+    const newAssetRaw = await Asset.create(payload);
+    const newAsset = Array.isArray(newAssetRaw) ? newAssetRaw[0] : newAssetRaw;
+
     ensureQrCode(newAsset, 'asset');
     if (!newAsset.qrCode) {
       newAsset.qrCode = generateQrCodeValue({ type: 'asset', id: newAsset._id.toString(), tenantId: tenantId.toString() });
@@ -561,7 +563,7 @@ async function createAsset(
         },
       );
     }
-    await auditAction(req as any, 'create', 'Asset', toEntityId(newAsset._id as Types.ObjectId) ?? newAsset._id, undefined, assetObj);
+    await auditAction(req as any, 'create', 'Asset', newAsset._id, undefined, assetObj);
     sendResponse(res, response, null, 201);
     return;
   } catch (err) {
@@ -605,7 +607,8 @@ async function updateAsset(
   }
 
   try {
-    const id = req.params.id;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
     if (!id) {
       sendResponse(res, null, 'ID is required', 400);
       return;
@@ -712,7 +715,7 @@ async function updateAsset(
       req as any,
       'update',
       'Asset',
-      toEntityId(new Types.ObjectId(id)) ?? id,
+      new Types.ObjectId(id),
       existing.toObject(),
       asset?.toObject(),
     );
@@ -779,7 +782,8 @@ async function deleteAsset(
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const id = req.params.id;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
     if (!id) {
       sendResponse(res, null, 'ID is required', 400);
       return;
@@ -809,7 +813,7 @@ async function deleteAsset(
       req as any,
       'delete',
       'Asset',
-      toEntityId(new Types.ObjectId(id)) ?? id,
+      new Types.ObjectId(id),
       asset.toObject(),
       undefined,
     );

@@ -877,6 +877,10 @@ export async function updateWorkOrder(
     const normalizedDepartment = toOptionalObjectId(department ?? departmentId);
     const normalizedLine = toOptionalObjectId(line ?? lineId);
     const normalizedStation = toOptionalObjectId(station ?? stationId);
+
+    const raw = req.params.id;
+      const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (departmentId !== undefined || department !== undefined) {
       update.department = normalizedDepartment;
     }
@@ -1018,7 +1022,7 @@ export async function updateWorkOrder(
         }),
       );
     }
-    await auditAction(req as unknown as Request, 'update', 'WorkOrder', new Types.ObjectId(req.params.id), existing.toObject(), updated.toObject());
+    await auditAction(req as unknown as Request, 'update', 'WorkOrder', new Types.ObjectId(id), existing.toObject(), updated.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
     await notifySlaBreach(updated);
     sendResponse(res, updated);
@@ -1202,12 +1206,14 @@ export async function updateWorkOrderSchedule(
       }
     }
     const saved = await workOrder.save();
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
 
     await auditAction(
       req as unknown as Request,
       'schedule',
       'WorkOrder',
-      new Types.ObjectId(req.params.id),
+      new Types.ObjectId(id),
       before,
       saved.toObject(),
     );
@@ -1567,6 +1573,8 @@ export async function deleteWorkOrder(
 ): Promise<void> {
   try {
     const tenantId = req.tenantId;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -1583,7 +1591,7 @@ export async function deleteWorkOrder(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    await auditAction(req as unknown as Request, 'delete', 'WorkOrder', new Types.ObjectId(req.params.id), deleted.toObject(), undefined);
+    await auditAction(req as unknown as Request, 'delete', 'WorkOrder', new Types.ObjectId(id), deleted.toObject(), undefined);
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
     sendResponse(res, { message: 'Deleted successfully' });
     return;
@@ -1781,7 +1789,10 @@ export async function approveWorkOrder(
     });
 
     const saved = await workOrder.save();
-    await auditAction(req as unknown as Request, 'approve', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
+    await auditAction(req as unknown as Request, 'approve', 'WorkOrder', new Types.ObjectId(id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
@@ -1992,7 +2003,9 @@ export async function assignWorkOrder(
       workOrder.set('assignees', mapAssignees(validAssignees));
     }
     const saved = await workOrder.save();
-    await auditAction(req as unknown as Request, 'assign', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    const raw = req.params.id;
+      const id = Array.isArray(raw) ? raw[0] : raw;
+    await auditAction(req as unknown as Request, 'assign', 'WorkOrder', new Types.ObjectId(id), before, saved.toObject());
     if (saved.assignees && saved.assignees.length) {
       await notifyWorkOrderAssigned(saved, saved.assignees as unknown as Types.ObjectId[]);
     }
@@ -2063,7 +2076,9 @@ export async function startWorkOrder(
         }),
       );
     }
-    await auditAction(req as unknown as Request, 'start', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    const raw = req.params.id;
+      const id = Array.isArray(raw) ? raw[0] : raw;
+    await auditAction(req as unknown as Request, 'start', 'WorkOrder', new Types.ObjectId(id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -2244,7 +2259,9 @@ export async function completeWorkOrder(
       workOrder._id,
       saved.completedAt ?? new Date(),
     );
-    await auditAction(req as unknown as Request, 'complete', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    const raw = req.params.id;
+      const id = Array.isArray(raw) ? raw[0] : raw;
+    await auditAction(req as unknown as Request, 'complete', 'WorkOrder', new Types.ObjectId(id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -2295,7 +2312,9 @@ export async function cancelWorkOrder(
     const before = workOrder.toObject();
     workOrder.status = 'cancelled';
     const saved = await workOrder.save();
-    await auditAction(req as unknown as Request, 'cancel', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    const raw = req.params.id;
+      const id = Array.isArray(raw) ? raw[0] : raw;
+    await auditAction(req as unknown as Request, 'cancel', 'WorkOrder', new Types.ObjectId(id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;

@@ -206,7 +206,9 @@ export async function createInventoryItem(
     }
 
     const payload: Partial<IInventoryItem> = scopedQuery(req, data);
-    const saved = await new InventoryItem(payload).save();
+    const savedRaw = await new InventoryItem(payload).save();
+    const saved = Array.isArray(savedRaw) ? savedRaw[0] : savedRaw;
+
     const qrCode = generateQrCodeValue({
       type: 'part',
       id: saved._id.toString(),
@@ -237,7 +239,9 @@ export async function updateInventoryItem(
     const tenantId = req.tenantId;
     if (!tenantId)
       return sendResponse(res, null, 'Tenant ID required', 400);
-    const { id } = req.params;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!isValidObjectId(id)) {
       sendResponse(res, null, "Invalid id", 400);
       return;
@@ -277,7 +281,8 @@ export async function updateInventoryItem(
 
     const before = toPlainObject(existing);
     const after = toPlainObject(updated);
-    await auditAction(req, "update", "InventoryItem", toEntityId(id) ?? id, before, after);
+    // await auditAction(req, "update", "InventoryItem", toEntityId(id), before, after);
+    await auditAction(req, "update", "InventoryItem", id, before, after);
     await notifyLowStock(updated);
     sendResponse(res, updated);
   } catch (err) {
@@ -297,7 +302,9 @@ export async function deleteInventoryItem(
     const tenantId = req.tenantId;
     if (!tenantId)
       return sendResponse(res, null, 'Tenant ID required', 400);
-    const { id } = req.params;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!isValidObjectId(id)) {
       sendResponse(res, null, "Invalid id", 400);
       return;
@@ -312,7 +319,8 @@ export async function deleteInventoryItem(
     }
 
     const deletedPlain = toPlainObject(deleted);
-    await auditAction(req, "delete", "InventoryItem", toEntityId(id) ?? id, deletedPlain, undefined);
+    // await auditAction(req, "delete", "InventoryItem", toEntityId(id), deletedPlain, undefined);
+    await auditAction(req, "delete", "InventoryItem", id, deletedPlain, undefined);
     sendResponse(res, { message: "Deleted successfully" });
   } catch (err) {
     next(err);
@@ -330,7 +338,9 @@ export async function useInventoryItem(
     const tenantId = req.tenantId;
     if (!tenantId)
       return sendResponse(res, null, 'Tenant ID required', 400);
-    const { id } = req.params;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     const { quantity, uom } = req.body as { quantity?: number; uom?: string };
 
     if (!isValidObjectId(id)) {
@@ -373,7 +383,8 @@ export async function useInventoryItem(
       return;
     }
 
-    await auditAction(req, "use", "InventoryItem", toEntityId(id) ?? id, before, toPlainObject(item));
+    // await auditAction(req, "use", "InventoryItem", toEntityId(id), before, toPlainObject(item));
+    await auditAction(req, "use", "InventoryItem", id, before, toPlainObject(item));
     sendResponse(res, item);
   } catch (err) {
     next(err);

@@ -45,7 +45,9 @@ async function verifyCaptcha(token: string): Promise<boolean> {
 }
 
 router.get('/status/:token', async (req: Request, res: Response, next: NextFunction) => {
-  const token = (req.params.token ?? '').trim();
+  const raw = req.params.token;
+  const token = Array.isArray(raw) ? raw[0].trim() : raw.trim();
+
   if (!token) {
     res.status(400).json({ success: false, error: 'A request token is required.' });
     return;

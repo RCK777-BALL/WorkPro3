@@ -121,8 +121,11 @@ export const updateWorkHistory = async (
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     const existing = await WorkHistory.findOne({
-      _id: req.params.id,
+      _id: id,
       tenantId,
     });
     if (!existing) {
@@ -130,7 +133,7 @@ export const updateWorkHistory = async (
       return;
     }
     const updated = await WorkHistory.findByIdAndUpdate(
-      req.params.id,
+      id,
       { ...req.body, tenantId },
       {
         returnDocument: 'after',
@@ -142,7 +145,7 @@ export const updateWorkHistory = async (
       userId,
       action: 'update',
       entityType: 'WorkHistory',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -161,13 +164,15 @@ export const deleteWorkHistory = async (
 ): Promise<Response | void> => {
   try {
     const tenantId = req.tenantId;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await WorkHistory.findOneAndDelete({
-      _id: req.params.id,
+      _id: id,
       tenantId,
     });
     if (!deleted) {
@@ -179,7 +184,7 @@ export const deleteWorkHistory = async (
       userId,
       action: 'delete',
       entityType: 'WorkHistory',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

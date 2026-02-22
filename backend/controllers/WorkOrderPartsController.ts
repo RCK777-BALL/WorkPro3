@@ -149,11 +149,14 @@ const validateStockForTenant = async (
 export const listWorkOrderParts = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const workOrder = await findWorkOrder(tenantId, req.params.id);
+    const workOrder = await findWorkOrder(tenantId, id);
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -170,6 +173,9 @@ export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, _n
   try {
     const { quantity, stockId, unitCost } = parsePartRequestBody(req.body);
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -183,7 +189,7 @@ export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, _n
       return;
     }
 
-    const workOrder = await findWorkOrder(tenantId, req.params.id);
+    const workOrder = await findWorkOrder(tenantId, id);
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -243,6 +249,9 @@ export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, 
   try {
     const { quantity, stockId } = parsePartRequestBody(req.body);
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -256,7 +265,7 @@ export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, 
       return;
     }
 
-    const workOrder = await findWorkOrder(tenantId, req.params.id);
+    const workOrder = await findWorkOrder(tenantId, id);
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -318,6 +327,9 @@ export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, _nex
   try {
     const { quantity, stockId, unitCost } = parsePartRequestBody(req.body);
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -331,7 +343,7 @@ export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, _nex
       return;
     }
 
-    const workOrder = await findWorkOrder(tenantId, req.params.id);
+    const workOrder = await findWorkOrder(tenantId, id);
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -392,6 +404,9 @@ export const returnIssuedWorkOrderPart = async (req: AuthedRequest, res: Respons
   try {
     const { quantity, stockId } = parsePartRequestBody(req.body);
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -405,7 +420,7 @@ export const returnIssuedWorkOrderPart = async (req: AuthedRequest, res: Respons
       return;
     }
 
-    const workOrder = await findWorkOrder(tenantId, req.params.id);
+    const workOrder = await findWorkOrder(tenantId, id);
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -462,11 +477,14 @@ export const deleteWorkOrderPartLineItem = async (req: AuthedRequest, res: Respo
   const session = await mongoose.startSession();
   try {
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const workOrder = await findWorkOrder(tenantId, req.params.id);
+    const workOrder = await findWorkOrder(tenantId, id);
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;

@@ -3,5 +3,10 @@
   "typescript.tsdk": "backend/node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "typescript.tsserver.experimental.enableProjectDiagnostics": true,
-  "typescript.tsserver.projectRootPath": "${workspaceFolder}/backend"
+  "typescript.tsserver.projectRootPath": "${workspaceFolder}/backend",
+  "typescript.tsserver.watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents"
+  },
+  "typescript.disableAutomaticTypeAcquisition": true
 }

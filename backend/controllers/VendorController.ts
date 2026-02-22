@@ -48,8 +48,11 @@ export const getVendorById = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!req.tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
-    const vendor = await getVendor(req.tenantId, req.params.id);
+    const vendor = await getVendor(req.tenantId, id);
     return sendResponse(res, vendor);
   } catch (err) {
     if (err instanceof VendorNotFoundError) {
@@ -81,10 +84,12 @@ export const updateVendorHandler = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
     const { data, error } = parseVendorInput(req.body);
     if (error || !data) return sendResponse(res, null, error ?? 'Invalid input', 400);
     if (!req.tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
-    const vendor = await updateVendor(req.tenantId, req.params.id, data);
+    const vendor = await updateVendor(req.tenantId, id, data);
     return sendResponse(res, vendor);
   } catch (err) {
     if (err instanceof VendorNotFoundError) {
@@ -100,8 +105,10 @@ export const deleteVendorHandler = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
     if (!req.tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
-    await deleteVendor(req.tenantId, req.params.id);
+    await deleteVendor(req.tenantId, id);
     return sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {
     if (err instanceof VendorNotFoundError) {

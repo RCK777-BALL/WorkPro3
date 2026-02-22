@@ -65,8 +65,11 @@ const createGoodsReceiptHandler: AuthedRequestHandler<
     if (!db) throw new Error('Database connection not ready');
 
     for (const grItem of items) {
-      const itemId = toEntityId(grItem.item as string | Types.ObjectId);
-      const uomId = toEntityId(grItem.uom as string | Types.ObjectId | undefined);
+      const itemIdRaw = toEntityId(grItem.item as string | Types.ObjectId);
+      const itemId = Array.isArray(itemIdRaw) ? itemIdRaw[0] : itemIdRaw;
+      const uomIdRaw = toEntityId(grItem.uom as string | Types.ObjectId | undefined);
+      const uomId = Array.isArray(uomIdRaw) ? uomIdRaw[0] : uomIdRaw;
+
       if (!itemId) {
         throw new Error('Invalid inventory item identifier');
       }

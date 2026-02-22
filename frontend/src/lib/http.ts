@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 import type {
   AxiosRequestHeaders,
   AxiosResponse,
@@ -76,7 +76,7 @@ http.interceptors.request.use(async (config) => {
     }
   }
 
-  const headers: AxiosRequestHeaders = config.headers ?? {};
+  const headers: AxiosRequestHeaders = config.headers ?? new AxiosHeaders();
   const tenantId = safeLocalStorage.getItem(TENANT_KEY);
   const siteId = safeLocalStorage.getItem(SITE_KEY);
   const token =

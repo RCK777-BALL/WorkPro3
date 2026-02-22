@@ -158,7 +158,10 @@ export const getDowntimeLogHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const log = await getDowntimeLog(tenantId, req.params.id);
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
+    const log = await getDowntimeLog(tenantId, id);
     if (!log) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -223,21 +226,23 @@ export const updateDowntimeLogHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const before = await getDowntimeLog(tenantId, req.params.id);
+    const before = await getDowntimeLog(tenantId, id);
     if (!before) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
 
-    const updated = await updateDowntimeLog(tenantId, req.params.id, req.body);
+    const updated = await updateDowntimeLog(tenantId, id, req.body);
     await writeAuditLog({
       tenantId,
       userId,
       action: 'update',
       entityType: 'DowntimeLog',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: before,
       after: updated ?? undefined,
     });
@@ -259,9 +264,11 @@ export const deleteDowntimeLogHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const deleted = await deleteDowntimeLog(tenantId, req.params.id);
+    const deleted = await deleteDowntimeLog(tenantId, id);
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -272,7 +279,7 @@ export const deleteDowntimeLogHandler = async (
       userId,
       action: 'delete',
       entityType: 'DowntimeLog',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: deleted,
     });
 

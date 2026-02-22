@@ -67,13 +67,15 @@ export const updateDowntimeHandler = async (req: AuthedRequest, res: Response, n
 
   try {
     const { assetId: assetIdRaw, ...rest } = parsed.data;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;   
     const assetId = assetIdRaw ? parseObjectId(assetIdRaw, res, 'asset id') : undefined;
     if (assetIdRaw && !assetId) return;
     const payload = {
       ...rest,
       ...(assetId ? { assetId } : {}),
     };
-    const updated = await updateDowntimeLog(req.tenantId!, req.params.id, payload);
+    const updated = await updateDowntimeLog(req.tenantId!, id, payload);
     if (!updated) {
       fail(res, 'Not found', 404);
       return;

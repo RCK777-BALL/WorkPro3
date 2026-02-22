@@ -161,7 +161,9 @@ export const getPurchaseOrder = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const { id } = req.params;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!isValidObjectId(id)) {
       sendResponse(res, null, 'Invalid id', 400);
       return;
@@ -224,7 +226,9 @@ export const updatePurchaseOrderStatus = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const { id } = req.params;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     const { status } = req.body as { status: string };
     if (!isValidObjectId(id)) {
       sendResponse(res, null, 'Invalid id', 400);
@@ -266,7 +270,9 @@ export const receivePurchaseOrder = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const { id } = req.params;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!isValidObjectId(id)) {
       sendResponse(res, null, 'Invalid id', 400);
       return;
@@ -321,7 +327,9 @@ export const updateVendorPurchaseOrder = async (
 ): Promise<Response | void> => {
   try {
     const vendorId = req.vendorId as string;
-    const { id } = req.params;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+    
     const { status } = req.body as { status: string };
     const allowed = ['acknowledged', 'shipped'];
     if (!allowed.includes(status)) {

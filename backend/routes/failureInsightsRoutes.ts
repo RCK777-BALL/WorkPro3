@@ -44,7 +44,8 @@ const workOrderCopilotHandler: RequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Tenant context required', 400);
       return;
     }
-    const workOrderId = authedReq.params.id;
+    const raw = authedReq.params.id;
+    const workOrderId = Array.isArray(raw) ? raw[0] : raw;
     const result = await buildWorkOrderCopilot({ tenantId, siteId: authedReq.siteId, workOrderId });
     sendResponse(res, result);
   } catch (err) {

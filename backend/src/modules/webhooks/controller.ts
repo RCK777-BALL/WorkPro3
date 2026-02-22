@@ -56,7 +56,10 @@ export const createSubscriptionHandler: AuthedRequestHandler = async (req, res, 
 export const deleteSubscriptionHandler: AuthedRequestHandler = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
   try {
-    const deleted = await deleteSubscription(req.tenantId, req.params.id);
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
+    const deleted = await deleteSubscription(req.tenantId, id);
     if (!deleted) {
       fail(res, 'Webhook not found', 404);
       return;

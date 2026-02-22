@@ -1,4 +1,4 @@
-import axios, { type AxiosError, type AxiosInstance } from 'axios';
+import axios, { AxiosHeaders, type AxiosError, type AxiosInstance } from 'axios';
 
 export type AuthTokens = {
   accessToken: string;
@@ -48,7 +48,7 @@ const refreshTokens = async (): Promise<AuthTokens | null> => {
 apiClient.interceptors.request.use((config) => {
   const tokens = getAuthTokens();
   if (tokens?.accessToken) {
-    config.headers = config.headers ?? {};
+    config.headers = config.headers ?? new AxiosHeaders();
     config.headers.Authorization = `Bearer ${tokens.accessToken}`;
   }
   return config;
@@ -75,7 +75,7 @@ apiClient.interceptors.response.use(
     setAuthTokens({ ...tokens, ...refreshed });
     const original = error.config;
     if (original) {
-      original.headers = original.headers ?? {};
+      original.headers = original.headers ?? new AxiosHeaders();
       original.headers.Authorization = `Bearer ${refreshed.accessToken}`;
       return apiClient.request(original);
     }

@@ -72,7 +72,10 @@ const parseProvider = (value: string | undefined) => accountingProviderSchema.pa
 
 export const syncVendorsHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const provider = parseProvider(req.params.provider);
+    const raw = req.params.provider;
+    const providerVal = Array.isArray(raw) ? raw[0] : raw;
+
+    const provider = parseProvider(providerVal);
     const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
     const result = syncVendorsWithAccounting(provider, payload);
     send(res, result, 202);
@@ -83,7 +86,9 @@ export const syncVendorsHandler: AuthedRequestHandler = async (req, res, next) =
 
 export const syncPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const provider = parseProvider(req.params.provider);
+    const raw = req.params.provider;
+    const providerRaw = Array.isArray(raw) ? raw[0] : raw;
+    const provider = parseProvider(providerRaw);
     const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
     const result = syncPurchaseOrdersWithAccounting(provider, payload);
     send(res, result, 202);
@@ -94,7 +99,9 @@ export const syncPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, 
 
 export const syncCostsHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const provider = parseProvider(req.params.provider);
+    const raw = req.params.provider;
+    const providerRaw = Array.isArray(raw) ? raw[0] : raw;
+    const provider = parseProvider(providerRaw);
     const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
     const result = syncCostsWithAccounting(provider, payload);
     send(res, result, 202);
@@ -141,7 +148,9 @@ export const createApiKeyHandler: AuthedRequestHandler = async (req, res, next) 
 export const revokeApiKeyHandler: AuthedRequestHandler = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
   try {
-    const key = await revokeApiKey(req.tenantId, req.params.id);
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+    const key = await revokeApiKey(req.tenantId, id);
     if (!key) {
       fail(res, 'API key not found', 404);
       return;

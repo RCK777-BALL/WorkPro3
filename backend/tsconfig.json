@@ -11,6 +11,8 @@
     "module": "commonjs",
     "baseUrl": ".",
     "resolveJsonModule": true,
+    "outDir": "../dist",
+    "rootDir": "..",
     "paths": {
       "@shared/*": ["../shared/types/*"],
       "@backend-shared/*": ["shared/*"],

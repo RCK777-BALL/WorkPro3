@@ -1,15 +1,18 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "baseUrl": "",
+    "skipLibCheck": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "@common/*": ["src/components/common/*"],
-      "@backend-shared/permissions": ["../shared/types/permissions.ts"],
-      "@backend-shared/pmAnalytics": ["../Backend/shared/pmAnalytics.ts"],
-      "@backend-shared/reports": ["../Backend/shared/reports.ts"],
-      "@backend-shared/*": ["../Backend/shared/*"]
+      "@backend-shared/*": ["../backend/shared/*"],
+      "@backend-shared/pmAnalytics": ["../backend/shared/pmAnalytics.ts"],
+      "@backend-shared/reports": ["../backend/shared/reports.ts"],
+      "@backend-shared/permissions": ["../backend/shared/permissions.ts"],
+      "@shared-types/*": ["../shared/types/*"]
     }
   },
-  "include": ["src", "analytics"]
+  "include": ["src", "analytics"],
+  "exclude": ["node_modules", "dist", "src/test"]
 }

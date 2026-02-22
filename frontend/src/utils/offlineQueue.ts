@@ -210,7 +210,7 @@ export const retryFailedRequests = () => {
 
 import http from '@/lib/http';
 
-type HttpClientResponse = { data?: unknown } | void;
+type HttpClientResponse = { data?: unknown };
 // allow tests to inject a mock http client
 type HttpClient = (args: { method: string; url: string; data?: unknown }) => Promise<HttpClientResponse>;
 let httpClient: HttpClient = http as unknown as HttpClient;

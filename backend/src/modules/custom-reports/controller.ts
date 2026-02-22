@@ -85,7 +85,9 @@ export const updateReportTemplateHandler: AuthedRequestHandler<
 export const getReportTemplateHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
     const authedReq = req as AuthedRequest;
-    const template = await getReportTemplate(authedReq, authedReq.params.id);
+    const raw = authedReq.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+    const template = await getReportTemplate(authedReq, id);
     sendResponse(res, template);
   } catch (error) {
     next(error);

@@ -173,11 +173,14 @@ router.patch('/:id', validateObjectId('id'), async (req, res, next) => {
 
 router.delete('/:id', validateObjectId('id'), async (req, res, next) => {
   try {
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     await Permit.deleteOne({ _id: req.params.id, tenantId: req.tenantId });
     recordAudit(req, res, {
       action: 'delete',
       entityType: 'permit',
-      entityId: req.params.id,
+      entityId: id,
     });
     sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {

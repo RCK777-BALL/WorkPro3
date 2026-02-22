@@ -115,7 +115,8 @@ export const getNotificationInbox: AuthedRequestHandler<
       const skip = (page - 1) * limit;
       const read = authedReq.query.read;
       const category = authedReq.query.category;
-      const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      const userIdRaw = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      const userId = Array.isArray(userIdRaw) ? userIdRaw[0] : userIdRaw;
       const baseFilter = resolveUserScope(tenantObjectId, userId);
       const filter = {
         ...baseFilter,
@@ -162,7 +163,8 @@ export const markAllNotificationsRead: AuthedRequestHandler<
         return;
       }
       const tenantObjectId = new Types.ObjectId(tenantId);
-      const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      const userIdRaw = (authedReq.user as any)?.id;
+      const userId = Array.isArray(userIdRaw) ? userIdRaw[0] : userIdRaw;
       const filter = resolveUserScope(tenantObjectId, userId);
       const result = await Notification.updateMany(
         { ...filter, read: false },

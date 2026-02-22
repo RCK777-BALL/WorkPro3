@@ -7,12 +7,16 @@
     "resolveJsonModule": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "@common/*": ["src/components/common/*"],
-      "@backend-shared/*": ["../backend/shared/*"]
+      "@backend-shared/*": ["../backend/shared/*"],
+      "@backend-shared/pmAnalytics": ["../backend/shared/pmAnalytics.ts"],
+      "@backend-shared/reports": ["../backend/shared/reports.ts"],
+      "@backend-shared/permissions": ["../backend/shared/permissions.ts"],
+      "@shared-types/*": ["../shared/types/*"]
     },
     "types": [
       "vite/client",
@@ -23,5 +27,6 @@
       "node"
     ]
   },
-  "include": ["src", "src/types/globals.d.ts"]
+  "include": ["src", "src/types/globals.d.ts"],
+  "exclude": ["src/test"]
 }

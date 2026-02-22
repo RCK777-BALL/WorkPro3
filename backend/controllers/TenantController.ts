@@ -68,6 +68,8 @@ const updateTenantHandler = async (
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const tenant = await Tenant.findById(req.params.id);
     if (!tenant) return sendResponse(res, null, 'Not found', 404);
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
 
     const before = tenant.toObject();
     tenant.set(req.body as Partial<TenantDocument>);
@@ -77,7 +79,7 @@ const updateTenantHandler = async (
       userId,
       action: 'update',
       entityType: 'Tenant',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before,
       after: tenant.toObject(),
     });
@@ -95,13 +97,16 @@ const deleteTenantHandler = async (
   try {
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const tenant = await Tenant.findByIdAndDelete(req.params.id);
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenant) return sendResponse(res, null, 'Not found', 404);
     await writeAuditLog({
       tenantId: tenant._id,
       userId,
       action: 'delete',
       entityType: 'Tenant',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: tenant.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

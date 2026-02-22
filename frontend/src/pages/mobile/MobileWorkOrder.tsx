@@ -75,12 +75,18 @@ const MobileWorkOrder = () => {
         setError(null);
         const cachePayload = {
           workOrder: normalized,
-          checklist: res.data.checklists ?? checklist,
+          checklist: Array.isArray(res.data.checklists)
+            ? res.data.checklists.map((item) => String(item))
+            : checklist,
           updatedAt: res.data.updatedAt ?? null,
         };
         safeLocalStorage.setItem(`${CACHE_PREFIX}${id}`, JSON.stringify(cachePayload));
         setServerVersion(res.data.updatedAt ?? null);
-        setChecklist((res.data.checklists as string[] | undefined) ?? checklist);
+        setChecklist(
+          Array.isArray(res.data.checklists)
+            ? res.data.checklists.map((item) => String(item))
+            : checklist
+        );
       } catch (err) {
         console.error(err);
         setError('Working offline; showing cached work order.');
@@ -291,5 +297,4 @@ const MobileWorkOrder = () => {
 };
 
 export default MobileWorkOrder;
-
 

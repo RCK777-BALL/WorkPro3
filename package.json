@@ -39,6 +39,7 @@
   "dependencies": {
     "fs-extra": "^11.3.2",
     "glob": "^13.0.3",
+    "mongoose": "^9.2.1",
     "ts-morph": "^27.0.2"
   },
   "devDependencies": {

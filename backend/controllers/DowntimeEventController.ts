@@ -167,8 +167,9 @@ export const getDowntimeEventHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-
-    const event = await getDowntimeEvent(tenantId, req.params.id);
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+    const event = await getDowntimeEvent(tenantId, id);
     if (!event) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -224,21 +225,23 @@ export const updateDowntimeEventHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const before = await getDowntimeEvent(tenantId, req.params.id);
+    const before = await getDowntimeEvent(tenantId, id);
     if (!before) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
 
-    const updated = await updateDowntimeEvent(tenantId, req.params.id, req.body);
+    const updated = await updateDowntimeEvent(tenantId, id, req.body);
     await writeAuditLog({
       tenantId,
       userId,
       action: 'update',
       entityType: 'DowntimeEvent',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: before.toObject?.() ?? before,
       after: updated?.toObject?.() ?? updated ?? undefined,
     });
@@ -260,9 +263,11 @@ export const deleteDowntimeEventHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const deleted = await deleteDowntimeEvent(tenantId, req.params.id);
+    const deleted = await deleteDowntimeEvent(tenantId, id);
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -273,7 +278,7 @@ export const deleteDowntimeEventHandler = async (
       userId,
       action: 'delete',
       entityType: 'DowntimeEvent',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: deleted.toObject?.() ?? deleted,
     });
 

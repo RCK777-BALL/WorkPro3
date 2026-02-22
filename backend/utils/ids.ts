@@ -4,21 +4,28 @@
 
 import { Types } from 'mongoose';
 
-export type EntityIdLike = Types.ObjectId | string | null | undefined;
+export type EntityIdLike = Types.ObjectId | string | string[] | null | undefined;
 
-export const toObjectId = (value: EntityIdLike): Types.ObjectId | undefined => {
+const normalizeInput = (value: EntityIdLike): string | Types.ObjectId | undefined => {
   if (!value) return undefined;
-  if (value instanceof Types.ObjectId) return value;
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  return Types.ObjectId.isValid(trimmed) ? new Types.ObjectId(trimmed) : undefined;
+  if (Array.isArray(value)) return value[0]; // take first
+  return value;
 };
 
-export const toEntityId = (value: EntityIdLike): string | undefined => {
-  if (!value) return undefined;
-  if (value instanceof Types.ObjectId) return value.toString();
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
+export const toObjectId = (value: EntityIdLike): Types.ObjectId | undefined => {
+  const v = normalizeInput(value);
+  if (!v) return undefined;
+  if (v instanceof Types.ObjectId) return v;
+  if (typeof v !== "string") return undefined;
+  const trimmed = v.trim();
+  return trimmed && Types.ObjectId.isValid(trimmed) ? new Types.ObjectId(trimmed) : undefined;
+};
+
+export const toEntityId = (value: EntityIdLike): string | string[] | undefined => {
+  const v = normalizeInput(value);
+  if (!v) return undefined;
+  if (v instanceof Types.ObjectId) return v.toString();
+  if (typeof v !== "string") return undefined;
+  const trimmed = v.trim();
   return trimmed ? trimmed : undefined;
 };

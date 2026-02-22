@@ -243,6 +243,9 @@ export const updateTeamMember = async (
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await TeamMember.findOne({ _id: req.params.id, tenantId });
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -256,7 +259,7 @@ export const updateTeamMember = async (
     }
 
     const updated = await TeamMember.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      { _id: id, tenantId },
       payload,
       {
         returnDocument: 'after',
@@ -270,7 +273,7 @@ export const updateTeamMember = async (
       userId,
       action: 'update',
       entityType: 'TeamMember',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before,
       after,
     });
@@ -301,6 +304,9 @@ export const deleteTeamMember = async (
 
   try {
     const tenantId = req.tenantId;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -329,7 +335,7 @@ export const deleteTeamMember = async (
       userId,
       action: 'delete',
       entityType: 'TeamMember',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: toPlainObject(deleted),
     });
     sendResponse(res, { message: 'Deleted successfully' });

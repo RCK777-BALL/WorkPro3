@@ -52,6 +52,9 @@ export const createVideo = async (req: Request, res: Response, next: NextFunctio
 export const updateVideo = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId)
       return sendResponse(res, null, 'Tenant ID required', 400);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -66,7 +69,7 @@ export const updateVideo = async (req: Request, res: Response, next: NextFunctio
       userId,
       action: 'update',
       entityType: 'Video',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -79,6 +82,9 @@ export const updateVideo = async (req: Request, res: Response, next: NextFunctio
 export const deleteVideo = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId;
+    const raw = req.params.id;
+    const id = Array.isArray(raw) ? raw[0] : raw;
+
     if (!tenantId)
       return sendResponse(res, null, 'Tenant ID required', 400);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -89,7 +95,7 @@ export const deleteVideo = async (req: Request, res: Response, next: NextFunctio
       userId,
       action: 'delete',
       entityType: 'Video',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

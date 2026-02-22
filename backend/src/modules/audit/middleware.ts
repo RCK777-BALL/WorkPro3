@@ -21,7 +21,9 @@ const buildActor = (req: AuthedRequest): AuditActor | undefined => {
 const resolveEntityId = (req: AuthedRequest, keys: string[]): string | undefined => {
   for (const key of keys) {
     const value = (req.params as Record<string, unknown> | undefined)?.[key];
-    const entityId = toEntityId(value as string | undefined);
+    const entityIdRaw = toEntityId(value as string | undefined);
+    const entityId = Array.isArray(entityIdRaw) ? entityIdRaw[0] : entityIdRaw;
+
     if (entityId) return entityId;
   }
   return undefined;

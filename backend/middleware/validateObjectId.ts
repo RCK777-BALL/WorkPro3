@@ -10,7 +10,8 @@ const validateObjectId = (paramName: string) => (
   res: Response,
   next: NextFunction,
 ): void => {
-  const id = req.params[paramName];
+  const raw = req.params[paramName];
+  const id = Array.isArray(raw) ? raw[0] : raw;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.status(400).json({ message: `Invalid ${paramName}` });
     return;
